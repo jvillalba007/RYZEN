@@ -34,9 +34,10 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.318237310" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release">
 								<option id="gnu.c.link.option.libs.1102734292" name="Libraries (-l)" superClass="gnu.c.link.option.libs" useByScannerDiscovery="false" valueType="libs">
+									<listOptionValue builtIn="false" value="commons"/>
 									<listOptionValue builtIn="false" value="shared"/>
 								</option>
-								<option id="gnu.c.link.option.ldflags.735924080" superClass="gnu.c.link.option.ldflags" useByScannerDiscovery="false" value="-Wl,-rpath='$$ORIGIN/../../shared/Shared' -L../../shared/Shared" valueType="string"/>
+								<option id="gnu.c.link.option.ldflags.735924080" name="Linker flags" superClass="gnu.c.link.option.ldflags" useByScannerDiscovery="false" value="-Wl,-rpath='$$ORIGIN/../../shared/Shared' -L../../shared/Shared" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.734963757" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
