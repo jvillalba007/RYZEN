@@ -79,8 +79,7 @@ local.properties
 # PyDev specific (Python IDE for Eclipse)
 *.pydevproject
 
-# CDT-specific (C/C++ Development Tooling)
-.cproject
+
 
 # CDT- autotools
 .autotools
@@ -115,8 +114,7 @@ local.properties
 .worksheet
 
 ### Eclipse Patch ###
-# Eclipse Core
-.project
+
 
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
@@ -128,8 +126,6 @@ local.properties
 
 # End of https://www.gitignore.io/api/eclipse
 
-
-.cproject
 .settings/org.eclipse.cdt.codan.core.prefs
 .settings/org.eclipse.core.resources.prefs
 .settings/org.eclipse.core.runtime.prefs
