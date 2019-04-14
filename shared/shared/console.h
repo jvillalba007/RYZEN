@@ -7,7 +7,7 @@
 
 	/**
 	* @NAME: console
-	* @DESC: /* Recibe un buffer alocado con los chars necesarios para almacenar el mensaje. Lee por console el mensaje y lo mete
+	* @DESC: Recibe un buffer alocado con los chars necesarios para almacenar el mensaje. Lee por console el mensaje y lo mete
 	* en la variable buffer. Retorna el tipo de dato size_t que dice la cantidad de caracteres que recibió, contando \0.
 	* No olvidarse de freerear el buffer una vez procesado.
 	* Ejemplo:
