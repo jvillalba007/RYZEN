@@ -1,7 +1,17 @@
 #include "LFS.h"
 
 
-size_t bufsize = 32;
+
+
+void iniciar_logger(void)
+{
+
+	g_logger = log_create("LFS.log", "LFS", 1, LOG_LEVEL_INFO);
+
+	log_info(g_logger, "logger iniciado");
+}
+
+
 
 void console_process(size_t bufsize) {
 
@@ -15,7 +25,7 @@ void console_process(size_t bufsize) {
 		buffer = (char*) malloc(bufsize * sizeof(char));
 
 		n_characters = console(&buffer);
-		printf("You typed: '%s'\n", buffer);
+		log_info(g_logger, buffer);
 
 		if ( 0 == strcmp(buffer, "exit\n") ) exit_loop = false;
 		free(buffer);
@@ -25,7 +35,14 @@ void console_process(size_t bufsize) {
 	pthread_exit(0);
 }
 
+void liberar_memoria(){
+	log_destroy(g_logger);
+}
+
+
 int main(void) {
+
+	iniciar_logger();
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
@@ -37,5 +54,7 @@ int main(void) {
 
 	//Esperar a que el hilo termine
 	pthread_join(tid, NULL);
+
+	liberar_memoria();
 
 }
