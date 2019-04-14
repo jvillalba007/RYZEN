@@ -6,8 +6,8 @@
  */
 
 #ifndef MEMORIA_H_
-#define MEMORIA_H_
-#include "config/config.h"
-#include <shared/socket.h>
+	#define MEMORIA_H_
+	#include "config/config.h"
+	#include <shared/socket.h>
 
 #endif /* MEMORIA_H_ */

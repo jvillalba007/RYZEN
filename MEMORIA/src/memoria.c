@@ -1,12 +1,3 @@
-/*
- ============================================================================
- Name        : MEMORIA.c
- Author      : RYZEN
- Version     :
- Copyright   : 2019
- Description : Hello World in C, Ansi-style
- ============================================================================
- */
 
 #include "memoria.h"
 
