@@ -1,0 +1,67 @@
+#define false 0
+#define true 1
+#define TAMANIO_MAX_PALABRA_RESERVADA 10
+
+char palabra[TAMANIO_MAX_PALABRA_RESERVADA - 1] = ""; //acá se irán "cargando" las letras para formar las palabras (que sólo pueden ser reservadas, según lo que dice la consigna --> Anexo I)
+int POSICION_LETRA = 0; //representaría a la posición de una letra en una palabra.
+                        //Siendo palabra = "Sisoperos", cuando POSICION_LETRA sea 0, palabra[POSICION_LETRA] será 'S'
+
+int main(void) {
+    FILE *archivo;
+    char caracterLeido;
+    int estoyEnComentario = false;
+    int cantSaltosDeLinea = 0;
+    archivo = fopen("a.txt", "r");
+
+    if (archivo == NULL) {
+        printf("Error al abrir el archivo. \n");
+    }
+    else {
+        caracterLeido = fgetc(archivo);
+        
+        while (caracterLeido != EOF) {
+            if (estoyEnComentario) {
+                if (caracterLeido == '\n') {
+                    cantSaltosDeLinea++;
+                    estoyEnComentario = false;
+                }
+            }
+            else {
+                switch (caracterLeido) {
+                    case '#':
+                        cantSaltosDeLinea = 0;
+                        estoyEnComentario = true;
+                        limpiarPalabra();
+                        break;
+                    
+                    case '\n':
+                        cantSaltosDeLinea++;
+                        if (cantSaltosDeLinea <=1) printf("%s\n", palabra);
+                        limpiarPalabra();
+                        break;
+                    
+                    default:
+                        cantSaltosDeLinea = 0;
+                        palabra[POSICION_LETRA] = caracterLeido;
+                        POSICION_LETRA++;
+                        break;
+                }
+            }
+
+            caracterLeido = fgetc(archivo);
+        }
+
+        //printf("La última línea es: \t\t%s", palabra); línea innecesaria, ya que "todo programa debe terminar con una línea en blanco"
+    }
+
+    fclose(archivo);
+    return 0;
+}
+
+void limpiarPalabra() {
+    int i = 0;
+    for (i = 0; i <= TAMANIO_MAX_PALABRA_RESERVADA - 1; i++) {
+        palabra[i] = '\0';
+    }
+    POSICION_LETRA = 0;
+}
