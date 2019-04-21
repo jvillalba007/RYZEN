@@ -9,7 +9,6 @@
 
 #endif /* LFS_H */
 
-size_t bufsize = 32;
 t_log* g_logger;
 
 void iniciar_logger(void);

@@ -20,14 +20,12 @@ void console_process(size_t bufsize) {
 	while (exit_loop) {
 
 		char* buffer;
-		size_t n_characters;
 
-		buffer = (char*) malloc(bufsize * sizeof(char));
+		buffer = console();
 
-		n_characters = console(&buffer);
 		log_info(g_logger, buffer);
 
-		if ( 0 == strcmp(buffer, "exit\n") ) exit_loop = false;
+		if ( 0 == strcmp(buffer, "exit") ) exit_loop = false;
 		free(buffer);
 
 	}
