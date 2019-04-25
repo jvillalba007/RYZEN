@@ -11,6 +11,7 @@
 	#include <shared/console.h>
 	#include <commons/string.h>
 	#include <pthread.h>
+	#include "config/config.h"
 
 void consola(); /* consola de MEMORIA */
 void consola_procesar_comando(char* linea); /* Procesamiento de comando de MEMORIA */
