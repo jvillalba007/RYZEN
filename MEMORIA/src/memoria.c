@@ -20,11 +20,19 @@ int main(void) {
 
 	inicializar();
 	/* TODO: iniciar en distintos hilos */
+	/* Creo el hilo consola */
+	pthread_t thread_consola;
+	if(pthread_create( &thread_consola, NULL, (void*) consola, NULL) ){
+		log_error(mem_log,"[MEMORIA] No pude crear el hilo para la consola");
+		mem_exit();
+		exit(EXIT_FAILURE);
+	}
+	log_info(mem_log, "[MEMORIA] Creo el hilo para la consola");
+	pthread_detach(thread_consola);
+
 	crear_servidor();
 	crear_cliente_lfs();
 	ejecutar_gossiping();
-	consola();
-
 
 	liberar_mem_config(mem_config);
 	mem_exit();
@@ -93,8 +101,3 @@ void crear_cliente_lfs(){
 void ejecutar_gossiping(){
 
 }
-
-void consola(){
-
-}
-
