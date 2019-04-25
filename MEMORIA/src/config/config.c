@@ -39,7 +39,7 @@ int mem_initialize() {
 
 void imprimir_config() {
 	log_info(mem_log, ".:: Imprimiendo configuracion ::.");
-	log_info(mem_log, "PUERTO MEMORIA: %d", mem_config.puerto_mem);
+	log_info(mem_log, "PUERTO MEMORIA: %s", mem_config.puerto_mem);
 	log_info(mem_log, "IP FLS: %s", mem_config.ip_LFS);
 	log_info(mem_log, "PUERTO FLS: %s", mem_config.puerto_LFS);
 
