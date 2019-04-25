@@ -55,7 +55,7 @@ void imprimir_config() {
 }
 
 void crear_log() {
-	mem_log = log_create(pathLOG, "LISSANDRA-MEMORIA", true, LOG_LEVEL_TRACE);
+	mem_log = log_create(pathLOG, "LISSANDRA-MEMORIA", false, LOG_LEVEL_TRACE);
 	if (mem_log == NULL) {
 		printf("No se pudo crear el log. Abortando ejecución\n");
 		exit(EXIT_FAILURE);
