@@ -37,6 +37,7 @@ void liberar_config(lfs_cfg lfs_config) {
 }
 
 void iniciar_config(){
+	iniciar_logger();
 	crear_config();
 	leer_config();
 	loggear_config();

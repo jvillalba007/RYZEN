@@ -64,7 +64,6 @@ void liberar_memoria(){
 int main(void) {
 
 	iniciar_config();
-	iniciar_logger();
 
 	// INICIAR CONSOLA
 	pthread_attr_t attr_consola;
