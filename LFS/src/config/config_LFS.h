@@ -2,6 +2,7 @@
 	#define CONFIG_LFS_H
 
 	#include <stdio.h>
+	#include <stdlib.h>
 	#include <string.h>
 	#include<commons/log.h>
 	#include <commons/config.h>
@@ -23,6 +24,7 @@
 	void crear_config(void);
 	void leer_config(void);
 	void loggear_config(void);
+	void liberar_logger(t_log*);
 	void liberar_config(lfs_cfg);
 
 #endif

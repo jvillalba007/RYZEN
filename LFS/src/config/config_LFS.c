@@ -3,7 +3,7 @@
 void iniciar_logger(void)
 {
 
-	g_logger = log_create("LFS.log", "LFS", 1, LOG_LEVEL_INFO);
+	g_logger = log_create("LFS.log", "LFS", 0, LOG_LEVEL_INFO);
 
 	log_info(g_logger, "logger iniciado");
 }
@@ -34,6 +34,10 @@ void loggear_config() {
 void liberar_config(lfs_cfg lfs_config) {
     free(lfs_config.puerto_lfs);
     free(lfs_config.punto_montaje);
+}
+
+void liberar_logger(t_log* g_logger){
+	log_destroy(g_logger);
 }
 
 void iniciar_config(){

@@ -15,7 +15,7 @@ void crear_servidor(){
 	log_info(g_logger, "Se abre servidor de LFS");
 
 	/* NUEVO CLIENTE */
-	while( (cliente = socket_aceptar_conexion(socketServidor) )  ){
+	while( (cliente = socket_aceptar_conexion(socketServidor) && !EXIT_PROGRAM)  ){
 
 		log_info(g_logger, "Se agrego una nueva conexión, socket: %d",cliente);
 		/************ LEER EL HANDSHAKE ************/
@@ -31,15 +31,15 @@ void crear_servidor(){
 	}
 
 	free( buffer );
+
+	pthread_exit(0);
+
 }
 
+void console_process() {
 
 
-void console_process(size_t bufsize) {
-
-	bool exit_loop = true;
-
-	while (exit_loop) {
+	while ( !EXIT_PROGRAM ) {
 
 		char* buffer;
 
@@ -47,46 +47,49 @@ void console_process(size_t bufsize) {
 
 		log_info(g_logger, buffer);
 
-		if ( 0 == strcmp(buffer, "exit") ) exit_loop = false;
+		if ( 0 == strcmp(buffer, "exit") ) EXIT_PROGRAM = true;
 		free(buffer);
 
 	}
 
 	pthread_exit(0);
+
 }
+
 
 void liberar_memoria(){
-	log_destroy(g_logger);
+	liberar_config(lfs_config);
+	liberar_logger(g_logger);
 }
-
-
 
 int main(void) {
 
+	EXIT_PROGRAM = false;
+
 	iniciar_config();
-
-	// INICIAR CONSOLA
-	pthread_attr_t attr_consola;
-	pthread_attr_init(&attr_consola);
-
-	pthread_t tid_consola;
-
-	pthread_create(&tid_consola, &attr_consola, console_process, NULL);
 
 	// INICIAR SOCKET SERVIDOR
 	pthread_attr_t attr_server;
 	pthread_attr_init(&attr_server);
 
 	pthread_t tid_server;
-
 	pthread_create(&tid_server, &attr_server, crear_servidor, NULL);
+	pthread_detach(tid_server);
 
+	// INICIAR CONSOLA
+	pthread_attr_t attr_consola;
+	pthread_attr_init(&attr_consola);
 
+	pthread_t tid_consola;
+	pthread_create(&tid_consola, &attr_consola, console_process, NULL);
 
 	//Esperar a que el hilo termine
 	pthread_join(tid_consola, NULL);
-	pthread_join(tid_server, NULL);
+	//pthread_join(tid_server, NULL);
 
 	liberar_memoria();
+
+
+	return 0;
 
 }
