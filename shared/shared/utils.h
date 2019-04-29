@@ -3,8 +3,10 @@
 
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include <string.h>
 
 	void split_liberar(char **);
 	int split_cant_elem(char **);
+	char* string_extract_substring(char*, char*, char*);
 
 #endif /* SHARED_SOCKET_H_ */
