@@ -1,5 +1,15 @@
 #include "API.h"
 
+
+void procesar_insert(int cant_parametros, char* linea){
+
+	char* value;
+	value = string_extract_substring(linea, "\"", "\"");
+
+	free(value);
+
+}
+
 void consola_procesar_comando(char* linea)
 {
 	char** parametros = string_split(linea, " ");
@@ -7,12 +17,9 @@ void consola_procesar_comando(char* linea)
 
 	if(string_equals_ignore_case(parametros[0],"INSERT")){
 		if (cantParametros >= 4 && cantParametros < 6) {
-			char** parametros_aux = string_split(linea, "\""); //spliteo la linea con comillas
-			char** parametros_estaticos  = string_split(parametros_aux[0], " "); //obtiene INSERT,[TABLA],[KEY]
-			string_iterate_lines(parametros_estaticos,puts);
-			puts(parametros_aux[1]); //parametros_aux[1] esta el "VALUE"
-			split_liberar(parametros_estaticos);
-			split_liberar(parametros_aux);
+
+			procesar_insert(cantParametros, linea);
+
 		}else{
 			perror("API Error: 3 o 4 argumentos son requeridos");
 		}
