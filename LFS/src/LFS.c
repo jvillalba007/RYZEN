@@ -31,7 +31,7 @@ void crear_servidor(){
 	}
 
 	free( buffer );
-
+	close(socketServidor);
 	pthread_exit(0);
 
 }
@@ -47,7 +47,11 @@ void console_process() {
 
 		log_info(g_logger, buffer);
 
-		if ( 0 == strcmp(buffer, "exit") ) EXIT_PROGRAM = true;
+		if ( 0 == strcmp(buffer, "exit") )
+			{
+				EXIT_PROGRAM = true;
+				shutdown(socketServidor,SHUT_RDWR);
+			}
 		free(buffer);
 
 	}
@@ -74,7 +78,7 @@ int main(void) {
 
 	pthread_t tid_server;
 	pthread_create(&tid_server, &attr_server, crear_servidor, NULL);
-	pthread_detach(tid_server);
+	//pthread_detach(tid_server);
 
 	// INICIAR CONSOLA
 	pthread_attr_t attr_consola;
@@ -85,7 +89,7 @@ int main(void) {
 
 	//Esperar a que el hilo termine
 	pthread_join(tid_consola, NULL);
-	//pthread_join(tid_server, NULL);
+	pthread_join(tid_server, NULL);
 
 	liberar_memoria();
 
