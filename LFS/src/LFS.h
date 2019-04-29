@@ -12,6 +12,7 @@
 
 	#include "shared/utils.h"
 	#include "config/config_LFS.h"
+	#include "API.h"
 
 #endif /* LFS_H */
 
