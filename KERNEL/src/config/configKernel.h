@@ -21,12 +21,11 @@ typedef struct {
 
 ck kernel_config;
 
-
-void abrirLog(void);
-void loggearInicioLogger(void);
-void crearConfig(void);
-void leerConfigs(void);
-void loggearConfigs(void);
-void liberar_kernel_config(ck kernel_config);
+void abrir_log(void);
+void crear_config(void);
+void leer_configs(void);
+void loggear_inicio_logger(void);
+void loggear_configs(void);
+void liberar_kernel_config(ck);
 
 #endif
