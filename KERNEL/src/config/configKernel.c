@@ -1,18 +1,14 @@
 #include "configKernel.h"
 
-void abrirLog() {
+void abrir_log() { 
     logger = log_create("kernel.log", "KERNEL", 1, LOG_LEVEL_INFO);
 }
 
-void loggearInicioLogger() {
-    log_info(logger, "KERNEL - Inicio del Logger");
-}
-
-void crearConfig() {
+void crear_config() {
     config = config_create("kernel.cfg");
 }
 
-void leerConfigs() {
+void leer_configs() {
 	kernel_config.IP_MEMORIA = strdup(config_get_string_value(config, "IP_MEMORIA"));
 	kernel_config.PUERTO_MEMORIA = strdup(config_get_string_value(config, "PUERTO_MEMORIA"));
 	kernel_config.MULTIPROCESAMIENTO = config_get_int_value(config, "MULTIPROCESAMIENTO");
@@ -24,7 +20,11 @@ void leerConfigs() {
 	config_destroy(config);
 }
 
-void loggearConfigs() {
+void loggear_inicio_logger() {
+    log_info(logger, "KERNEL - Inicio del Logger");
+}
+
+void loggear_configs() {
     log_info(logger, "IP_MEMORIA: %s", kernel_config.IP_MEMORIA);
     log_info(logger, "PUERTO_MEMORIA: %s", kernel_config.PUERTO_MEMORIA);
     log_info(logger, "MULTIPROCESAMIENTO: %d", kernel_config.MULTIPROCESAMIENTO);
