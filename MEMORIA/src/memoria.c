@@ -20,11 +20,10 @@ int main(void) {
 
 	imprimir_config();
 
-
-	estructurar_memoria();
-
 	//CLIENTE CON LFS
-	crear_cliente_lfs();
+	//crear_cliente_lfs();
+	//ESTRUCTURAR/INICIALIZACION DE MEMORIA
+	estructurar_memoria();
 
 	//INICIAR SERVER
 	log_info(mem_log, "[MEMORIA] Abro hilo servidor");
@@ -47,7 +46,7 @@ int main(void) {
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO CONSOLA");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO SERVIDOR");
 
-
+	liberar_tablas();
 	liberar_mem_config(mem_config);
 	log_info(mem_log, "[MEMORIA] LIBERO MEMORIA CONFIG");
 
@@ -61,27 +60,34 @@ void estructurar_memoria(){
 
 	iniciar_tabla_frames();
 	iniciar_tabla_paginas();
-
-	tabla_segmentos = list_create();
+	iniciar_tabla_segmentos();
 }
 
 void iniciar_tabla_frames(){
-
+	maximo_value = 5;
 	tabla_frames = list_create();
+	int tamanio_fila = tamanio_fila_TFrames();
 
 	log_info(mem_log, "***INICIAMOS TABLA DE FRAMES ****");
-	cantidad_frames = mem_config.tam_mem / tamanio_fila_TFrames();
+	cantidad_frames = mem_config.tam_mem / tamanio_fila;
+	log_info(mem_log, "Tamaño Memoria: %d", mem_config.tam_mem);
+	log_info(mem_log, "Tamaño de la fila: %d", tamanio_fila);
+	log_info(mem_log, "Cantidad de Frames: %d", cantidad_frames);
 
 	int i;
 
 	void _agregar_nueva_fila(){
-		fila_TFrames* nueva_fila = malloc( tamanio_fila_TFrames() );
-		nueva_fila->timestamp = 123456; // Este frame esta vacio inicialmente
-		nueva_fila->key = 25;
-		nueva_fila->value = strcpy( nueva_fila+sizeof(int32_t) + sizeof(u_int16_t) ,strdup("Hola") );
-		list_add(tabla_frames, (void*) nueva_fila);
-		log_info(mem_log, "AGREGO A LA LISTA ELEMENTO");
-		//puts( nueva_fila->value );
+		void* nueva_fila = calloc(tamanio_fila,sizeof(char));
+
+		int posicion = 0;
+		fila_TFrames* fila_frame = malloc(sizeof(fila_TFrames));
+		fila_frame->timestamp = nueva_fila;
+		posicion+=sizeof( int32_t );
+		fila_frame->key = nueva_fila + posicion;
+		posicion+=sizeof(u_int16_t);
+		fila_frame->value = nueva_fila + posicion;
+
+		list_add(tabla_frames, (void*) fila_frame);
 	}
 
 	for(i = 0; i < cantidad_frames; i++){
@@ -92,11 +98,25 @@ void iniciar_tabla_frames(){
 void iniciar_tabla_paginas(){
 
 	log_info(mem_log, "***INICIAMOS TABLA DE PAGINAS ****");
+	log_info(mem_log, "Cantidad de Paginas: %d", cantidad_frames);
 	tabla_paginas = list_create();
+
+	void _agregar_nueva_fila(int i){
+		fila_TPaginas* fila_pagina = malloc(sizeof(fila_TPaginas));
+		fila_pagina->numero_pagina = i;
+		fila_pagina->modificado = 0;
+
+		list_add(tabla_paginas, (void*) fila_pagina);
+	}
+
+	int i;
+	for(i = 0; i < cantidad_frames; i++){
+		_agregar_nueva_fila(i);
+	}
 }
 
 void iniciar_tabla_segmentos(){
-
+	tabla_segmentos = list_create();
 }
 
 
@@ -116,10 +136,10 @@ void crear_servidor(){
 
 	if( socketServidor < 0  ){
 
-		log_error(mem_log, "¡Error no se pudo abrir el servidor ");
+		log_error(mem_log, "¡Error no se pudo abrir el servidor!");
 		free( buffer );
 		close(socketServidor);
-		exit(EXIT_FAILURE);
+		pthread_exit(0);
 	}
 	log_info(mem_log, "Se abre servidor de MEMORIA");
 
@@ -147,11 +167,13 @@ void crear_servidor(){
 
 void crear_cliente_lfs(){
 	socketClienteLfs = socket_connect_to_server(mem_config.ip_LFS,  mem_config.puerto_LFS );
-	/*socketClienteLfs = socket_connect_to_server("192.168.1",  "30000" );*/
 	log_info(mem_log, "%d" ,socketClienteLfs);
 	if( socketClienteLfs == -1  ){
 
 		log_error(mem_log, "¡Error no se pudo conectar con LFS");
+		liberar_mem_config(mem_config);
+		log_info(mem_log, "[MEMORIA] LIBERO MEMORIA CONFIG");
+		mem_exit();
 		exit(EXIT_FAILURE);
 	}
 
@@ -164,6 +186,7 @@ void crear_cliente_lfs(){
 
 	send(socketClienteLfs, &buffer, sizeof( buffer ) , 0);
 	/* TODO lfs nos devuelve valores, terminar de realizar */
+	//maximo_value = 5;
 
 }
 

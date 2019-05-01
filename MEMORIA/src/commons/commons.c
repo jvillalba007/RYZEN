@@ -5,7 +5,7 @@
  *      Author: utnso
  */
 
-#include "config.h"
+#include "commons.h"
 
 int mem_initialize() {
 
@@ -71,6 +71,12 @@ void imprimir_arrays(char** split,char* nombre)
 	}
 }
 
+void liberar_tablas() {
+	liberar_tabla_frames(tabla_frames);
+	liberar_tabla_paginas(tabla_paginas);
+	liberar_tabla_segmentos(tabla_segmentos);
+}
+
 void liberar_mem_config(mem_cfg mem_config)
 {
 	free(mem_config.puerto_mem);
@@ -78,6 +84,36 @@ void liberar_mem_config(mem_cfg mem_config)
 	free(mem_config.puerto_LFS);
 	split_liberar(mem_config.ip_SEEDS);
 	split_liberar(mem_config.puerto_SEEDS);
+}
+
+void liberar_fila_frame(fila_TFrames* fila_frame)
+{
+	free(fila_frame->timestamp);
+	free(fila_frame);
+}
+
+void liberar_tabla_frames(t_list* tabla_frames){
+	list_iterate(tabla_frames,(void*)liberar_fila_frame);
+	list_destroy(tabla_frames);
+	log_info(mem_log, "LIBERADO TABLA DE FRAMES");
+
+}
+
+void liberar_fila_paginas(fila_TPaginas* fila_pagina)
+{
+	free(fila_pagina);
+}
+
+void liberar_tabla_paginas(t_list* tabla_paginas){
+	list_iterate(tabla_paginas,(void*)liberar_fila_paginas);
+	list_destroy(tabla_paginas);
+	log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+
+}
+
+void liberar_tabla_segmentos(t_list* tabla_segmentos) {
+	list_destroy(tabla_segmentos);
+	log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
 }
 
 void mem_exit() {

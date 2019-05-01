@@ -12,9 +12,9 @@
 	#include <commons/string.h>
 	#include <pthread.h>
 	#include <shared/socket.h>
-	#include "config/config.h"
+	#include "commons/commons.h"
 
-EXIT_PROGRAM;
+int EXIT_PROGRAM;
 
 void consola(); /* consola de MEMORIA */
 void consola_procesar_comando(char* linea); /* Procesamiento de comando de MEMORIA */
