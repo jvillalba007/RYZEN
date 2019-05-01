@@ -9,5 +9,6 @@
 		#include "shared/utils.h"
 
 		void consola_procesar_comando(char*);
+		void procesar_insert(int, char** , char*);
 
 #endif /* API_H_ */
