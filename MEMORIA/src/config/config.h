@@ -33,6 +33,7 @@
 	} mem_cfg;
 
 	/* Variables Globales*/
+	int socketServidor;
 	t_config* config;
 	t_log* mem_log;
 	mem_cfg mem_config;
