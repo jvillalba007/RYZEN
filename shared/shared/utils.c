@@ -34,7 +34,6 @@ char* string_extract_substring(char* s, char* pattern_start, char* pattern_end){
 
 }
 
-
 void remove_substring (char *string, char *sub) {
     char *match = string;
     int len = strlen(sub);
@@ -44,3 +43,13 @@ void remove_substring (char *string, char *sub) {
                 match++;
     }
 }
+
+char* generate_path(char* table_name, char* table_folder, char* file_extension) {
+	char* full_path = (char *)malloc(sizeof(table_name) + sizeof(table_folder) + sizeof(file_extension));
+	strcat(full_path, table_folder);
+	strcat(full_path, table_name);
+	strcat(full_path, file_extension);
+
+	return full_path;
+}
+
