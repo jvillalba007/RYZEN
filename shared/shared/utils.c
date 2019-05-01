@@ -33,3 +33,14 @@ char* string_extract_substring(char* s, char* pattern_start, char* pattern_end){
     return target;
 
 }
+
+
+void remove_substring (char *string, char *sub) {
+    char *match = string;
+    int len = strlen(sub);
+    while ((match = strstr(match, sub))) {
+        *match = '\0';
+        strcat(string, match+len);
+                match++;
+    }
+}
