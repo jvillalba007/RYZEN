@@ -8,7 +8,11 @@
 
 		#include "shared/utils.h"
 
+		#define TABLES_FOLDER "tables/"
+
 		void consola_procesar_comando(char*);
 		void procesar_insert(int, char** , char*);
+
+		const char* folder_path;
 
 #endif /* API_H_ */

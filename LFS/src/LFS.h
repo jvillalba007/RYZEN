@@ -14,12 +14,14 @@
 	#include "config/config_LFS.h"
 	#include "API.h"
 
+	bool EXIT_PROGRAM;
+	int socketServidor;
+
+	void crear_servidor(void);
+	void console_process(void);
+	void liberar_memoria(void);
+	void consola_procesar_comando(char*);
+
 #endif /* LFS_H */
 
-bool EXIT_PROGRAM;
-int socketServidor;
 
-void crear_servidor(void);
-void console_process(void);
-void liberar_memoria(void);
-void consola_procesar_comando(char*);

@@ -1,10 +1,16 @@
 #include "API.h"
 
 
-
 void procesar_insert(int cant_parametros, char** parametros_no_value, char* value){
 
-	printf("Cantidad de parametros: %d", cant_parametros);
+	char* table_name = parametros_no_value[1];
+	char* full_path;
+	full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
+
+	printf("%s", full_path);
+	free(full_path);
+//	FILE * fPtr;
+//	fPtr = fopen("tables/file1.txt", "w");
 
 
 }
@@ -27,7 +33,7 @@ void consola_procesar_comando(char* linea)
 			return ;
 		}
 
-		remove_substring (linea, value); // QUeda la linea sin value, solo comillas
+		remove_substring (linea, value); // Queda la linea sin value, solo comillas
 
 		char** parametros_no_value = string_split(linea, " ");
 
@@ -35,9 +41,10 @@ void consola_procesar_comando(char* linea)
 		// Si deja las comillas, entonces siguen siendo la misma cantida de parametros
 
 		if (cant_sin_value >= 4 && cant_sin_value < 6) {
-
+			split_liberar(parametros_no_value);
 			procesar_insert(cant_sin_value, parametros_no_value, value);
 			free(value);
+
 
 		}else{
 			perror("API Error: 3 o 4 argumentos son requeridos");
