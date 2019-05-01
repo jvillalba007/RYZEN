@@ -11,38 +11,10 @@
 	#include <shared/socket.h>
 	#include <pthread.h>
 
-typedef struct {
-	int32_t timestamp;
-	u_int16_t key;
-	char* value;
-} fila_TFrames;
-
-typedef struct {
-	int32_t numero_pagina;
-	fila_TFrames *frame;
-	int8_t modificado;
-	int32_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
-	//TODO verificar si hay que agregar el puntero al segmento
-} fila_TPaginas;
-
-typedef struct {
-	char nombre_tabla[255];
-	t_list* paginas;
-} fila_TSegmentos;
-
-
-t_list* tabla_frames;
-t_list* tabla_paginas;
-t_list* tabla_segmentos;
-int socketClienteLfs;
-
-uint8_t maximo_value = 10; //TAMANIO MAXIMO DEL VALUE RECIBIDO EN BYTES POR LFS
-int cantidad_frames;
-
-
 void estructurar_memoria();/* inicializa todas las estructuras funcionales para la memoria */
 void iniciar_tabla_frames();
 void iniciar_tabla_paginas();
+void iniciar_tabla_segmentos();
 
 void crear_servidor(); /* crea servidor de la memoria donde recibira las request de kernel y de otras meomrias */
 void crear_cliente_lfs(); /* crea cliente para poder enviar las request hacia el LFS */
