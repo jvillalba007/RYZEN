@@ -10,12 +10,15 @@
 void consola(){
 
 	printf("Consola Memoria Lissandra\n");
+	EXIT_PROGRAM=false;
 
-	while(1)
+	while(!EXIT_PROGRAM)
 	{
 		char* linea = console();
 
 		if(string_equals_ignore_case(linea,"SALIR")) {
+			EXIT_PROGRAM = true;
+			shutdown(socketServidor,SHUT_RDWR);
 			free(linea);
 			break;
 		}
@@ -23,8 +26,8 @@ void consola(){
 		consola_procesar_comando(linea);
 		free(linea);
 	}
-	exit(EXIT_SUCCESS);
-
+	log_info(mem_log, "FIN DE CONSOLA");
+	pthread_exit(0);
 }
 
 void consola_procesar_comando(char* linea)
