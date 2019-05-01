@@ -1,17 +1,40 @@
 #include "API.h"
 
+int file_write_key_value (char* full_path, char* key, char* value){
+	FILE * fPtr;
+	fPtr = fopen(full_path, "a");
+
+	if(fPtr == NULL)
+	{
+		printf("Unable to create file: .\n %s",  strerror(errno));
+		return 1;
+	}
+
+	char* key_value = (char*) malloc(sizeof(value) + sizeof(key) + 1 );
+
+	// Concatener linea a colocar
+	strcat(key_value, key);
+	strcat(key_value, "=");
+	strcat(key_value, value);
+
+	fputs(key_value, fPtr);
+	fputs("\n", fPtr);
+
+	fclose(fPtr);
+
+    free(key_value);
+
+    return 0;
+}
 
 void procesar_insert(int cant_parametros, char** parametros_no_value, char* value){
 
 	char* table_name = parametros_no_value[1];
 	char* full_path;
-	full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
-
-	printf("%s", full_path);
+	//full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
+	char* key = parametros_no_value[2];
+	file_write_key_value(full_path, key, value);
 	free(full_path);
-//	FILE * fPtr;
-//	fPtr = fopen("tables/file1.txt", "w");
-
 
 }
 

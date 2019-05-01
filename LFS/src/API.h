@@ -5,6 +5,7 @@
 		#include <string.h>
 		#include <stdlib.h>
 		#include <commons/string.h>
+		#include <errno.h>
 
 		#include "shared/utils.h"
 
