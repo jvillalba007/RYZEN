@@ -31,7 +31,7 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 
 	char* table_name = parametros_no_value[1];
 	char* full_path;
-	//full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
+	full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
 	char* key = parametros_no_value[2];
 	file_write_key_value(full_path, key, value);
 	free(full_path);
