@@ -20,6 +20,13 @@ void consola_procesar_comando(char* linea)
 		char* value;
 		value = string_extract_substring(linea, "\"", "\"");
 
+		if (value == NULL) {
+			puts("API Error: Valor no proporcionado");
+			free(value);
+			split_liberar(parametros);
+			return ;
+		}
+
 		remove_substring (linea, value); // QUeda la linea sin value, solo comillas
 
 		char** parametros_no_value = string_split(linea, " ");
