@@ -31,9 +31,9 @@ typedef struct {
 } fila_TSegmentos;
 
 
-t_list* tabla_frames = list_create();
-t_list* tabla_paginas = list_create();
-t_list* tabla_segmentos = list_create();
+t_list* tabla_frames;
+t_list* tabla_paginas;
+t_list* tabla_segmentos;
 int socketClienteLfs;
 
 uint8_t maximo_value = 10; //TAMANIO MAXIMO DEL VALUE RECIBIDO EN BYTES POR LFS
