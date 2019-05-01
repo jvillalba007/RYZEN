@@ -21,5 +21,10 @@
 	 * Liberar memoria de los strings si es necesario.
 	 */
 	void remove_substring (char *, char*);
+	/* Recibe como parametro el nombre de la carpeta, el nombre del archivo
+	 * y la extensión. Devuelve un puntero al string concatenado.
+	 * ADVERTENCIA: LIBERAR ESE STRING DESPUES DE USAR.
+	 */
+	char* generate_path(char*, char*, char*);
 
 #endif /* SHARED_SOCKET_H_ */
