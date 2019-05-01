@@ -11,6 +11,8 @@
 #include "memoria.h"
 
 int main(void) {
+
+
 	if (mem_initialize() == -1) {
 		mem_exit();
 		return EXIT_FAILURE;
@@ -18,32 +20,88 @@ int main(void) {
 
 	imprimir_config();
 
-	inicializar();
-	/* TODO: iniciar en distintos hilos */
-	/* Creo el hilo consola */
-	pthread_t thread_consola;
-	if(pthread_create( &thread_consola, NULL, (void*) consola, NULL) ){
-		log_error(mem_log,"[MEMORIA] No pude crear el hilo para la consola");
-		mem_exit();
-		exit(EXIT_FAILURE);
-	}
-	log_info(mem_log, "[MEMORIA] Creo el hilo para la consola");
-	pthread_detach(thread_consola);
 
-	crear_servidor();
+	estructurar_memoria();
+
+	//CLIENTE CON LFS
 	crear_cliente_lfs();
-	ejecutar_gossiping();
+
+	//INICIAR SERVER
+	log_info(mem_log, "[MEMORIA] Abro hilo servidor");
+	pthread_t tid_server;
+	pthread_create(&tid_server, NULL, (void*)crear_servidor, NULL);
+
+	// INICIAR CONSOLA
+	log_info(mem_log, "[MEMORIA] Abro hilo consola");
+	pthread_t tid_consola;
+	pthread_create(&tid_consola, NULL, (void*)consola, NULL);
+
+	//GOSSIPING
+	pthread_t tid_gossiping;
+	pthread_create(&tid_gossiping, NULL, (void*)ejecutar_gossiping, NULL);
+
+
+
+	pthread_join(tid_consola, NULL);
+	pthread_join(tid_server, NULL);
+	log_info(mem_log, "[MEMORIA] FINALIZO HILO CONSOLA");
+	log_info(mem_log, "[MEMORIA] FINALIZO HILO SERVIDOR");
+
 
 	liberar_mem_config(mem_config);
+	log_info(mem_log, "[MEMORIA] LIBERO MEMORIA CONFIG");
+
 	mem_exit();
 
 	return EXIT_SUCCESS;
 }
 
-/* TODO: aca hay que iniciar la lista de sedds de gossiping , segmentar y paginar la memoria */
-void inicializar(){
+
+void estructurar_memoria(){
+
+	iniciar_tabla_frames();
+	iniciar_tabla_paginas();
+}
+
+void iniciar_tabla_frames(){
+
+	log_info(mem_log, "***INICIAMOS TABLA DE FRAMES ****");
+	cantidad_frames = mem_config.tam_mem / tamanio_fila_TFrames();
+
+	int i;
+
+	void _agregar_nueva_fila(){
+		fila_TFrames* nueva_fila = malloc( tamanio_fila_TFrames() );
+		nueva_fila->timestamp = 123456; // Este frame esta vacio inicialmente
+		nueva_fila->key = 25;
+		nueva_fila->value = strcpy( nueva_fila+sizeof(int32_t) + sizeof(u_int16_t) ,strdup("Hola") );
+		list_add(tabla_frames, (void*) nueva_fila);
+		log_info(mem_log, "AGREGO A LA LISTA ELEMENTO");
+		//puts( nueva_fila->value );
+	}
+
+	for(i = 0; i < cantidad_frames; i++){
+		_agregar_nueva_fila();
+	}
+}
+
+void iniciar_tabla_paginas(){
+
+	log_info(mem_log, "***INICIAMOS TABLA DE PAGINAS ****");
 
 }
+
+void iniciar_tabla_segmentos(){
+
+}
+
+
+
+int tamanio_fila_TFrames(){
+
+	return ( sizeof( int32_t ) + sizeof(u_int16_t) + maximo_value ) ;
+}
+
 
 void crear_servidor(){
 
@@ -55,12 +113,14 @@ void crear_servidor(){
 	if( socketServidor < 0  ){
 
 		log_error(mem_log, "¡Error no se pudo abrir el servidor ");
+		free( buffer );
+		close(socketServidor);
 		exit(EXIT_FAILURE);
 	}
 	log_info(mem_log, "Se abre servidor de MEMORIA");
 
 	/* NUEVO CLIENTE */
-	while( (cliente = socket_aceptar_conexion(socketServidor) )  ){
+	while( (cliente = socket_aceptar_conexion(socketServidor)  && !EXIT_PROGRAM )  ){
 
 		log_info(mem_log, "Se agrego una nueva conexión, socket: %d",cliente);
 		/************ LEER EL HANDSHAKE ************/
@@ -75,14 +135,17 @@ void crear_servidor(){
 
 	}
 
+	log_info(mem_log, "FIN SERVIDOR");
 	free( buffer );
+	close(socketServidor);
+	pthread_exit(0);
 }
 
 void crear_cliente_lfs(){
-
 	socketClienteLfs = socket_connect_to_server(mem_config.ip_LFS,  mem_config.puerto_LFS );
-
-	if( socketClienteLfs < 0  ){
+	/*socketClienteLfs = socket_connect_to_server("192.168.1",  "30000" );*/
+	log_info(mem_log, "%d" ,socketClienteLfs);
+	if( socketClienteLfs == -1  ){
 
 		log_error(mem_log, "¡Error no se pudo conectar con LFS");
 		exit(EXIT_FAILURE);
@@ -96,6 +159,8 @@ void crear_cliente_lfs(){
 	buffer.payload_size = 32;
 
 	send(socketClienteLfs, &buffer, sizeof( buffer ) , 0);
+	/* TODO lfs nos devuelve valores, terminar de realizar */
+
 }
 
 void ejecutar_gossiping(){
