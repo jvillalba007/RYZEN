@@ -61,9 +61,13 @@ void estructurar_memoria(){
 
 	iniciar_tabla_frames();
 	iniciar_tabla_paginas();
+
+	tabla_segmentos = list_create();
 }
 
 void iniciar_tabla_frames(){
+
+	tabla_frames = list_create();
 
 	log_info(mem_log, "***INICIAMOS TABLA DE FRAMES ****");
 	cantidad_frames = mem_config.tam_mem / tamanio_fila_TFrames();
@@ -88,7 +92,7 @@ void iniciar_tabla_frames(){
 void iniciar_tabla_paginas(){
 
 	log_info(mem_log, "***INICIAMOS TABLA DE PAGINAS ****");
-
+	tabla_paginas = list_create();
 }
 
 void iniciar_tabla_segmentos(){
