@@ -34,9 +34,9 @@
 	} mem_cfg;
 
 	typedef struct {
-		int32_t* timestamp;
-		u_int16_t* key;
-		char* value;
+		int32_t timestamp;
+		u_int16_t key;
+		char value[];
 	} fila_TFrames;
 
 	typedef struct {
