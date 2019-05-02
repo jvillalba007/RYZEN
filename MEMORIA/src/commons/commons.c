@@ -88,7 +88,6 @@ void liberar_mem_config(mem_cfg mem_config)
 
 void liberar_fila_frame(fila_TFrames* fila_frame)
 {
-	free(fila_frame->timestamp);
 	free(fila_frame);
 }
 
@@ -117,6 +116,9 @@ void liberar_tabla_segmentos(t_list* tabla_segmentos) {
 }
 
 void mem_exit() {
+	liberar_tablas();
+	liberar_mem_config(mem_config);
+	log_info(mem_log, "[MEMORIA] LIBERO MEMORIA CONFIG");
 	log_destroy(mem_log);
 }
 
