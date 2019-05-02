@@ -14,7 +14,7 @@ int main(void) {
 
 
 	if (mem_initialize() == -1) {
-		mem_exit();
+		log_destroy(mem_log);
 		return EXIT_FAILURE;
 	}
 
@@ -46,7 +46,7 @@ int main(void) {
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO CONSOLA");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO SERVIDOR");
 
-	mem_exit();
+	mem_exit_global();
 
 	return EXIT_SUCCESS;
 }
@@ -60,9 +60,8 @@ void estructurar_memoria(){
 }
 
 void iniciar_tabla_frames(){
-	maximo_value = 5;
-	tabla_frames = list_create();
-	int tamanio_fila = tamanio_fila_TFrames();
+	maximo_value = 4;
+	int tamanio_fila = tamanio_fila_Frames();
 
 	log_info(mem_log, "***INICIAMOS TABLA DE FRAMES ****");
 	cantidad_frames = mem_config.tam_mem / tamanio_fila;
@@ -70,23 +69,8 @@ void iniciar_tabla_frames(){
 	log_info(mem_log, "Tamaño de la fila: %d", tamanio_fila);
 	log_info(mem_log, "Cantidad de Frames: %d", cantidad_frames);
 
-	int i;
-
-	void _agregar_nueva_fila(){
-
-		typedef struct {
-			int32_t timestamp;
-			u_int16_t key;
-			char value[maximo_value];
-		} fila_TFrames_Temporal;
-
-		fila_TFrames* fila_frame = malloc(sizeof(fila_TFrames_Temporal));
-		list_add(tabla_frames, (void*) fila_frame);
-	}
-
-	for(i = 0; i < cantidad_frames; i++){
-		_agregar_nueva_fila();
-	}
+	memoria = malloc(tamanio_fila*cantidad_frames);
+	memset(memoria, '\0', tamanio_fila*cantidad_frames);
 }
 
 void iniciar_tabla_paginas(){
@@ -98,6 +82,13 @@ void iniciar_tabla_paginas(){
 	void _agregar_nueva_fila(int i){
 		fila_TPaginas* fila_pagina = malloc(sizeof(fila_TPaginas));
 		fila_pagina->numero_pagina = i;
+
+		fila_pagina->frame = malloc(sizeof(fila_Frames));
+		void* frame = memoria+(tamanio_fila_Frames()*i);
+		fila_pagina->frame->timestamp = frame;
+		fila_pagina->frame->key = frame+sizeof(int32_t);
+		fila_pagina->frame->value = frame+sizeof(int32_t)+sizeof(uint16_t);
+
 		fila_pagina->modificado = 0;
 
 		list_add(tabla_paginas, (void*) fila_pagina);
@@ -115,9 +106,9 @@ void iniciar_tabla_segmentos(){
 
 
 
-int tamanio_fila_TFrames(){
+int tamanio_fila_Frames(){
 
-	return ( sizeof( int32_t ) + sizeof(u_int16_t) + maximo_value ) ;
+	return ( sizeof( int32_t ) + sizeof(u_int16_t) + maximo_value + 1 ) ;
 }
 
 
@@ -165,9 +156,7 @@ void crear_cliente_lfs(){
 	if( socketClienteLfs == -1  ){
 
 		log_error(mem_log, "¡Error no se pudo conectar con LFS");
-		liberar_mem_config(mem_config);
-		log_info(mem_log, "[MEMORIA] LIBERO MEMORIA CONFIG");
-		mem_exit();
+		mem_exit_simple();
 		exit(EXIT_FAILURE);
 	}
 
