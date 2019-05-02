@@ -36,8 +36,8 @@ int main(void) {
 	pthread_create(&tid_consola, NULL, (void*)consola, NULL);
 
 	//GOSSIPING
-	pthread_t tid_gossiping;
-	pthread_create(&tid_gossiping, NULL, (void*)ejecutar_gossiping, NULL);
+	//pthread_t tid_gossiping;
+	//pthread_create(&tid_gossiping, NULL, (void*)ejecutar_gossiping, NULL);
 
 
 
@@ -45,10 +45,6 @@ int main(void) {
 	pthread_join(tid_server, NULL);
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO CONSOLA");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO SERVIDOR");
-
-	liberar_tablas();
-	liberar_mem_config(mem_config);
-	log_info(mem_log, "[MEMORIA] LIBERO MEMORIA CONFIG");
 
 	mem_exit();
 
@@ -77,16 +73,14 @@ void iniciar_tabla_frames(){
 	int i;
 
 	void _agregar_nueva_fila(){
-		void* nueva_fila = calloc(tamanio_fila,sizeof(char));
 
-		int posicion = 0;
-		fila_TFrames* fila_frame = malloc(sizeof(fila_TFrames));
-		fila_frame->timestamp = nueva_fila;
-		posicion+=sizeof( int32_t );
-		fila_frame->key = nueva_fila + posicion;
-		posicion+=sizeof(u_int16_t);
-		fila_frame->value = nueva_fila + posicion;
+		typedef struct {
+			int32_t timestamp;
+			u_int16_t key;
+			char value[maximo_value];
+		} fila_TFrames_Temporal;
 
+		fila_TFrames* fila_frame = malloc(sizeof(fila_TFrames_Temporal));
 		list_add(tabla_frames, (void*) fila_frame);
 	}
 
