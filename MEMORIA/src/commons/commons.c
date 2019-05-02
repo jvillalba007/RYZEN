@@ -72,7 +72,6 @@ void imprimir_arrays(char** split,char* nombre)
 }
 
 void liberar_tablas() {
-	liberar_tabla_frames(tabla_frames);
 	liberar_tabla_paginas(tabla_paginas);
 	liberar_tabla_segmentos(tabla_segmentos);
 }
@@ -86,20 +85,15 @@ void liberar_mem_config(mem_cfg mem_config)
 	split_liberar(mem_config.puerto_SEEDS);
 }
 
-void liberar_fila_frame(fila_TFrames* fila_frame)
-{
-	free(fila_frame);
-}
-
-void liberar_tabla_frames(t_list* tabla_frames){
-	list_iterate(tabla_frames,(void*)liberar_fila_frame);
-	list_destroy(tabla_frames);
-	log_info(mem_log, "LIBERADO TABLA DE FRAMES");
+void liberar_memoria_contigua(){
+	free(memoria);
+	log_info(mem_log, "LIBERADO MEMORIA CONTIGUA");
 
 }
 
 void liberar_fila_paginas(fila_TPaginas* fila_pagina)
 {
+	free(fila_pagina->frame);
 	free(fila_pagina);
 }
 
@@ -115,8 +109,13 @@ void liberar_tabla_segmentos(t_list* tabla_segmentos) {
 	log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
 }
 
-void mem_exit() {
+void mem_exit_global() {
 	liberar_tablas();
+	liberar_memoria_contigua();
+	mem_exit_simple();
+}
+
+void mem_exit_simple() {
 	liberar_mem_config(mem_config);
 	log_info(mem_log, "[MEMORIA] LIBERO MEMORIA CONFIG");
 	log_destroy(mem_log);

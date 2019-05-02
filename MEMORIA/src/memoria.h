@@ -20,6 +20,6 @@ void crear_servidor(); /* crea servidor de la memoria donde recibira las request
 void crear_cliente_lfs(); /* crea cliente para poder enviar las request hacia el LFS */
 void ejecutar_gossiping(); /* ejecuta proceso de gossiping cada x tiempo */
 
-int tamanio_fila_TFrames();
+int tamanio_fila_Frames();
 
 #endif /* MEMORIA_H_ */
