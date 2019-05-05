@@ -1,16 +1,7 @@
 #include "kernel.h"
 
 int main() {
-	//	Log: apertura
-	abrir_log();
-
-	//	Archivo de Configuración: creación y lectura del contenido
-	crear_config();
-	leer_configs();
-	
-	//	Log: registro inicial + registro de las configuraciones leídas
-	loggear_inicio_logger();
-	loggear_configs();	
+	inicializar_logs_y_configs();
 	
 	//	Conexión con la memoria
 	int socket = socket_connect_to_server(kernel_config.IP_MEMORIA, kernel_config.PUERTO_MEMORIA);

@@ -21,6 +21,7 @@ typedef struct {
 
 ck kernel_config;
 
+void inicializar_logs_y_configs(void);
 void abrir_log(void);
 void crear_config(void);
 void leer_configs(void);

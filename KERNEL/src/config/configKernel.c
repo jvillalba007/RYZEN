@@ -1,5 +1,13 @@
 #include "configKernel.h"
 
+void inicializar_logs_y_configs() {
+    abrir_log();
+    crear_config();
+	leer_configs();
+    loggear_inicio_logger();
+	loggear_configs();
+}
+
 void abrir_log() { 
     logger = log_create("kernel.log", "KERNEL", 1, LOG_LEVEL_INFO);
 }
