@@ -9,9 +9,10 @@ void consola() {
         if(string_equals_ignore_case(linea,"SALIR")) {
                 free(linea);
                 break;
-            }
+        }
 
         procesar_comando(linea);
+
         free(linea);
     }
     exit(EXIT_SUCCESS);
