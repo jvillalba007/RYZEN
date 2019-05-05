@@ -1,6 +1,7 @@
 #include "kernel.h"
 
 int main() {
+	//	Se inicializan los logs y las configs
 	inicializar_logs_y_configs();
 	
 	//	Conexión con la memoria
