@@ -17,7 +17,7 @@ void consola() {
     exit(EXIT_SUCCESS);
 }
 
-void procesar_comando() {
+void procesar_comando(char* linea) {
     char** parametros = string_split(linea, " ");
 	int cantParametros = split_cant_elem(parametros);
 
@@ -103,7 +103,7 @@ void procesar_comando() {
         }
     }
     else
-    if (string_equals_ignore_case(paramentros[0], "RUN")) {
+    if (string_equals_ignore_case(parametros[0], "RUN")) {
         if (cantParametros == 2) {
             //  RUN ruta_del_archivo_LQL
         }
@@ -130,6 +130,7 @@ void procesar_comando() {
         else {
             notificar_error_sintactico_parametros();
         }
+    }
     
     //  Si no se ingresa ningún comando...
     else {
