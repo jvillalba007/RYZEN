@@ -13,21 +13,18 @@ int main() {
 	send(socket, &buffer, sizeof(buffer), 0);
 	
 	//	Hilo para la consola
+	pthread_attr_t atributos_consola;
+	pthread_attr_init(&atributos_consola);
 	pthread_t hilo_consola;
-	pthread_create(&hilo_consola, NULL, (void*) consola, NULL);
-	log_info(logger, "KERNEL > Hilo creado para la consola...");
+	pthread_create(&hilo_consola, &atributos_consola, (void*) consola, NULL);
+	log_info(logger, "Kernel > Hilo creado para la consola...");
 
-
-/*
-	//	Hilo para la consola
-	pthread_create(&tID, &attr, consola, NULL);
 	
 	//	Se espera a que el hilo termine...
-	pthread_join(tID, NULL);
-*/
+	pthread_join(hilo_consola, NULL);
+
 
 	sleep(3);
-
 
 
 	//	Se liberan los char* pedidos anteriormente
@@ -42,7 +39,6 @@ int main() {
 
 
 /* otra consola...
-
 void consola(size_t TAMANIO_BUFFER) {
 	//	Un bucle infinito porque la consola permanecerá abierta (casi) siempre.
 	while (1) {
@@ -51,7 +47,6 @@ void consola(size_t TAMANIO_BUFFER) {
 		buffer_linea_leida = (char*) malloc(TAMANIO_BUFFER * 2 * sizeof(char));
 		cantidad_caracteres = console(&buffer_linea_leida);
 		log_info(logger, buffer_linea_leida);
-
 		//	A continuación se empieza a parsear lo escrito por consola...
 		//	Si se lee el comando EXIT, se saldrá del bucle.
 		if (strcmp(buffer_linea_leida, "EXIT\n") == 0) {
@@ -87,12 +82,9 @@ void consola(size_t TAMANIO_BUFFER) {
 		if (string_starts_with(buffer_linea_leida, "SELECT")) {
 			puts("Pusiste un SELECT\n");
 		}
-
 		//	Acá se termina de parsear.
-
 		free(buffer_linea_leida);
 	}
-
 	pthread_exit(0);
 }
 */
