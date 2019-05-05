@@ -29,7 +29,7 @@ void leer_configs() {
 }
 
 void loggear_inicio_logger() {
-    log_info(logger, "KERNEL - Inicio del Logger");
+    log_info(logger, "Kernel > Inicio del Logger");
 }
 
 void loggear_configs() {
