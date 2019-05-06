@@ -1,12 +1,12 @@
 #include "consola.h"
 
 #define ever ;;
+#define OR ||
+#define AND &&
 
 void consola() {
     for(ever) {
         char* linea = console();
-
-        //Esto se "podría" hacer así también: char* linea = console("Kernel"); ... habría que hacerlo...
 
         if(string_equals_ignore_case(linea,"SALIR")) {
                 free(linea);
@@ -118,14 +118,36 @@ void procesar_comando(char* linea) {
         }
     }
     else
-    if (string_equals_ignore_case(parametros[0], "ADD") && string_equals_ignore_case(parametros[1], "MEMORY") && string_equals_ignore_case(parametros[3], "TO")) {
+    if (string_equals_ignore_case(parametros[0], "ADD") AND string_equals_ignore_case(parametros[1], "MEMORY") AND string_equals_ignore_case(parametros[3], "TO")) {
         if (cantParametros == 5) {
             //  Ejemplo: ADD MEMORY numero_de_memoria TO tipo_de_consistencia
-            
-            //  numero_de_memoria = parametros[2];
-            //  tipo_de_consistencia = parametros[4];
+            int numero_de_memoria = atoi(parametros[2]);
+            char* tipo_de_consistencia = parametros[4];
 
-            //  ...laburar acá...
+            if (string_equals_ignore_case(tipo_de_consistencia, "SC")) {
+                printf("Se agrega la memoria %d al criterio SC\n.", numero_de_memoria);
+
+                //  ...se labura acá...
+
+            }
+            else 
+                if (string_equals_ignore_case(tipo_de_consistencia, "SHC")) {
+                    printf("Se agrega la memoria %d al criterio SHC\n.", numero_de_memoria);
+
+                    //  ...se labura acá...
+
+                }
+                else {
+                    if (string_equals_ignore_case(tipo_de_consistencia, "EC")) {
+                    printf("Se agrega la memoria %d al criterio EC\n.", numero_de_memoria);
+                    
+                    //  ...se labura acá...
+
+                    }
+                    else {
+                        notificar_error_tipo_consistencia();
+                    }
+                }
         }
         else {
             notificar_error_sintactico_en_parametros();
@@ -136,9 +158,50 @@ void procesar_comando(char* linea) {
         if (cantParametros == 2) {
             //  Ejemplo: RUN ruta_del_archivo_LQL
             
-            //  ruta_del_archivo_LQL = parametros[1];
+            char* ruta_del_archivo_LQL = parametros[1];
+            char* lineaLeida = (char*) malloc(sizeof(char) * 100);
+            
+            FILE *archivo = NULL;
+            archivo = fopen(ruta_del_archivo_LQL, "r");
+            if(archivo == NULL ) {
+                puts("Ruta del archivo incorrecta.");
+            }
+            else {
+                while (!feof(archivo))
+                {
+                    fgets(lineaLeida, 100, archivo);
+                    if (strcmp(lineaLeida, "\n") != 0) { //el archivo no debe terminar con un "\n". Si no, falla (duplica la última línea leída).
+                        printf("%s", lineaLeida);
 
-            //  ...laburar acá...
+                        procesar_comando(lineaLeida);
+                        //  y todo lo demás...
+
+                        /* Al ingresar por consola RUN 2.LQL, se muestra lo siguiente
+                                    ADD MEMORY 1 TO SC
+                        NO -------> Error: criterio de consistencia incorrecto.
+                                    ADD MEMORY 2 TO SHC
+                        NO -------> Error: criterio de consistencia incorrecto.
+                                    ADD MEMORY 3 TO EC
+                        NO -------> Error: criterio de consistencia incorrecto.
+                                    ADD MEMORY 4 TO SC
+                        NO -------> Error: criterio de consistencia incorrecto.
+                        CASI -----> ADD MEMORY 5 TO SHCSe agrega la memoria 5 al criterio SHC
+                        ? --------> .
+
+                        En los primeros 4 casos:
+                        Me parece que el último parámetro guarda el "\n" (¿será culpa de fgets? eso)... por eso falla al compararlo con "SC", o con "SHC" o con "EC".
+                        En el último caso, cuando no hay "\n", anda bien digamos...
+
+
+                        Por otro lado: si se pone un archivo que no existe, el programa muestra "Ruta del archivo incorrecta" y termina.
+                        Hay que corregirlo...
+                        */
+                    }
+                }
+                printf("\n");
+            }
+            
+            fclose(archivo);
         }
         else {
             notificar_error_sintactico_en_parametros();
@@ -177,9 +240,13 @@ void procesar_comando(char* linea) {
 }
 
 void notificar_error_sintactico_en_comando(void) {
-    puts("Error sintáctico al ingresar el comando.");
+    puts("Error sintáctico: comando incorrecto.");
 }
 
 void notificar_error_sintactico_en_parametros(void) {
-    puts("Error sintácico: la cantidad de parámetros es incorrecta.");
+    puts("Error sintácico: cantidad de parámetros incorrecta.");
+}
+
+void notificar_error_tipo_consistencia(void) {
+    puts("Error: criterio de consistencia incorrecto.");
 }
