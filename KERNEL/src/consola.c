@@ -159,13 +159,27 @@ void procesar_comando(char* linea) {
             //  Ejemplo: RUN ruta_del_archivo_LQL
             
             char* ruta_del_archivo_LQL = parametros[1];
-            char* lineaLeida = (char*) malloc(sizeof(char) * 100);
-            
             FILE *archivo = NULL;
             archivo = fopen(ruta_del_archivo_LQL, "r");
-            if(archivo == NULL ) {
-                puts("Ruta del archivo incorrecta.");
+
+            if (archivo == NULL) {
+                puts("Archivo no encontrado.");
             }
+            
+            size_t buffer_size = 100;
+            char *lineaLeida = malloc(buffer_size * sizeof(char));
+
+            int numero_de_linea = 0;
+            while (getline(&lineaLeida, &buffer_size, archivo) != -1) {
+                if (strcmp(lineaLeida, "\n")) printf("%s", lineaLeida);
+                
+                procesar_comando(lineaLeida);
+
+            }
+            fflush(stdout);
+            fclose(archivo);
+            free(lineaLeida);          
+/*   
             else {
                 while (!feof(archivo))
                 {
@@ -195,13 +209,14 @@ void procesar_comando(char* linea) {
 
                         Por otro lado: si se pone un archivo que no existe, el programa muestra "Ruta del archivo incorrecta" y termina.
                         Hay que corregirlo...
-                        */
+                        
                     }
                 }
                 printf("\n");
             }
             
             fclose(archivo);
+*/
         }
         else {
             notificar_error_sintactico_en_parametros();
