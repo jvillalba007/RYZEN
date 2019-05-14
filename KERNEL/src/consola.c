@@ -95,6 +95,8 @@ void procesar_comando(char* linea) {
             //  Ejemplo: DROP nombre_de_la_tabla
 
             //  nombre_de_la_tabla = parametros[1];
+            int* nombre_de_la_tabla = parametros[1];
+            printf("Se DROPea la tabla %s.\n", nombre_de_la_tabla);
             
             //  Delegar al módulo Memoria.
         }
@@ -124,22 +126,27 @@ void procesar_comando(char* linea) {
             int numero_de_memoria = atoi(parametros[2]);
             char* tipo_de_consistencia = parametros[4];
 
+            //  PRUEBA_DEL_BARRA_N clean_new_line_ch
+            limpiar_caracter_final_de_nueva_linea(tipo_de_consistencia);
+            //  FIN PRUEBA
+
+
             if (string_equals_ignore_case(tipo_de_consistencia, "SC")) {
-                printf("Se agrega la memoria %d al criterio SC\n.", numero_de_memoria);
+                printf("Se agrega la memoria %d al criterio SC.\n", numero_de_memoria);
 
                 //  ...se labura acá...
 
             }
             else 
                 if (string_equals_ignore_case(tipo_de_consistencia, "SHC")) {
-                    printf("Se agrega la memoria %d al criterio SHC\n.", numero_de_memoria);
+                    printf("Se agrega la memoria %d al criterio SHC.\n", numero_de_memoria);
 
                     //  ...se labura acá...
 
                 }
                 else {
                     if (string_equals_ignore_case(tipo_de_consistencia, "EC")) {
-                    printf("Se agrega la memoria %d al criterio EC\n.", numero_de_memoria);
+                    printf("Se agrega la memoria %d al criterio EC.\n", numero_de_memoria);
                     
                     //  ...se labura acá...
 
@@ -265,3 +272,10 @@ void notificar_error_sintactico_en_parametros(void) {
 void notificar_error_tipo_consistencia(void) {
     puts("Error: criterio de consistencia incorrecto.");
 }
+
+//  PRUEBA_DEL_BARRA_N clean_new_line_ch
+/*void limpiar_caracter_final_de_nueva_linea(char *linea) {
+    int posicion_nueva_linea = strlen(linea) - 1;
+    if (linea[posicion_nueva_linea] == '\n') linea[posicion_nueva_linea] = '\0';
+}*/
+//  FIN PRUEBA
