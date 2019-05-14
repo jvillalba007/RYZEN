@@ -6,9 +6,6 @@
 #include "consola.h"
 #include <shared/socket.h>
 #include <shared/console.h>
-
-/*  Definiciones de variables y funciones
-size_t TAMANIO_BUFFER = 32;
-//void consola(size_t);*/
+#include "shared/utils.h"
 
 #endif

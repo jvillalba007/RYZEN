@@ -2,6 +2,7 @@
 #define CONSOLA_H
 
 	#include <shared/console.h>
+	#include "shared/utils.h"
 	#include <commons/string.h>
 	#include <pthread.h>
 	#include "config/configKernel.h"
