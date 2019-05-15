@@ -12,8 +12,7 @@
 	#include <pthread.h>
 
 void estructurar_memoria();/* inicializa todas las estructuras funcionales para la memoria */
-void iniciar_tabla_frames();
-void iniciar_tabla_paginas();
+void iniciar_memoria_contigua();
 void iniciar_tabla_segmentos();
 
 void crear_servidor(); /* crea servidor de la memoria donde recibira las request de kernel y de otras meomrias */

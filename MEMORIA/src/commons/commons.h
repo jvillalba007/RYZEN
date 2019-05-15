@@ -34,14 +34,14 @@
 	} mem_cfg;
 
 	typedef struct {
-		int32_t* timestamp;
-		u_int16_t* key;
+		int32_t timestamp;
+		u_int16_t key;
 		char* value;
 	} fila_Frames;
 
 	typedef struct {
 		int32_t numero_pagina;
-		fila_Frames* frame;
+		char* frame_registro;
 		int8_t modificado;
 		int32_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
 		//TODO verificar si hay que agregar el puntero al segmento
@@ -55,12 +55,11 @@
 	/* Variables Globales*/
 	int socketServidor;
 	int socketClienteLfs;
+
 	int maximo_value; //TAMANIO MAXIMO DEL VALUE RECIBIDO EN BYTES POR LFS
 	int cantidad_frames;
-	t_list* tabla_paginas;
 	t_list* tabla_segmentos;
-
-	void* memoria;
+	char* memoria;
 
 	t_config* config;
 	t_log* mem_log;
@@ -73,7 +72,7 @@
 	void liberar_mem_config(mem_cfg mem_config);
 	void liberar_fila_paginas(fila_TPaginas* fila_pagina);
 	void liberar_memoria_contigua();
-	void liberar_tabla_paginas(t_list* tabla_paginas);
+	void liberar_tabla_paginas(fila_TSegmentos segmento);
 	void liberar_tabla_segmentos(t_list* tabla_segmentos);
 	void mem_exit_global();
 	void mem_exit_simple();

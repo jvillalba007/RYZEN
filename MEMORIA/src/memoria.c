@@ -54,16 +54,15 @@ int main(void) {
 
 void estructurar_memoria(){
 
-	iniciar_tabla_frames();
-	iniciar_tabla_paginas();
+	iniciar_memoria_contigua();
 	iniciar_tabla_segmentos();
 }
 
-void iniciar_tabla_frames(){
+void iniciar_memoria_contigua(){
 	maximo_value = 4;
 	int tamanio_fila = tamanio_fila_Frames();
 
-	log_info(mem_log, "***INICIAMOS TABLA DE FRAMES ****");
+	log_info(mem_log, "***INICIAMOS MEMORIA CONTIGUA ****");
 	cantidad_frames = mem_config.tam_mem / tamanio_fila;
 	log_info(mem_log, "Tamaño Memoria: %d", mem_config.tam_mem);
 	log_info(mem_log, "Tamaño de la fila: %d", tamanio_fila);
@@ -73,34 +72,8 @@ void iniciar_tabla_frames(){
 	memset(memoria, '\0', tamanio_fila*cantidad_frames);
 }
 
-void iniciar_tabla_paginas(){
-
-	log_info(mem_log, "***INICIAMOS TABLA DE PAGINAS ****");
-	log_info(mem_log, "Cantidad de Paginas: %d", cantidad_frames);
-	tabla_paginas = list_create();
-
-	void _agregar_nueva_fila(int i){
-		fila_TPaginas* fila_pagina = malloc(sizeof(fila_TPaginas));
-		fila_pagina->numero_pagina = i;
-
-		fila_pagina->frame = malloc(sizeof(fila_Frames));
-		void* frame = memoria+(tamanio_fila_Frames()*i);
-		fila_pagina->frame->timestamp = frame;
-		fila_pagina->frame->key = frame+sizeof(int32_t);
-		fila_pagina->frame->value = frame+sizeof(int32_t)+sizeof(uint16_t);
-
-		fila_pagina->modificado = 0;
-
-		list_add(tabla_paginas, (void*) fila_pagina);
-	}
-
-	int i;
-	for(i = 0; i < cantidad_frames; i++){
-		_agregar_nueva_fila(i);
-	}
-}
-
 void iniciar_tabla_segmentos(){
+	log_info(mem_log, "***INICIAMOS TABLA DE SEGMENTOS ****");
 	tabla_segmentos = list_create();
 }
 
