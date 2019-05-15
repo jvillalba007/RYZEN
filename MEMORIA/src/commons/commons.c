@@ -72,7 +72,6 @@ void imprimir_arrays(char** split,char* nombre)
 }
 
 void liberar_tablas() {
-	liberar_tabla_paginas(tabla_paginas);
 	liberar_tabla_segmentos(tabla_segmentos);
 }
 
@@ -93,18 +92,18 @@ void liberar_memoria_contigua(){
 
 void liberar_fila_paginas(fila_TPaginas* fila_pagina)
 {
-	free(fila_pagina->frame);
 	free(fila_pagina);
 }
 
-void liberar_tabla_paginas(t_list* tabla_paginas){
-	list_iterate(tabla_paginas,(void*)liberar_fila_paginas);
-	list_destroy(tabla_paginas);
+void liberar_tabla_paginas(fila_TSegmentos segmento){
+	list_iterate(segmento.paginas,(void*)liberar_fila_paginas);
+	list_destroy(segmento.paginas);
 	log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
 
 }
 
 void liberar_tabla_segmentos(t_list* tabla_segmentos) {
+	list_iterate(tabla_segmentos,(void*)liberar_tabla_paginas);
 	list_destroy(tabla_segmentos);
 	log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
 }
