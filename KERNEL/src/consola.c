@@ -8,7 +8,7 @@ void consola() {
     for(ever) {
         char* linea = console();
 
-        if(string_equals_ignore_case(linea,"SALIR")) {
+        if(string_equals_ignore_case(linea,"EXIT")) {
                 free(linea);
                 break;
         }
@@ -17,7 +17,8 @@ void consola() {
 
         free(linea);
     }
-    exit(EXIT_SUCCESS);
+    pthread_exit(0);
+    //exit(EXIT_SUCCESS);
 }
 
 void procesar_comando(char* linea) {

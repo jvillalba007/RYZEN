@@ -23,9 +23,12 @@ int main() {
 	//	Se espera a que el hilo termine...
 	pthread_join(hilo_consola, NULL);
 
-
-	sleep(3);
-
+	puts("3...");
+	sleep(1);
+	puts("2...");
+	sleep(1);
+	puts("1...");
+	sleep(1);
 
 	//	Se liberan los char* pedidos anteriormente
 	liberar_kernel_config(kernel_config);
