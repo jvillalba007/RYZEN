@@ -6,7 +6,7 @@ int file_write_key_value (char* full_path, char* key, char* value){
 
 	if(fPtr == NULL)
 	{
-		printf("Unable to create file: .\n %s",  strerror(errno));
+		printf("Unable to create file: %s \n %s", full_path, strerror(errno));
 		return 1;
 	}
 
