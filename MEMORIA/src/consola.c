@@ -16,7 +16,7 @@ void consola(){
 	{
 		char* linea = console();
 
-		if(string_equals_ignore_case(linea,"SALIR")) {
+		if(string_equals_ignore_case(linea,"exit")) {
 			EXIT_PROGRAM = true;
 			shutdown(socketServidor,SHUT_RDWR);
 			free(linea);
