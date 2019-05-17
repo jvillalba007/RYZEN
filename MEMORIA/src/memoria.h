@@ -15,6 +15,9 @@ void estructurar_memoria();/* inicializa todas las estructuras funcionales para 
 void iniciar_memoria_contigua();
 void iniciar_tabla_segmentos();
 
+void atender_request(void* cliente_socket); //hilo/funcion de atender request
+void atender_kernel(int* cliente); //gestiona cosas de kernel
+
 void crear_servidor(); /* crea servidor de la memoria donde recibira las request de kernel y de otras meomrias */
 void crear_cliente_lfs(); /* crea cliente para poder enviar las request hacia el LFS */
 void ejecutar_gossiping(); /* ejecuta proceso de gossiping cada x tiempo */

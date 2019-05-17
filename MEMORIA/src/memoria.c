@@ -68,8 +68,8 @@ void iniciar_memoria_contigua(){
 	log_info(mem_log, "Tamaño de la fila: %d", tamanio_fila);
 	log_info(mem_log, "Cantidad de Frames: %d", cantidad_frames);
 
-	memoria = malloc(tamanio_fila*cantidad_frames);
-	memset(memoria, '\0', tamanio_fila*cantidad_frames);
+	memoria = malloc(mem_config.tam_mem);
+	memset(memoria, '\0', mem_config.tam_mem);
 }
 
 void iniciar_tabla_segmentos(){
@@ -102,18 +102,9 @@ void crear_servidor(){
 	log_info(mem_log, "Se abre servidor de MEMORIA");
 
 	/* NUEVO CLIENTE */
-	while( (cliente = socket_aceptar_conexion(socketServidor)  && !EXIT_PROGRAM )  ){
+	while( (cliente = socket_aceptar_conexion(socketServidor))  && (!EXIT_PROGRAM )  ){
 
-		log_info(mem_log, "Se agrego una nueva conexión, socket: %d",cliente);
-		/************ LEER EL HANDSHAKE ************/
-		int res = recv(cliente, buffer, sizeof( t_header ) ,MSG_WAITALL);
-
-		if (res <= 0) {
-			log_error(mem_log, "¡Error en el handshake con el cliente! %d",res);
-			close(cliente);
-			free(buffer);
-		}
-		log_info(mem_log, "El emisor es: %d",buffer->emisor);
+			atender_request(&cliente);
 
 	}
 
@@ -121,6 +112,68 @@ void crear_servidor(){
 	free( buffer );
 	close(socketServidor);
 	pthread_exit(0);
+}
+
+void atender_request(void* cliente_socket)
+{
+	int cliente = *(int *) cliente_socket;
+	t_header* paquete = malloc(sizeof(t_header));
+
+	log_info(mem_log, "Se agrego una nueva conexión, socket: %d",cliente);
+
+	/************ LEER EL HANDSHAKE ************/
+	recv(cliente, paquete, sizeof(t_header) ,MSG_WAITALL);
+	log_info(mem_log, "TIPO EMISOR: %d",paquete->emisor);
+
+	/*************************** SI EL HANDSHAKE LO HIZO UNA MEMORIA *********************************/
+	if (paquete->emisor == MEMORIA) {
+		log_info(mem_log, "************* NUEVA CONEXION DE MEMORIA **************");
+
+
+	}
+
+	/************************** SI EL HANDSHAKE LO HIZO KERNEL ***************************************/
+	if( paquete->emisor == KERNEL ){
+		log_info(mem_log, "************* NUEVA CONEXION DE KERNEL **************");
+
+		atender_kernel(&cliente);
+
+	}
+	free(paquete);
+
+}
+
+void atender_kernel(int* cliente)
+{
+	int res ;
+	t_header* paquete = malloc(sizeof(t_header));
+
+	while ( ( res = recv(*cliente, (void*) paquete, sizeof( t_header ) ,MSG_WAITALL) )  > 0) {
+
+		log_info(mem_log, "Se recibio request del KERNEL: %d",paquete->tipo_mensaje);
+
+		switch (paquete->tipo_mensaje) {
+
+		/* TODO: SELECT en shared */
+		case CONEXION:{
+			log_info(mem_log, "ALGORITMIA SELECT");
+
+		}
+		break;
+
+		case DESCONEXION:{
+			/* TODO: INSERT en shared */
+			log_info(mem_log, "ALGORITMIA INSERT");
+		}
+		break;
+
+
+
+		}
+
+	}
+	free(paquete);
+	close(*cliente);
 }
 
 void crear_cliente_lfs(){
