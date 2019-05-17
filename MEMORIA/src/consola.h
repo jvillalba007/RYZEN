@@ -14,7 +14,7 @@
 	#include <shared/socket.h>
 	#include "commons/commons.h"
 
-int EXIT_PROGRAM;
+bool EXIT_PROGRAM;//cnosola
 
 void consola(); /* consola de MEMORIA */
 void consola_procesar_comando(char* linea); /* Procesamiento de comando de MEMORIA */
