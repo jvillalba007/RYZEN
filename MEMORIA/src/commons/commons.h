@@ -40,7 +40,7 @@
 	} fila_Frames;
 
 	typedef struct {
-		int32_t numero_pagina;
+		int32_t numero_pagina; //TODO: verificar si esto sirve
 		char* frame_registro;
 		int8_t modificado;
 		int32_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
@@ -48,9 +48,17 @@
 	} fila_TPaginas;
 
 	typedef struct {
-		char nombre_tabla[255];
+		char *nombre_tabla; //TODO validar con ayudantes si se pyede definir como char[255]
 		t_list* paginas;
 	} fila_TSegmentos;
+
+
+	typedef struct {
+		char* tabla;
+		u_int16_t key;
+		char* value;
+	} linea_insert;
+
 
 	/* Variables Globales*/
 	int socketServidor;
@@ -58,6 +66,8 @@
 
 	int maximo_value; //TAMANIO MAXIMO DEL VALUE RECIBIDO EN BYTES POR LFS
 	int cantidad_frames;
+	int frames_ocupados; //ME INDICA LA CANTIDAD DE FRAMES QUE ESTAN OCUPADOS ACTUALMENTE
+
 	t_list* tabla_segmentos;
 	char* memoria;
 
@@ -72,7 +82,7 @@
 	void liberar_mem_config(mem_cfg mem_config);
 	void liberar_fila_paginas(fila_TPaginas* fila_pagina);
 	void liberar_memoria_contigua();
-	void liberar_tabla_paginas(fila_TSegmentos segmento);
+	void liberar_tabla_paginas(fila_TSegmentos *segmento);
 	void liberar_tabla_segmentos(t_list* tabla_segmentos);
 	void mem_exit_global();
 	void mem_exit_simple();
