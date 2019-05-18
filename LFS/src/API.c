@@ -32,6 +32,58 @@ int file_write_key_value (char* full_path, char* key, char* value, char* timesta
     return 0;
 }
 
+char* extract_value_from_key(char* full_path, char* key){
+	FILE * fPtr;
+	fPtr = fopen(full_path, "r");
+	char* target;
+	char* value = NULL;
+
+	if ( fPtr != NULL ){
+	  char line [ 256 ];
+	  while ( fgets ( line, sizeof line, fPtr ) != NULL ) /* read a line */
+	  {
+		  target = string_extract_substring(line, "", "="); // extraer la clave
+		  if (strcmp(key, target) == 0){ // son iguales?
+			  value = string_extract_substring(line, "=", "\n");
+			  free(target); // este free tiene que estar porque al hacer el break, no llega al free que esta al final del while
+			  break;
+		  }
+		  free(target);
+	  }
+
+
+	}
+	else {
+		printf("Unable to create file: %s \n %s \n", full_path, (char *) strerror(errno));
+		return value;
+	}
+
+
+	fclose (fPtr);
+	return value;
+}
+
+void procesar_select(char** parametros){
+	char* table_name = parametros[1];
+	char* key = parametros[2];
+	char* full_path;
+	full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
+
+	char* value;
+	value = extract_value_from_key(full_path, key);
+
+	if( value == NULL ){
+		printf("La key %s no fue encontrada en el sistema.\n", key);
+	}else{
+		printf("El valor para la key %s es %s \n", key, value);
+	}
+
+
+	free(full_path);
+	free(value);
+
+}
+
 void procesar_insert(int cant_parametros, char** parametros_no_value, char* value){
 
 	char* table_name = parametros_no_value[1];
@@ -56,6 +108,7 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 		file_write_key_value(full_path, key, value, timestamp);
 
 	}
+
 
 	free(full_path);
 
@@ -98,7 +151,9 @@ void consola_procesar_comando(char* linea)
 
 	else if(string_equals_ignore_case(parametros[0],"SELECT")){
 		if (cant_parametros == 3) {
-			string_iterate_lines(parametros,puts);
+
+			procesar_select(parametros);
+
 		} else {
 			perror("API Error: 2 argumentos son requeridos.");
 		}
@@ -145,4 +200,3 @@ void consola_procesar_comando(char* linea)
 
 	split_liberar(parametros);
 }
-
