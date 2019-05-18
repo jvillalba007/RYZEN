@@ -77,5 +77,7 @@
 	void mem_exit_global();
 	void mem_exit_simple();
 	void imprimir_arrays(char** split,char* nombre);
+	int escribir_en_frame(char* frame, fila_Frames registro);
+	void leer_de_frame(char* frame, fila_Frames* registro);
 
 #endif /* COMMONS_COMMONS_H_ */

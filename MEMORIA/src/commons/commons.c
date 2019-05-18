@@ -71,6 +71,41 @@ void imprimir_arrays(char** split,char* nombre)
 	}
 }
 
+int escribir_en_frame(char* frame, fila_Frames registro)
+{
+	int pos = 0;
+	int len_value = strlen(registro.value);
+
+	if(len_value > maximo_value)
+	{
+		log_info(mem_log, "Segmentation Paginated Fault");
+		return -1;
+	}
+
+	memcpy(frame, (void*) &(registro.timestamp), sizeof(int32_t));
+	pos+=sizeof(int32_t);
+	memcpy(frame+pos, (void*) &(registro.key), sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+	memcpy(frame+pos, (void*) registro.value, len_value);
+	frame[pos+len_value] = '\0';
+
+	log_info(mem_log, "SE ESCRIBIO CORRECTAMENTE UN REGISTRO EN EL FRAME");
+
+	return pos;
+}
+
+void leer_de_frame(char* frame, fila_Frames* registro)
+{
+	int pos = 0;
+	memcpy((void*) &(registro->timestamp), (void*) frame, sizeof(int32_t));
+	pos+=sizeof(int32_t);
+	memcpy((void*) &(registro->key), (void*) frame+pos, sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+
+	registro->value = frame+pos;
+
+}
+
 void liberar_tablas() {
 	liberar_tabla_segmentos(tabla_segmentos);
 }
