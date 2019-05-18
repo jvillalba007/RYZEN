@@ -64,9 +64,10 @@ void consola_procesar_comando(char* linea)
 		// Si deja las comillas, entonces siguen siendo la misma cantida de parametros
 
 		if (cant_sin_value >= 4 && cant_sin_value < 6) {
-			split_liberar(parametros_no_value);
+
 			procesar_insert(cant_sin_value, parametros_no_value, value);
 			free(value);
+			split_liberar(parametros_no_value);
 
 
 		}else{
