@@ -54,6 +54,8 @@ int main(void) {
 
 void estructurar_memoria(){
 
+	frames_ocupados=2;
+
 	iniciar_memoria_contigua();
 	iniciar_tabla_segmentos();
 }
@@ -164,10 +166,50 @@ void atender_kernel(int* cliente)
 		case DESCONEXION:{
 			/* TODO: INSERT en shared */
 			log_info(mem_log, "ALGORITMIA INSERT");
+
+			linea_insert linea;
+			linea.tabla =strdup( "TEST" );
+			linea.key= 1 ;
+			linea.value= strdup( "Hola" ) ;
+
+			fila_TSegmentos *segmento = obtener_segmento( linea.tabla );
+
+			if( segmento == NULL ) segmento = crear_segmento( linea.tabla );
+
+
+			fila_TPaginas *pagina=NULL;
+			if( !list_is_empty(segmento->paginas )) pagina = obtener_pagina_segmento( segmento , linea.key );
+
+
+			if( pagina != NULL ) {
+
+				actualizar_pagina( pagina , linea );
+				log_info(mem_log, "SE ACTUALIZO LA PAGINA CON KEY: %s" , linea.value  ) ;
+			}
+			else{
+
+				char* frame = obtener_frame_libre();
+				log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
+
+				fila_Frames linea_frame = inicializar_fila_frame(linea ) ;
+				log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
+
+				escribir_en_frame( frame , linea_frame );
+				fila_TPaginas* pagina = crear_pagina( segmento , frame );
+				log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
+
+				fila_Frames registro;
+				leer_de_frame( pagina->frame_registro , &registro );
+				log_info(mem_log, "LA INFORMACION DEL FRAME INSERTADO ES key: %d , value: %s  , timestamp: %d" , registro.key , registro.value , registro.timestamp ) ;
+				log_info(mem_log, "LA CANTIDAD DE PAGINAS DEL SEGMENTO ES: %d" , list_size(segmento->paginas )  ) ;
+			}
+
+
+
+			free(linea.tabla);
+			free(linea.value);
 		}
 		break;
-
-
 
 		}
 
@@ -175,6 +217,106 @@ void atender_kernel(int* cliente)
 	free(paquete);
 	close(*cliente);
 }
+
+
+void actualizar_pagina( fila_TPaginas* pagina , linea_insert linea ){
+
+	pagina->ultimo_uso=0; //TODO: verificar que poner aca
+	pagina->modificado=1;
+	fila_Frames linea_frame = inicializar_fila_frame( linea ) ;
+	escribir_en_frame(  pagina->frame_registro , linea_frame );
+}
+
+
+fila_TPaginas* crear_pagina(  fila_TSegmentos* segmento , char* frame ){
+
+	fila_TPaginas *pagina = malloc( sizeof( fila_TPaginas ) );
+
+	pagina->frame_registro = frame;
+	pagina->modificado = 1;
+	pagina->numero_pagina =list_size( segmento->paginas);
+	pagina->ultimo_uso=0;//TODO: verificar que poner aca
+	list_add( segmento->paginas , pagina );
+
+	return pagina;
+}
+
+
+
+char *obtener_frame_libre(){
+
+	char* frame;
+
+	if( frames_ocupados < cantidad_frames ){
+
+		frame= memoria+ ( tamanio_fila_Frames() * frames_ocupados );
+		frames_ocupados++;
+	}
+	else
+	{
+		frame = ejecutar_lru();
+	}
+
+	return frame;
+}
+
+
+fila_TSegmentos*  crear_segmento( char *nombre_tabla ){
+
+	fila_TSegmentos *segmento = malloc( sizeof( fila_TSegmentos ) );
+
+	segmento->nombre_tabla = strdup( nombre_tabla );
+	segmento->paginas = list_create();
+	list_add( tabla_segmentos , segmento );
+
+	return segmento;
+}
+
+
+fila_TSegmentos* obtener_segmento( char *nombre_tabla ){
+
+	bool buscar_segmento(fila_TSegmentos *s) {
+
+		if(  string_equals_ignore_case(  s->nombre_tabla , nombre_tabla ) ) return true;
+		return false;
+	}
+
+	fila_TSegmentos *segmento = NULL;
+	segmento = list_find( tabla_segmentos , (void*)buscar_segmento );
+
+	return segmento;
+}
+
+fila_TPaginas *obtener_pagina_segmento( fila_TSegmentos *segmento , u_int16_t key ){
+
+	bool buscar_pagina(fila_TPaginas *p) {
+
+		fila_Frames fila_f;
+		leer_de_frame(p->frame_registro , &fila_f );
+
+		if( fila_f.key == key ) return true;
+		return false;
+	}
+
+	fila_TPaginas *pagina= NULL;
+	pagina = list_find( segmento->paginas , (void*)buscar_pagina );
+
+	return pagina;
+}
+
+
+fila_Frames inicializar_fila_frame( linea_insert linea ){
+
+	fila_Frames fila_frame;
+
+	fila_frame.key= linea.key;
+	fila_frame.timestamp= 450; //TODO: funcion de timestamp
+	fila_frame.value= linea.value;
+
+	return fila_frame;
+}
+
+
 
 void crear_cliente_lfs(){
 	socketClienteLfs = socket_connect_to_server(mem_config.ip_LFS,  mem_config.puerto_LFS );
@@ -197,6 +339,11 @@ void crear_cliente_lfs(){
 	/* TODO lfs nos devuelve valores, terminar de realizar */
 	//maximo_value = 5;
 
+}
+
+char* ejecutar_lru(){
+
+	return NULL;
 }
 
 void ejecutar_gossiping(){
