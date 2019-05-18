@@ -10,7 +10,7 @@ int file_write_key_value (char* full_path, char* key, char* value){
 		return 1;
 	}
 
-	char* key_value = (char*) malloc(sizeof(value) + sizeof(key) + 1 );
+	char* key_value = (char*) calloc(sizeof(value) + sizeof(key) + 1, sizeof(char));
 
 	// Concatener linea a colocar
 	strcat(key_value, key);
