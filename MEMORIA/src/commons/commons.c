@@ -130,10 +130,14 @@ void liberar_fila_paginas(fila_TPaginas* fila_pagina)
 	free(fila_pagina);
 }
 
-void liberar_tabla_paginas(fila_TSegmentos segmento){
-	list_iterate(segmento.paginas,(void*)liberar_fila_paginas);
-	list_destroy(segmento.paginas);
+void liberar_tabla_paginas(fila_TSegmentos *segmento){
+	list_iterate(segmento->paginas,(void*)liberar_fila_paginas);
+	list_destroy(segmento->paginas);
 	log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+
+	free( segmento->nombre_tabla );//SE AGREGO AHORA
+	free(segmento);
+	log_info(mem_log, "LIBERADO SEGMENTO");
 
 }
 
