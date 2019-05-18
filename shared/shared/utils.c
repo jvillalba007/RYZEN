@@ -45,7 +45,7 @@ void remove_substring (char *string, char *sub) {
 }
 
 char* generate_path(char* table_name, char* table_folder, char* file_extension) {
-	char* full_path = (char *)malloc(sizeof(table_name) + sizeof(table_folder) + sizeof(file_extension));
+	char* full_path = (char *)malloc(strlen(table_name) + strlen(table_folder) + strlen(file_extension) + 1);
 	strcat(full_path, table_folder);
 	strcat(full_path, table_name);
 	strcat(full_path, file_extension);
