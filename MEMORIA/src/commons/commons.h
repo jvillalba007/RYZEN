@@ -53,13 +53,6 @@
 	} fila_TSegmentos;
 
 
-	typedef struct {
-		char* tabla;
-		u_int16_t key;
-		char* value;
-	} linea_insert;
-
-
 	/* Variables Globales*/
 	int socketServidor;
 	int socketClienteLfs;
