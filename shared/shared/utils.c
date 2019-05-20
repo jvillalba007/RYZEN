@@ -33,3 +33,28 @@ char* string_extract_substring(char* s, char* pattern_start, char* pattern_end){
     return target;
 
 }
+
+void remove_substring (char *string, char *sub) {
+    char *match = string;
+    int len = strlen(sub);
+    while ((match = strstr(match, sub))) {
+        *match = '\0';
+        strcat(string, match+len);
+                match++;
+    }
+}
+
+void limpiar_caracter_final_de_nueva_linea (char *linea) {
+    int posicion_nueva_linea = strlen(linea) - 1;
+    if (linea[posicion_nueva_linea] == '\n') linea[posicion_nueva_linea] = '\0';
+}
+
+char* generate_path(char* table_name, char* table_folder, char* file_extension) {
+	char* full_path = (char *)calloc(strlen(table_name) + strlen(table_folder) + strlen(file_extension) + 1, sizeof(char));
+	strcat(full_path, table_folder);
+	strcat(full_path, table_name);
+	strcat(full_path, file_extension);
+
+	return full_path;
+}
+
