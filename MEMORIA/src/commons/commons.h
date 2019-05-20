@@ -52,17 +52,6 @@
 		t_list* paginas;
 	} fila_TSegmentos;
 
-<<<<<<< Upstream, based on origin/master
-=======
-
-	typedef struct {
-		char* tabla;
-		u_int16_t key;
-		char* value;
-	} linea_insert;
-
-
->>>>>>> 4984b8a arreglo error
 	/* Variables Globales*/
 	int socketServidor;
 	int socketClienteLfs;

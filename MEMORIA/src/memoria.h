@@ -12,6 +12,7 @@
 	#include <shared/protocolo.h>
 	#include <pthread.h>
 
+
 void estructurar_memoria();/* inicializa todas las estructuras funcionales para la memoria */
 void iniciar_memoria_contigua();
 void iniciar_tabla_segmentos();
@@ -34,5 +35,7 @@ fila_TPaginas* obtener_pagina_segmento( fila_TSegmentos *segmento , u_int16_t ke
 char* obtener_frame_libre();//me devuelve un marco libre, en el caso que la memoria este llena ejecutara el lru , en el caso que no le dara el puntero al inicio del marco
 char* ejecutar_lru();
 fila_Frames inicializar_fila_frame( linea_insert linea ); //inicializa la linea del frame desde un insert para escribir en memoria
+
+void ejecutar_insert(linea_insert *linea); //ejecuta comando insert tanto como desde consola como desde una request de kernel
 
 #endif /* MEMORIA_H_ */

@@ -174,39 +174,7 @@ void atender_kernel(int* cliente)
 			deserializar_insert(payload,&linea);
 			free(payload);
 
-			fila_TSegmentos *segmento = obtener_segmento( linea.tabla );
-
-			if( segmento == NULL ) segmento = crear_segmento( linea.tabla );
-
-
-			fila_TPaginas *pagina=NULL;
-			if( !list_is_empty(segmento->paginas )) pagina = obtener_pagina_segmento( segmento , linea.key );
-
-
-			if( pagina != NULL ) {
-
-				actualizar_pagina( pagina , linea );
-				log_info(mem_log, "SE ACTUALIZO LA PAGINA CON KEY: %s" , linea.value  ) ;
-			}
-			else{
-
-				char* frame = obtener_frame_libre();
-				log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
-
-				fila_Frames linea_frame = inicializar_fila_frame(linea ) ;
-				log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
-
-				escribir_en_frame( frame , linea_frame );
-				fila_TPaginas* pagina = crear_pagina( segmento , frame );
-				log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
-
-				fila_Frames registro;
-				leer_de_frame( pagina->frame_registro , &registro );
-				log_info(mem_log, "LA INFORMACION DEL FRAME INSERTADO ES key: %d , value: %s  , timestamp: %d" , registro.key , registro.value , registro.timestamp ) ;
-				log_info(mem_log, "LA CANTIDAD DE PAGINAS DEL SEGMENTO ES: %d" , list_size(segmento->paginas )  ) ;
-			}
-
-
+			ejecutar_insert(&linea);
 
 			free(linea.tabla);
 			free(linea.value);
@@ -220,6 +188,42 @@ void atender_kernel(int* cliente)
 	close(*cliente);
 }
 
+
+void ejecutar_insert(linea_insert* linea){
+
+	fila_TSegmentos *segmento = obtener_segmento( linea->tabla );
+
+	if( segmento == NULL ) segmento = crear_segmento( linea->tabla );
+
+
+	fila_TPaginas *pagina=NULL;
+	if( !list_is_empty(segmento->paginas )) pagina = obtener_pagina_segmento( segmento , linea->key );
+
+
+	if( pagina != NULL ) {
+
+		actualizar_pagina( pagina , linea );
+		log_info(mem_log, "SE ACTUALIZO LA PAGINA CON KEY: %s" , linea->value  ) ;
+	}
+	else{
+
+		char* frame = obtener_frame_libre();
+		log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
+
+		fila_Frames linea_frame = inicializar_fila_frame(linea ) ;
+		log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
+
+		escribir_en_frame( frame , linea_frame );
+		fila_TPaginas* pagina = crear_pagina( segmento , frame );
+		log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
+
+		fila_Frames registro;
+		leer_de_frame( pagina->frame_registro , &registro );
+		log_info(mem_log, "LA INFORMACION DEL FRAME INSERTADO ES key: %d , value: %s  , timestamp: %d" , registro.key , registro.value , registro.timestamp ) ;
+		log_info(mem_log, "LA CANTIDAD DE PAGINAS DEL SEGMENTO ES: %d" , list_size(segmento->paginas )  ) ;
+	}
+
+}
 
 void actualizar_pagina( fila_TPaginas* pagina , linea_insert linea ){
 
