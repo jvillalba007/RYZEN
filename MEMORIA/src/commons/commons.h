@@ -52,7 +52,6 @@
 		t_list* paginas;
 	} fila_TSegmentos;
 
-<<<<<<< HEAD
 
 	typedef struct {
 		char* tabla;
@@ -61,8 +60,6 @@
 	} linea_insert;
 
 
-=======
->>>>>>> ac9ba9aca1a62d3fad2f901a7f70a60c427b5818
 	/* Variables Globales*/
 	int socketServidor;
 	int socketClienteLfs;
