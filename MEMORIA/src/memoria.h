@@ -9,6 +9,7 @@
 	#define MEMORIA_H_
 	#include "consola.h"
 	#include <shared/socket.h>
+	#include <shared/protocolo.h>
 	#include <pthread.h>
 
 void estructurar_memoria();/* inicializa todas las estructuras funcionales para la memoria */

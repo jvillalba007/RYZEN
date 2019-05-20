@@ -157,20 +157,22 @@ void atender_kernel(int* cliente)
 		switch (paquete->tipo_mensaje) {
 
 		/* TODO: SELECT en shared */
-		case CONEXION:{
+		case SELECT:{
 			log_info(mem_log, "ALGORITMIA SELECT");
 
 		}
 		break;
 
-		case DESCONEXION:{
+		case INSERT:{
 			/* TODO: INSERT en shared */
 			log_info(mem_log, "ALGORITMIA INSERT");
 
+			char* payload;
 			linea_insert linea;
-			linea.tabla =strdup( "TEST" );
-			linea.key= 1 ;
-			linea.value= strdup( "Hola" ) ;
+			payload = malloc(paquete->payload_size);
+			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
+			deserializar_insert(payload,&linea);
+			free(payload);
 
 			fila_TSegmentos *segmento = obtener_segmento( linea.tabla );
 
