@@ -25,6 +25,13 @@
 	 */
 	void remove_substring (char *, char*);
 
+	/* Recibe 2 strings: el primero es la linea a procesar y el segundo
+	 * es value (sin comillas) que hay que quitar de esa linea.
+	 * Ejemplo: remove_value("insert tabla1 1 "a1" timestamp","a1") => "insert tabla1 1 timestamp"
+	 * Ya esta lindo y agradable para splitear linea con un espacio!
+	 */
+	void remove_value (char *, char*);
+
 	/* Recibe como parámetro un string.
 	 * Si el último caracter es un '\n', se elimina.
 	 * Si no lo es, no pasa nada.
