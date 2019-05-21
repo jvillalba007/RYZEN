@@ -54,7 +54,7 @@ int main(void) {
 
 void estructurar_memoria(){
 
-	frames_ocupados=2;
+	frames_ocupados=0;
 
 	iniciar_memoria_contigua();
 	iniciar_tabla_segmentos();
@@ -191,10 +191,13 @@ void atender_kernel(int* cliente)
 
 void ejecutar_insert(linea_insert* linea){
 
+	log_info(mem_log, "***************INICIA INSERT**********************" ) ;
+
 	fila_TSegmentos *segmento = obtener_segmento( linea->tabla );
 
 	if( segmento == NULL ) segmento = crear_segmento( linea->tabla );
 
+	log_info(mem_log, "SEGMENTO DE TABLA: %s" , segmento->nombre_tabla  ) ;
 
 	fila_TPaginas *pagina=NULL;
 	if( !list_is_empty(segmento->paginas )) pagina = obtener_pagina_segmento( segmento , linea->key );
@@ -202,7 +205,7 @@ void ejecutar_insert(linea_insert* linea){
 
 	if( pagina != NULL ) {
 
-		actualizar_pagina( pagina , linea );
+		actualizar_pagina( pagina , *linea );
 		log_info(mem_log, "SE ACTUALIZO LA PAGINA CON KEY: %s" , linea->value  ) ;
 	}
 	else{
@@ -210,7 +213,7 @@ void ejecutar_insert(linea_insert* linea){
 		char* frame = obtener_frame_libre();
 		log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
 
-		fila_Frames linea_frame = inicializar_fila_frame(linea ) ;
+		fila_Frames linea_frame = inicializar_fila_frame(*linea ) ;
 		log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
 
 		escribir_en_frame( frame , linea_frame );
@@ -220,9 +223,10 @@ void ejecutar_insert(linea_insert* linea){
 		fila_Frames registro;
 		leer_de_frame( pagina->frame_registro , &registro );
 		log_info(mem_log, "LA INFORMACION DEL FRAME INSERTADO ES key: %d , value: %s  , timestamp: %d" , registro.key , registro.value , registro.timestamp ) ;
-		log_info(mem_log, "LA CANTIDAD DE PAGINAS DEL SEGMENTO ES: %d" , list_size(segmento->paginas )  ) ;
 	}
 
+	log_info(mem_log, "LA CANTIDAD DE PAGINAS DEL SEGMENTO ES: %d" , list_size(segmento->paginas )  ) ;
+	log_info(mem_log, "***************FIN INSERT**********************" ) ;
 }
 
 void actualizar_pagina( fila_TPaginas* pagina , linea_insert linea ){

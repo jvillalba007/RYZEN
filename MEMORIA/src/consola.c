@@ -47,6 +47,7 @@ void consola_procesar_comando(char* linea)
 			return ;
 		}
 
+		//TODO:resolver bug
 		remove_substring (linea, value); // Queda la linea sin value, solo comillas
 
 		char** parametros_no_value = string_split(linea, " ");
@@ -57,37 +58,24 @@ void consola_procesar_comando(char* linea)
 		if (cant_sin_value >= 4 && cant_sin_value < 6) {
 
 			linea_insert linea_ins;
-			//TODO habria que adaptar el insert que vino por consola a la linea_insert para pasarleo a ejecutar_insert
+			linea_ins.tabla= parametros_no_value[1];
+			linea_ins.key = (u_int16_t) atoi( parametros_no_value[2]);
+			linea_ins.value = value;
 
-			procesar_insert(cant_sin_value, parametros_no_value, value);
+			log_info(mem_log, "Tabla es %s",linea_ins.tabla);
+			log_info(mem_log, "KEY es %d",linea_ins.key);
+			log_info(mem_log, "VALUE es %s",linea_ins.value);
+
+			ejecutar_insert(&linea_ins);
+
+			//procesar_insert(cant_sin_value, parametros_no_value, value);
 			free(value);
 			split_liberar(parametros_no_value);
-
 
 		}else{
 			perror("API Error: 3 o 4 argumentos son requeridos");
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-		/*
-		char** parametros_aux = string_split(linea, "\""); //spliteo la linea con comillas
-		char** parametros_estaticos  = string_split(parametros_aux[0], " "); //obtiene INSERT,[TABLA],[KEY]
-		string_iterate_lines(parametros_estaticos,puts);
-		puts(parametros_aux[1]); //parametros_aux[1] esta el "VALUE"
-		split_liberar(parametros_estaticos);
-		split_liberar(parametros_aux);
-		*/
 	}
 
 	else if(cantParametros == 3 && string_equals_ignore_case(parametros[0],"SELECT")){
@@ -123,3 +111,5 @@ void consola_procesar_comando(char* linea)
 
 	split_liberar(parametros);
 }
+
+

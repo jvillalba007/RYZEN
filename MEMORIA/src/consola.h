@@ -12,6 +12,7 @@
 	#include <commons/string.h>
 	#include <pthread.h>
 	#include <shared/socket.h>
+	#include <shared/protocolo.h>
 	#include "commons/commons.h"
 
 bool EXIT_PROGRAM;//cnosola
