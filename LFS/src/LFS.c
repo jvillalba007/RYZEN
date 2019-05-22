@@ -43,7 +43,7 @@ void console_process() {
 
 		char* buffer;
 		buffer = console();
-		log_info(g_logger, buffer);
+		log_info(g_logger, "Comando leido: %s", buffer);
 
 		if ( 0 == strcmp(buffer, "exit") )
 			{

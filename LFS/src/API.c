@@ -1,8 +1,9 @@
 #include "API.h"
 
-int file_write_key_value (char* full_path, char* key, char* value){
+int file_write_key_value (char* full_path, char* key, char* value, char* timestamp){
 	FILE * fPtr;
 	fPtr = fopen(full_path, "a");
+
 
 	if(fPtr == NULL)
 	{
@@ -10,11 +11,13 @@ int file_write_key_value (char* full_path, char* key, char* value){
 		return 1;
 	}
 
-	char* key_value = (char*) calloc(strlen(value) + strlen(key) + 1, sizeof(char));
+	char* key_value = (char*) calloc(strlen(timestamp) + 1 + strlen(value) + 1 + strlen(key) + 1, sizeof(char));
 
 	// Concatener linea a colocar
+	strcat(key_value, timestamp);
+	strcat(key_value, ";");
 	strcat(key_value, key);
-	strcat(key_value, "=");
+	strcat(key_value, ";");
 	strcat(key_value, value);
 
 	fputs(key_value, fPtr);
@@ -22,6 +25,8 @@ int file_write_key_value (char* full_path, char* key, char* value){
 
 	fclose(fPtr);
 
+
+	log_info(g_logger, "Insertado %s en %s", key_value, full_path);
     free(key_value);
 
     return 0;
@@ -33,7 +38,25 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 	char* full_path;
 	full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
 	char* key = parametros_no_value[2];
-	file_write_key_value(full_path, key, value);
+	char* timestamp;
+
+	if (cant_parametros == 3){
+		// Timestamp no proporcionado
+		timestamp = (char*)calloc(sizeof(int32_t) + 1, sizeof(char));
+		time_t current_time;
+		current_time = (int32_t) time(NULL);
+		sprintf(timestamp, "%lu", current_time );
+		file_write_key_value(full_path, key, value, timestamp);
+
+		free(timestamp);
+
+	} else if (cant_parametros == 4) {
+		//Timestamp proporcionado
+		timestamp = parametros_no_value[3];
+		file_write_key_value(full_path, key, value, timestamp);
+
+	}
+
 	free(full_path);
 
 }
@@ -67,7 +90,6 @@ void consola_procesar_comando(char* linea)
 			procesar_insert(cant_sin_value, parametros_no_value, value);
 			free(value);
 			split_liberar(parametros_no_value);
-
 
 		}else{
 			perror("API Error: 3 o 4 argumentos son requeridos");
