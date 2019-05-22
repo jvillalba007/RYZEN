@@ -231,7 +231,7 @@ void ejecutar_insert(linea_insert* linea){
 		log_info(mem_log, "***************FIN INSERT**********************" ) ;
 	}
 	else{
-		log_info(mem_log, "---FALLO ALGORITMO DE REEMPLAZO. HAY QUE HACER JORUNAL---");
+		log_info(mem_log, "---FALLO ALGORITMO DE REEMPLAZO. HAY QUE HACER JOURNAL---");
 		}
 	}
 }
@@ -367,34 +367,33 @@ char* ejecutar_lru(){
 	fila_TPaginas* pagina = NULL;
 	char* frame = NULL;
 
-	uint32_t minimun;
+	int32_t minimun;
 	int posicion;
+	int pos;
 
-	//Obtengo un ultimo uso como parametro de comparacion
-	segmento = list_get(tabla_segmentos,0);
-	pagina = list_get(segmento->paginas,0);
-	minimun = pagina->ultimo_uso;
-
-	segmento = NULL;
-	pagina = NULL;
+	time_t EPOCH = time(NULL);
+	minimun = EPOCH;
 
 	void algoritmo_reemplazo(fila_TSegmentos* un_segmento)
 	{
-		void findLRU(fila_TPaginas* pagina_segmento){
+		void findLRU(fila_TPaginas* pagina_segmento,int* pos){
 
 				/*Si encontro una pagina que no esta modificada, y es vieja (ultimo_uso menor global)
 				* entonces lo eligo como victima para el LRU. */
-				if((pagina_segmento->ultimo_uso <= minimun) && (pagina_segmento->modificado != 1)){
+				if((pagina_segmento->ultimo_uso < minimun) && (pagina_segmento->modificado != 1)){
 					minimun = pagina_segmento->ultimo_uso;
 
 					segmento = un_segmento;
 					pagina = pagina_segmento;
-					posicion = pagina->numero_pagina;
+					posicion = *(pos);
 				}
 		}
 
-		//Aplico LRU a toda la tabla de paginas
-		list_iterate(un_segmento->paginas,(void*)findLRU);
+		//Busco con LRU a toda la tabla de paginas, si tiene paginas...
+		if(list_size(un_segmento->paginas) > 0)
+		{
+			list_iterate_pos(un_segmento->paginas,(void*)findLRU,&pos);
+		}
 	}
 
 	//Aplico el algoritmo de reemplazo a todos los segmentos(tablas)
