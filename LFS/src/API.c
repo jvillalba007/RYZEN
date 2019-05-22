@@ -10,7 +10,7 @@ int file_write_key_value (char* full_path, char* key, char* value){
 		return 1;
 	}
 
-	char* key_value = (char*) calloc(sizeof(value) + sizeof(key) + 1, sizeof(char));
+	char* key_value = (char*) calloc(strlen(value) + strlen(key) + 1, sizeof(char));
 
 	// Concatener linea a colocar
 	strcat(key_value, key);
@@ -56,14 +56,13 @@ void consola_procesar_comando(char* linea)
 			return ;
 		}
 
-		remove_substring (linea, value); // Queda la linea sin value, solo comillas
+		remove_value (linea, value); // Queda la linea sin value, solo comillas
 
 		char** parametros_no_value = string_split(linea, " ");
 
 		int cant_sin_value = split_cant_elem(parametros_no_value);
-		// Si deja las comillas, entonces siguen siendo la misma cantida de parametros
 
-		if (cant_sin_value >= 4 && cant_sin_value < 6) {
+		if (cant_sin_value >= 3 && cant_sin_value < 5) {
 
 			procesar_insert(cant_sin_value, parametros_no_value, value);
 			free(value);
