@@ -10,6 +10,7 @@
 
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include <stdint.h>
 	#include <commons/config.h>
 	#include <commons/log.h>
 	#include <commons/collections/list.h>
@@ -43,7 +44,7 @@
 		int32_t numero_pagina; //TODO: verificar si esto sirve
 		char* frame_registro;
 		int8_t modificado;
-		int32_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
+		uint32_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
 		//TODO verificar si hay que agregar el puntero al segmento
 	} fila_TPaginas;
 
