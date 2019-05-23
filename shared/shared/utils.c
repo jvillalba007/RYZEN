@@ -44,6 +44,18 @@ void remove_substring (char *string, char *sub) {
     }
 }
 
+void remove_value(char* linea, char* value)
+{
+	int bytes = strlen(value)+3;
+	char* value_comillas = calloc(bytes,sizeof(char));
+	strcat(value_comillas,"\"" );
+	strcat(value_comillas,value);
+	strcat(value_comillas,"\"" );
+
+	remove_substring (linea, value_comillas);
+	free(value_comillas);
+}
+
 void limpiar_caracter_final_de_nueva_linea (char *linea) {
     int posicion_nueva_linea = strlen(linea) - 1;
     if (linea[posicion_nueva_linea] == '\n') linea[posicion_nueva_linea] = '\0';

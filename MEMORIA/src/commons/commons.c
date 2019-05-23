@@ -71,6 +71,18 @@ void imprimir_arrays(char** split,char* nombre)
 	}
 }
 
+void list_iterate_pos(t_list* self, void(*closure)(void*,int*),int* pos) {
+	t_link_element *element = self->head;
+	t_link_element *aux = NULL;
+	*(pos) = 0;
+	while (element != NULL) {
+		aux = element->next;
+		closure(element->data,pos);
+		element = aux;
+		*(pos) = *(pos)+1;
+	}
+}
+
 int escribir_en_frame(char* frame, fila_Frames registro)
 {
 	int pos = 0;

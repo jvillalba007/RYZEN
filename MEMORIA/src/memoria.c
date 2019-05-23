@@ -210,7 +210,9 @@ void ejecutar_insert(linea_insert* linea){
 	}
 	else{
 
-		char* frame = obtener_frame_libre();
+	char* frame = obtener_frame_libre();
+
+	if(frame != NULL){
 		log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
 
 		fila_Frames linea_frame = inicializar_fila_frame(*linea ) ;
@@ -219,19 +221,25 @@ void ejecutar_insert(linea_insert* linea){
 		escribir_en_frame( frame , linea_frame );
 		fila_TPaginas* pagina = crear_pagina( segmento , frame );
 		log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
+		log_info(mem_log, "PAGINA N°: %d" , pagina->numero_pagina) ;
+		log_info(mem_log, "ULTIMO USO: %d" , pagina->ultimo_uso  ) ;
 
 		fila_Frames registro;
 		leer_de_frame( pagina->frame_registro , &registro );
 		log_info(mem_log, "LA INFORMACION DEL FRAME INSERTADO ES key: %d , value: %s  , timestamp: %d" , registro.key , registro.value , registro.timestamp ) ;
+		log_info(mem_log, "LA CANTIDAD DE PAGINAS DEL SEGMENTO ES: %d" , list_size(segmento->paginas )  ) ;
+		log_info(mem_log, "***************FIN INSERT**********************" ) ;
 	}
-
-	log_info(mem_log, "LA CANTIDAD DE PAGINAS DEL SEGMENTO ES: %d" , list_size(segmento->paginas )  ) ;
-	log_info(mem_log, "***************FIN INSERT**********************" ) ;
+	else{
+		log_info(mem_log, "---FALLO ALGORITMO DE REEMPLAZO. HAY QUE HACER JOURNAL---");
+		}
+	}
 }
 
 void actualizar_pagina( fila_TPaginas* pagina , linea_insert linea ){
 
-	pagina->ultimo_uso=0; //TODO: verificar que poner aca
+	time_t EPOCH = time(NULL);
+	pagina->ultimo_uso = EPOCH;
 	pagina->modificado=1;
 	fila_Frames linea_frame = inicializar_fila_frame( linea ) ;
 	escribir_en_frame(  pagina->frame_registro , linea_frame );
@@ -245,7 +253,9 @@ fila_TPaginas* crear_pagina(  fila_TSegmentos* segmento , char* frame ){
 	pagina->frame_registro = frame;
 	pagina->modificado = 1;
 	pagina->numero_pagina =list_size( segmento->paginas);
-	pagina->ultimo_uso=0;//TODO: verificar que poner aca
+
+	time_t EPOCH = time(NULL);
+	pagina->ultimo_uso = EPOCH;
 	list_add( segmento->paginas , pagina );
 
 	return pagina;
@@ -353,7 +363,57 @@ void crear_cliente_lfs(){
 
 char* ejecutar_lru(){
 
-	return NULL;
+	fila_TSegmentos* segmento = NULL;
+	fila_TPaginas* pagina = NULL;
+	char* frame = NULL;
+
+	int32_t minimun;
+	int posicion;
+	int pos;
+
+	time_t EPOCH = time(NULL);
+	minimun = EPOCH;
+
+	void algoritmo_reemplazo(fila_TSegmentos* un_segmento)
+	{
+		void findLRU(fila_TPaginas* pagina_segmento,int* pos){
+
+				/*Si encontro una pagina que no esta modificada, y es vieja (ultimo_uso menor global)
+				* entonces lo eligo como victima para el LRU. */
+				if((pagina_segmento->ultimo_uso < minimun) && (pagina_segmento->modificado != 1)){
+					minimun = pagina_segmento->ultimo_uso;
+
+					segmento = un_segmento;
+					pagina = pagina_segmento;
+					posicion = *(pos);
+				}
+		}
+
+		//Busco con LRU a toda la tabla de paginas, si tiene paginas...
+		if(list_size(un_segmento->paginas) > 0)
+		{
+			list_iterate_pos(un_segmento->paginas,(void*)findLRU,&pos);
+		}
+	}
+
+	//Aplico el algoritmo de reemplazo a todos los segmentos(tablas)
+	list_iterate(tabla_segmentos,(void*)algoritmo_reemplazo );
+
+	//Si tuve exito con LRU segmento y pagina son distintos de NULL
+	if((segmento != NULL) && (pagina != NULL))
+	{
+		log_info(mem_log,"---ENCONTRE FRAME POR LRU---");
+		frame = pagina->frame_registro;
+		log_info(mem_log, "FRAME POR LRU ES: %d", ((frame-memoria)   / tamanio_fila_Frames()   ));
+
+		log_info(mem_log,"SE QUITO AL SEGMENTO: %s",segmento->nombre_tabla);
+		log_info(mem_log,"LA PAGINA N°: %d",pagina->numero_pagina);
+		list_remove(segmento->paginas,posicion);
+		free(pagina);
+	}
+
+	//Si Frame es NULL quiere decir que hay que hacer JOURNAL (fallo LRU)
+	return frame;
 }
 
 void ejecutar_gossiping(){

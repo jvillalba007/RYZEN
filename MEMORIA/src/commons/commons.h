@@ -52,7 +52,6 @@
 		t_list* paginas;
 	} fila_TSegmentos;
 
-
 	/* Variables Globales*/
 	int socketServidor;
 	int socketClienteLfs;
