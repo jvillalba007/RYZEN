@@ -79,6 +79,7 @@
 	void mem_exit_global();
 	void mem_exit_simple();
 	void imprimir_arrays(char** split,char* nombre);
+	void list_iterate_pos(t_list* self, void(*closure)(void*,int*),int* pos);
 	int escribir_en_frame(char* frame, fila_Frames registro);
 	void leer_de_frame(char* frame, fila_Frames* registro);
 

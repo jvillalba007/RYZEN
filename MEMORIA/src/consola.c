@@ -74,12 +74,20 @@ void consola_procesar_comando(char* linea)
 
 		}else{
 			perror("API Error: 3 o 4 argumentos son requeridos");
-	}
+		}
 
 	}
 
 	else if(cantParametros == 3 && string_equals_ignore_case(parametros[0],"SELECT")){
-		string_iterate_lines(parametros,puts);
+
+		linea_select linea_s;
+		linea_s.tabla= parametros[1];
+		linea_s.key = (u_int16_t) atoi( parametros[2]);
+
+		log_info(mem_log, "SELECT tabla: %s , key: %d",linea_s.tabla ,linea_s.key );
+
+		fila_TPaginas *pagina = ejecutar_select( &linea_s );
+
 	}
 
 	else if(cantParametros == 5 && string_equals_ignore_case(parametros[0],"CREATE")){

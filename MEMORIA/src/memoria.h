@@ -29,7 +29,7 @@ void ejecutar_gossiping(); /* ejecuta proceso de gossiping cada x tiempo */
 int tamanio_fila_Frames();
 
 fila_TSegmentos*  crear_segmento( char *nombre_tabla ); //crea segmento y lo agrega a la lista de la tabla de segmentos
-fila_TPaginas* crear_pagina(  fila_TSegmentos *segmento , char* frame ); //crea pagina y lo agrega a la tabla de paginas del segmento indicado
+fila_TPaginas* crear_pagina(  fila_TSegmentos *segmento , char* frame , int8_t modificado ); //crea pagina y lo agrega a la tabla de paginas del segmento indicado
 void actualizar_pagina( fila_TPaginas* pagina , linea_insert linea ); //actualiza los valores de la pagina y del frame con los nuevos valores
 fila_TSegmentos* obtener_segmento( char *nombre_tabla );/* obtiene segmento con el mismo nombre de tabla, si no lo encuentra retorna NULL */
 fila_TPaginas* obtener_pagina_segmento( fila_TSegmentos *segmento , u_int16_t key ); /* obtiene pagina de segmento segun la key si no la encuentra retorna null  */
@@ -39,5 +39,6 @@ char* ejecutar_lru();
 fila_Frames inicializar_fila_frame( linea_insert linea ); //inicializa la linea del frame desde un insert para escribir en memoria
 
 void ejecutar_insert(linea_insert *linea); //ejecuta comando insert tanto como desde consola como desde una request de kernel
+fila_TPaginas * ejecutar_select( linea_select* linea ); //ejecuta comando select tanto desde consola como request de kernel. devuelve la pagina para devolver la info
 
 #endif /* MEMORIA_H_ */

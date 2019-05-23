@@ -18,6 +18,11 @@
 		char* value;
 	} linea_insert;
 
+	typedef struct {
+		char* tabla;
+		u_int16_t key;
+	} linea_select;
+
 char* serializar_insert(linea_insert insert, int* longitud);
 void deserializar_insert(char* buffer, linea_insert* insert);
 

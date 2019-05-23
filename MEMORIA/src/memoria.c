@@ -189,6 +189,62 @@ void atender_kernel(int* cliente)
 }
 
 
+fila_TPaginas* ejecutar_select( linea_select* linea ){
+
+	log_info(mem_log, "***************INICIA SELECT**********************" ) ;
+
+	fila_TSegmentos *segmento = obtener_segmento( linea->tabla );
+
+	if( segmento == NULL ) segmento = crear_segmento( linea->tabla );
+
+	log_info(mem_log, "SEGMENTO DE TABLA: %s" , segmento->nombre_tabla  ) ;
+
+	fila_TPaginas *pagina=NULL;
+	if( !list_is_empty(segmento->paginas )) pagina = obtener_pagina_segmento( segmento , linea->key );
+
+	if( pagina != NULL )
+	{
+		log_info(mem_log, "PAGINA ENCONTRARA ACTUALIZAMOS ULTIMO USO" ) ;
+		//si encuentra pagina actualizo ultimo uso
+		time_t EPOCH = time(NULL);
+		pagina->ultimo_uso = EPOCH;
+		log_info(mem_log, "SE ACTUALIZO ULTIMO USO DE LA PAGINA CON KEY: %s" , linea->key  ) ;
+	}
+	else
+	{
+		log_info(mem_log, "PAGINA NO ENCONTRADA HACAEMOS REQUEST A LFS Y OBTENEMOS FRAME DISPONIBLE" ) ;
+
+		//TODO: hacer request a lfs y recibir la info
+		fila_Frames request_select;
+
+		char* frame = obtener_frame_libre();
+
+		if(frame != NULL){
+			log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
+
+			fila_Frames linea_frame;
+			//TODO: habria que cambiar inicializar_fila_frame para que reciba un linea mas general para poder reutilizarlo tanto en select como en insert
+			//linea_frame = inicializar_fila_frame(*linea ) ;
+
+			log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
+
+			escribir_en_frame( frame , linea_frame );
+			fila_TPaginas* pagina = crear_pagina( segmento , frame , 0 );
+			log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
+			log_info(mem_log, "PAGINA N°: %d" , pagina->numero_pagina) ;
+			log_info(mem_log, "ULTIMO USO: %d" , pagina->ultimo_uso  ) ;
+
+		}
+
+
+
+	}
+
+	return pagina;
+
+}
+
+
 void ejecutar_insert(linea_insert* linea){
 
 	log_info(mem_log, "***************INICIA INSERT**********************" ) ;
@@ -219,7 +275,7 @@ void ejecutar_insert(linea_insert* linea){
 		log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
 
 		escribir_en_frame( frame , linea_frame );
-		fila_TPaginas* pagina = crear_pagina( segmento , frame );
+		fila_TPaginas* pagina = crear_pagina( segmento , frame , 1 );
 		log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
 		log_info(mem_log, "PAGINA N°: %d" , pagina->numero_pagina) ;
 		log_info(mem_log, "ULTIMO USO: %d" , pagina->ultimo_uso  ) ;
@@ -246,12 +302,12 @@ void actualizar_pagina( fila_TPaginas* pagina , linea_insert linea ){
 }
 
 
-fila_TPaginas* crear_pagina(  fila_TSegmentos* segmento , char* frame ){
+fila_TPaginas* crear_pagina(  fila_TSegmentos* segmento , char* frame , int8_t modificado ){
 
 	fila_TPaginas *pagina = malloc( sizeof( fila_TPaginas ) );
 
 	pagina->frame_registro = frame;
-	pagina->modificado = 1;
+	pagina->modificado = modificado;
 	pagina->numero_pagina =list_size( segmento->paginas);
 
 	time_t EPOCH = time(NULL);
@@ -328,9 +384,10 @@ fila_TPaginas *obtener_pagina_segmento( fila_TSegmentos *segmento , u_int16_t ke
 fila_Frames inicializar_fila_frame( linea_insert linea ){
 
 	fila_Frames fila_frame;
+	time_t EPOCH = time(NULL);
 
 	fila_frame.key= linea.key;
-	fila_frame.timestamp= 450; //TODO: funcion de timestamp
+	fila_frame.timestamp=EPOCH;
 	fila_frame.value= linea.value;
 
 	return fila_frame;
