@@ -204,44 +204,50 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 
 	if( pagina != NULL )
 	{
-		log_info(mem_log, "PAGINA ENCONTRARA ACTUALIZAMOS ULTIMO USO" ) ;
+		log_info(mem_log, "PAGINA ENCONTRADA ACTUALIZAMOS ULTIMO USO" ) ;
 		//si encuentra pagina actualizo ultimo uso
 		time_t EPOCH = time(NULL);
 		pagina->ultimo_uso = EPOCH;
-		log_info(mem_log, "SE ACTUALIZO ULTIMO USO DE LA PAGINA CON KEY: %s" , linea->key  ) ;
+		log_info(mem_log, "SE ACTUALIZO ULTIMO USO DE LA PAGINA CON KEY: %d" , linea->key  ) ;
 	}
 	else
 	{
 		log_info(mem_log, "PAGINA NO ENCONTRADA HACAEMOS REQUEST A LFS Y OBTENEMOS FRAME DISPONIBLE" ) ;
 
 		//TODO: hacer request a lfs y recibir la info
-		fila_Frames request_select;
-
 		char* frame = obtener_frame_libre();
 
 		if(frame != NULL){
+
+			log_info(mem_log, "****HAY FRAMES DISPONIBLES***") ;
 			log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
 
-			fila_Frames linea_frame;
 			//TODO: habria que cambiar inicializar_fila_frame para que reciba un linea mas general para poder reutilizarlo tanto en select como en insert
-			//linea_frame = inicializar_fila_frame(*linea ) ;
+			char* value= "TEST";
+			//combierto el linea entrante a linea_insert para incializarlo
+			linea_insert linea_ins;
+			linea_ins.tabla= linea->tabla;
+			linea_ins.key = linea->key;
+			linea_ins.value = value;
+			fila_Frames linea_frame = inicializar_fila_frame( linea_ins ) ;
 
 			log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
 
 			escribir_en_frame( frame , linea_frame );
-			fila_TPaginas* pagina = crear_pagina( segmento , frame , 0 );
+			pagina = crear_pagina( segmento , frame , 0 );
 			log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
 			log_info(mem_log, "PAGINA N°: %d" , pagina->numero_pagina) ;
 			log_info(mem_log, "ULTIMO USO: %d" , pagina->ultimo_uso  ) ;
 
 		}
+		else{
 
-
+			log_info(mem_log, "****NO HAY FRAMES DISPONIBLES SE RECHAZA REQUEST***") ;
+		}
 
 	}
 
 	return pagina;
-
 }
 
 

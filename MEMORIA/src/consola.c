@@ -88,6 +88,16 @@ void consola_procesar_comando(char* linea)
 
 		fila_TPaginas *pagina = ejecutar_select( &linea_s );
 
+		if(pagina != NULL){
+			fila_Frames frame;
+			leer_de_frame( pagina->frame_registro , &frame );
+			log_info(mem_log, "REQUEST DEVUELTA CON KEY: %s" , frame.value );
+			puts( frame.value );
+		}
+		else{
+			log_info(mem_log, "NO PUEDO RESOLVERSE LA REQUEST" );
+		}
+
 	}
 
 	else if(cantParametros == 5 && string_equals_ignore_case(parametros[0],"CREATE")){
