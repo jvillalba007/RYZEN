@@ -35,20 +35,39 @@ int file_write_key_value (char* full_path, char* key, char* value, char* timesta
 char* extract_value_from_key(char* full_path, char* key){
 	FILE * fPtr;
 	fPtr = fopen(full_path, "r");
+	char* timestamp;
+	int timestamp_i;
+	int max_timestamp = 0;
 	char* target;
 	char* value = NULL;
+	char* before_value;
 
 	if ( fPtr != NULL ){
 	  char line [ 256 ];
-	  while ( fgets ( line, sizeof line, fPtr ) != NULL ) /* read a line */
-	  {
-		  target = string_extract_substring(line, "", "="); // extraer la clave
-		  if (strcmp(key, target) == 0){ // son iguales?
-			  value = string_extract_substring(line, "=", "\n");
-			  free(target); // este free tiene que estar porque al hacer el break, no llega al free que esta al final del while
-			  break;
+	  while ( fgets ( line, sizeof line, fPtr ) != NULL ) {
+		  timestamp = string_extract_substring(line, "", ";"); // extraer el timestamp
+		  target = string_extract_substring(line, ";", ";"); // extraer la key
+
+		  if (strcmp(key, target) == 0){ // son iguales las keys?
+			  sscanf(timestamp, "%d", &timestamp_i); // castear a int
+
+			  if (timestamp_i > max_timestamp) { // el timestamp es mayor?
+				  max_timestamp = timestamp_i;
+
+				  before_value = (char *) calloc(strlen(timestamp) + 1 + strlen(target), sizeof(char));
+				  strcat(before_value, timestamp);
+				  strcat(before_value, ";");
+				  strcat(before_value, target);
+				  remove_substring(line, before_value);
+
+				  value = string_extract_substring(line, ";", "\n");
+
+				  free(before_value);
+			  }
 		  }
+
 		  free(target);
+		  free(timestamp);
 	  }
 
 
