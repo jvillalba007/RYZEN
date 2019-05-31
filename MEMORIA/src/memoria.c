@@ -160,6 +160,17 @@ void atender_kernel(int* cliente)
 		case SELECT:{
 			log_info(mem_log, "ALGORITMIA SELECT");
 
+			char* payload;
+			linea_select linea;
+			payload = malloc(paquete->payload_size);
+			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
+			deserializar_select(payload,&linea);
+			free(payload);
+
+			ejecutar_select(&linea);
+
+			free(linea.tabla);
+
 		}
 		break;
 
@@ -235,6 +246,7 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 			fila_Frames linea_frame = inicializar_fila_frame( linea_ins ) ;
 			//TODO; decidir si agregar parametro a esta funcion o usar una nueva funcion o actualizar el timestamp luego de inicializar el frame
 			linea_frame.timestamp=linea_response->timestamp;
+			free(linea_response);
 
 			log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
 
@@ -261,7 +273,7 @@ linea_response_select* enviar_request_select_lfs( linea_select *linea ){
 	//TODO: hacer la request de select al lfs
 	log_info(mem_log, "REQUEST DE SELECT A LFS"  ) ;
 
-	linea_response_select* linea_response;
+	linea_response_select* linea_response = malloc(sizeof(linea_response_select));
 	linea_response->timestamp = 10;
     linea_response->value = strdup( "test" );
 

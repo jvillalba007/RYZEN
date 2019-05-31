@@ -150,3 +150,34 @@ void deserializar_create(char* buffer, linea_create* linea)
 	pos+=sizeof(u_int8_t );
 	memcpy((void*) &(linea->tiempo_compactacion), (void*) buffer+pos, sizeof(u_int32_t));
 }
+
+char* serializar_response_select(linea_response_select linea, int* longitud)
+{
+	int pos = 0;
+	u_int16_t len_value = strlen(linea.value);
+	int buffer_size = sizeof(u_int16_t) + len_value + sizeof(u_int16_t);
+
+	char* buffer = malloc(buffer_size);
+	memcpy(buffer, (void*) &(len_value), sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+	memcpy(buffer+pos, (void*) linea.value, len_value);
+	pos+=len_value;
+	memcpy(buffer+pos, (void*) &(linea.timestamp), sizeof(int32_t));
+	*(longitud) = buffer_size;
+
+	return buffer;
+}
+
+void deserializar_response_select(char* buffer, linea_response_select* linea)
+{
+	int pos = 0;
+	u_int16_t len_value;
+
+	memcpy((void*) &(len_value), (void*) buffer, sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+	linea->value = malloc(len_value+1);
+	memcpy((void*) linea->value, (void*) buffer+pos,len_value);
+	linea->value[len_value] = '\0';
+	pos+=len_value;
+	memcpy((void*) &(linea->timestamp), (void*) buffer+pos, sizeof(int32_t));
+}

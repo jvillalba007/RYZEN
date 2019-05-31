@@ -47,4 +47,7 @@ char* deserializar_string(char*);
 char* serializar_create(linea_create, int*);
 void deserializar_create(char*,linea_create*);
 
+char* serializar_response_select(linea_response_select, int*);
+void deserializar_response_select(char*,linea_response_select*);
+
 #endif /* PROTOCOLO_H_ */
