@@ -24,6 +24,11 @@
 	} linea_select;
 
 	typedef struct {
+		char* value;
+		int32_t timestamp;
+	} linea_response_select;
+
+	typedef struct {
 		char* tabla;
 		char* tipo_consistencia;
 		u_int8_t nro_particiones;

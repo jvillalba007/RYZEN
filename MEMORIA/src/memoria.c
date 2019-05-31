@@ -222,14 +222,19 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 			log_info(mem_log, "****HAY FRAMES DISPONIBLES***") ;
 			log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
 
-			//TODO: habria que cambiar inicializar_fila_frame para que reciba un linea mas general para poder reutilizarlo tanto en select como en insert
-			char* value= "TEST";
+
+			linea_response_select* linea_response = enviar_request_select_lfs( linea );
+
+			if( linea_response == NULL ) return NULL;
+
 			//combierto el linea entrante a linea_insert para incializarlo
 			linea_insert linea_ins;
 			linea_ins.tabla= linea->tabla;
 			linea_ins.key = linea->key;
-			linea_ins.value = value;
+			linea_ins.value = linea_response->value;
 			fila_Frames linea_frame = inicializar_fila_frame( linea_ins ) ;
+			//TODO; decidir si agregar parametro a esta funcion o usar una nueva funcion o actualizar el timestamp luego de inicializar el frame
+			linea_frame.timestamp=linea_response->timestamp;
 
 			log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
 
@@ -250,6 +255,18 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 	return pagina;
 }
 
+
+linea_response_select* enviar_request_select_lfs( linea_select *linea ){
+
+	//TODO: hacer la request de select al lfs
+	log_info(mem_log, "REQUEST DE SELECT A LFS"  ) ;
+
+	linea_response_select* linea_response;
+	linea_response->timestamp = 10;
+    linea_response->value = strdup( "test" );
+
+    return linea_response;
+}
 
 void ejecutar_insert(linea_insert* linea){
 
