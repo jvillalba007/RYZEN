@@ -75,6 +75,7 @@ void procesar_create(char** parametros){
 	char* table_name = parametros[1];
 	string_to_upper(table_name);
 	char* consistency = parametros[2];
+	string_to_upper(consistency);
 	char* partitions = parametros[3];
 	char* compact_time = parametros[4];
 
@@ -134,6 +135,27 @@ void procesar_create(char** parametros){
 	fputs("\n", fPtr);
 	fputs(compact, fPtr);
 	fputs("\n", fPtr);
+
+	// Create partitions
+	int partitions_i = 0;
+	sscanf(partitions, "%d", &partitions_i); // castear a int
+	char* partition_path;
+	for (int i = 0; i < partitions_i; ++i) {
+		char* n = string_itoa(i);
+		char* path_to_n = (char*) calloc(strlen(n) + 1 + 1, sizeof(char));
+		strcat(path_to_n, "/");
+		strcat(path_to_n, n);
+		partition_path = generate_path(path_to_n, table_path, ".bin");
+
+		FILE * f;
+		f = fopen(partition_path, "a");
+		fclose(f);
+		free(partition_path);
+		free(path_to_n);
+		free(n);
+
+	}
+
 
 	// Free everything
 	fclose(fPtr);
