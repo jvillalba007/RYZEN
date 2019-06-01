@@ -10,13 +10,15 @@
 int main2(void){
 
 	int socket = socket_connect_to_server("127.0.0.1",  "8000" );
+	t_header paquete;
+	paquete.emisor = KERNEL;
+	send(socket,&paquete,sizeof(t_header),0);
+	paquete.tipo_mensaje = CONEXION;
+	send(socket,&paquete,sizeof(t_header),0);
+	paquete.tipo_mensaje = DESCONEXION;
+	send(socket,&paquete,sizeof(t_header),0);
 
-	t_header buffer;
-	buffer.emisor=KERNEL;
-	buffer.tipo_mensaje = CONEXION ;
-	buffer.payload_size = 32;
-
-	send(socket, &buffer, sizeof( buffer ) , 0);
+	while(1){};
 
 	return 0;
 }

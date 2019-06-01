@@ -18,7 +18,36 @@
 		char* value;
 	} linea_insert;
 
-char* serializar_insert(linea_insert insert, int* longitud);
-void deserializar_insert(char* buffer, linea_insert* insert);
+	typedef struct {
+		char* tabla;
+		u_int16_t key;
+	} linea_select;
+
+	typedef struct {
+		char* value;
+		int32_t timestamp;
+	} linea_response_select;
+
+	typedef struct {
+		char* tabla;
+		char* tipo_consistencia;
+		u_int8_t nro_particiones;
+		u_int32_t tiempo_compactacion;
+	} linea_create;
+
+char* serializar_insert(linea_insert, int*);
+void deserializar_insert(char*,linea_insert*);
+
+char* serializar_select(linea_select, int*);
+void deserializar_select(char*,linea_select*);
+
+char* serializar_string(char*, int*);
+char* deserializar_string(char*);
+
+char* serializar_create(linea_create, int*);
+void deserializar_create(char*,linea_create*);
+
+char* serializar_response_select(linea_response_select, int*);
+void deserializar_response_select(char*,linea_response_select*);
 
 #endif /* PROTOCOLO_H_ */
