@@ -35,13 +35,14 @@ int file_write_key_value (char* full_path, char* key, char* value, char* timesta
 void procesar_insert(int cant_parametros, char** parametros_no_value, char* value){
 
 	char* table_name = parametros_no_value[1];
+	string_to_upper(table_name);
 	char* full_path;
 	full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
 
 	if( access( full_path, F_OK ) == -1 ) {
 	    // file doesn't exist
 		free(full_path);
-		perror("No existe la tabla especificada. Creala.");
+		printf("No existe la tabla especificada. Creala.");
 		return;
 	}
 
@@ -69,6 +70,80 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 
 }
 
+void procesar_create(char** parametros){
+
+	char* table_name = parametros[1];
+	string_to_upper(table_name);
+	char* consistency = parametros[2];
+	char* partitions = parametros[3];
+	char* compact_time = parametros[4];
+
+	if( !isNumeric(partitions) ){
+		printf("Parametro particiones no es numérico. \n");
+		return;
+	}
+
+	if( !isNumeric(compact_time) ){
+		printf("Parametro tiempo de compactación no es numérico. \n");
+		return;
+	}
+
+	// Does the table exist?
+	struct stat st = {0};
+	char* table_path;
+	table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+	if (stat(table_path, &st) == -1) {
+		// Create it
+	    mkdir(table_path, 0700);
+	}else{
+		// Already exists
+		free(table_path);
+		printf("La tabla especificada ya existe. \n");
+		log_info(g_logger, "La tabla %s ya existe", table_name);
+		return;
+	}
+
+	// Create Metadata file
+	char* metadata_path;
+	metadata_path = generate_path("/Metadata", table_path, "");
+
+	FILE * fPtr;
+	fPtr = fopen(metadata_path, "a");
+
+	if(fPtr == NULL)
+	{
+		printf("Unable to create file: %s \n %s \n", metadata_path, (char *) strerror(errno));
+		return;
+	}
+
+	char* consist = (char*) calloc(strlen("CONSISTENCY=") + strlen(consistency) +1, sizeof(char));
+	char* parts = (char*) calloc(strlen("PARTITIONS=") + strlen(partitions) +1, sizeof(char));
+	char* compact = (char*) calloc(strlen("COMPACTION_TIME=") + strlen(compact_time) +1, sizeof(char));
+
+	strcat(consist, "CONSISTENCY=");
+	strcat(consist, consistency);
+	strcat(parts, "PARTITIONS=");
+	strcat(parts, partitions);
+	strcat(compact, "COMPACTION_TIME=");
+	strcat(compact, compact_time);
+
+	fputs(consist, fPtr);
+	fputs("\n", fPtr);
+	fputs(parts, fPtr);
+	fputs("\n", fPtr);
+	fputs(compact, fPtr);
+	fputs("\n", fPtr);
+
+	// Free everything
+	fclose(fPtr);
+	free(metadata_path);
+	free(table_path);
+	free(consist);
+	free(parts);
+	free(compact);
+}
+
 void consola_procesar_comando(char* linea)
 {
 
@@ -81,7 +156,7 @@ void consola_procesar_comando(char* linea)
 		value = string_extract_substring(linea, "\"", "\"");
 
 		if (value == NULL) {
-			puts("API Error: Valor no proporcionado");
+			puts("API Error: Valor no proporcionado\n");
 			free(value);
 			split_liberar(parametros);
 			return ;
@@ -100,7 +175,7 @@ void consola_procesar_comando(char* linea)
 			split_liberar(parametros_no_value);
 
 		}else{
-			perror("API Error: 3 o 4 argumentos son requeridos");
+			printf("API Error: 3 o 4 argumentos son requeridos\n");
 		}
 	}
 
@@ -108,16 +183,18 @@ void consola_procesar_comando(char* linea)
 		if (cant_parametros == 3) {
 			string_iterate_lines(parametros,puts);
 		} else {
-			perror("API Error: 2 argumentos son requeridos.");
+			printf("API Error: 2 argumentos son requeridos.\n");
 		}
 
 	}
 
 	else if(string_equals_ignore_case(parametros[0],"CREATE")){
 		if (cant_parametros == 5) {
-			string_iterate_lines(parametros,puts);
+
+			procesar_create(parametros);
+
 		} else {
-			perror("API Error: 4 argumentos son requeridos.");
+			printf("API Error: 4 argumentos son requeridos.\n");
 		}
 
 	}
@@ -126,7 +203,7 @@ void consola_procesar_comando(char* linea)
 		if (cant_parametros >= 1 && cant_parametros < 3) {
 			string_iterate_lines(parametros,puts);
 		} else {
-			perror("API Error: ninguno o 1 argumento es requerido.");
+			printf("API Error: ninguno o 1 argumento es requerido.\n");
 		}
 
 	}
@@ -135,7 +212,7 @@ void consola_procesar_comando(char* linea)
 		if (cant_parametros == 2) {
 			string_iterate_lines(parametros,puts);
 		} else {
-			perror("API Error: 1 argumento es requerido.");
+			printf("API Error: 1 argumento es requerido.\n");
 		}
 
 	}
