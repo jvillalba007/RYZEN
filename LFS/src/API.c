@@ -1,9 +1,9 @@
 #include "API.h"
 
 int file_write_key_value (char* full_path, char* key, char* value, char* timestamp){
+
 	FILE * fPtr;
 	fPtr = fopen(full_path, "a");
-
 
 	if(fPtr == NULL)
 	{
@@ -37,6 +37,14 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 	char* table_name = parametros_no_value[1];
 	char* full_path;
 	full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
+
+	if( access( full_path, F_OK ) == -1 ) {
+	    // file doesn't exist
+		free(full_path);
+		perror("No existe la tabla especificada. Creala.");
+		return;
+	}
+
 	char* key = parametros_no_value[2];
 	char* timestamp;
 
