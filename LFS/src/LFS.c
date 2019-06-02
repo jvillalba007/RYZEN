@@ -72,6 +72,7 @@ int main(void) {
 	EXIT_PROGRAM = false;
 
 	iniciar_config();
+	iniciar_montaje();
 
 	// INICIAR SOCKET SERVIDOR
 	pthread_attr_t attr_server;

@@ -46,3 +46,28 @@ void iniciar_config(){
 	leer_config();
 	loggear_config();
 }
+
+void iniciar_montaje(){
+	log_info(g_logger, "Llega");
+	char** folders = string_split(lfs_config.punto_montaje, "/");
+	int cant_folders = split_cant_elem(folders);
+
+	char s[100];
+
+	for (int i = 0; i < cant_folders; i++) {
+		// Does the directory exist?
+
+		struct stat st = {0};
+
+		if (stat(folders[i], &st) == -1) {
+			// Create it
+			mkdir(folders[i], 0700);
+		}
+
+
+		log_info(g_logger, "Current directory is: %s \n", getcwd(s, 100));
+		chdir(folders[i]);
+		log_info(g_logger, "Current mount directory is: %s \n", getcwd(s, 100));
+	}
+	split_liberar(folders);
+}

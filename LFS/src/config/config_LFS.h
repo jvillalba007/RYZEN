@@ -4,8 +4,12 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
-	#include<commons/log.h>
+	#include <unistd.h>
+	#include <sys/types.h>
+	#include <sys/stat.h>
+	#include <commons/log.h>
 	#include <commons/config.h>
+	#include <commons/string.h>
 
 	typedef struct {
 		char* puerto_lfs;
@@ -26,5 +30,6 @@
 	void loggear_config(void);
 	void liberar_logger(t_log*);
 	void liberar_config(lfs_cfg);
+	void iniciar_montaje();
 
 #endif
