@@ -133,6 +133,7 @@ void procesar_comando(char* linea) {
 
 
             if (string_equals_ignore_case(tipo_de_consistencia, "SC")) {
+                numero_memoria_con_criterio_SC = numero_de_memoria;
                 printf("Se agrega la memoria %d al criterio SC.\n", numero_de_memoria);
 
                 //  ...se labura acá...
