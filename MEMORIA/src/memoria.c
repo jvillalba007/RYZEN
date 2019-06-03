@@ -70,6 +70,9 @@ void iniciar_memoria_contigua(){
 	log_info(mem_log, "Tamaño de la fila: %d", tamanio_fila);
 	log_info(mem_log, "Cantidad de Frames: %d", cantidad_frames);
 
+	bitMapStr = calloc(ceiling(cantidad_frames, 8), 1);
+	bitmap_frames = bitarray_create_with_mode(bitMapStr, ceiling(cantidad_frames, 8), MSB_FIRST);
+
 	memoria = malloc(mem_config.tam_mem);
 	memset(memoria, '\0', mem_config.tam_mem);
 }
@@ -352,15 +355,28 @@ fila_TPaginas* crear_pagina(  fila_TSegmentos* segmento , char* frame , int8_t m
 	return pagina;
 }
 
+int SPA_obtener_frame(){
+	int i = 0;
+	int frame_encontrado = 0;
 
+	while(i < cantidad_frames  && !frame_encontrado){
+		if(bitarray_test_bit(bitmap_frames, i) == 0){ // Frame disponible
+			bitarray_set_bit(bitmap_frames, i); // Lo selecciono como no disponible
+			frame_encontrado = 1;
+		}
+		else
+			i++;
+	}
+
+	return i;
+}
 
 char *obtener_frame_libre(){
 
 	char* frame;
 
 	if( frames_ocupados < cantidad_frames ){
-
-		frame= memoria+ ( tamanio_fila_Frames() * frames_ocupados );
+		frame = memoria + (tamanio_fila_Frames() * SPA_obtener_frame());
 		frames_ocupados++;
 	}
 	else

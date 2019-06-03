@@ -13,7 +13,7 @@
 	#include <pthread.h>
 	#include <time.h>
 
-
+#define ceiling(x,y) (((x) + (y) - 1) / (y))
 
 void estructurar_memoria();/* inicializa todas las estructuras funcionales para la memoria */
 void iniciar_memoria_contigua();
@@ -33,7 +33,7 @@ fila_TPaginas* crear_pagina(  fila_TSegmentos *segmento , char* frame , int8_t m
 void actualizar_pagina( fila_TPaginas* pagina , linea_insert linea ); //actualiza los valores de la pagina y del frame con los nuevos valores
 fila_TSegmentos* obtener_segmento( char *nombre_tabla );/* obtiene segmento con el mismo nombre de tabla, si no lo encuentra retorna NULL */
 fila_TPaginas* obtener_pagina_segmento( fila_TSegmentos *segmento , u_int16_t key ); /* obtiene pagina de segmento segun la key si no la encuentra retorna null  */
-
+int SPA_obtener_frame();
 char* obtener_frame_libre();//me devuelve un marco libre, en el caso que la memoria este llena ejecutara el lru , en el caso que no le dara el puntero al inicio del marco
 char* ejecutar_lru();
 fila_Frames inicializar_fila_frame( linea_insert linea ); //inicializa la linea del frame desde un insert para escribir en memoria

@@ -133,6 +133,8 @@ void liberar_mem_config(mem_cfg mem_config)
 
 void liberar_memoria_contigua(){
 	free(memoria);
+	bitarray_destroy(bitmap_frames);
+	free(bitMapStr);
 	log_info(mem_log, "LIBERADO MEMORIA CONTIGUA");
 
 }

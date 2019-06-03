@@ -15,6 +15,7 @@
 	#include <commons/collections/list.h>
 	#include <string.h>
 	#include <shared/utils.h>
+	#include <commons/bitarray.h>
 
 	#define pathCFG "MEMORIA.CFG"
 	#define pathLOG "MEMORIA.LOG"
@@ -66,6 +67,9 @@
 	t_config* config;
 	t_log* mem_log;
 	mem_cfg mem_config;
+
+	char* bitMapStr;
+	t_bitarray* bitmap_frames;
 
 	int mem_initialize();
 	void crear_log();
