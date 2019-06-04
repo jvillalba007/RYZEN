@@ -74,7 +74,19 @@ typedef struct Nodo_memorias{
 */
 typedef struct PCB_request {
     int id;
+    
     struct nodo_request* lista_requests;
+    /*
+    Podría ser un string directamente: char* request_script;
+    En ese caso, habría que agregar:
+        - instantes inicial.
+        - instante final.
+    No serían necesarios:
+        - los nodos por cada línea de código.
+        - los números de línea por cada línea de código
+    Sería necesario trabajar con funciones para eliminar caracteres/substrings de un string más grande...
+    */
+    
     int PC;
     struct PCB_request* siguiente;
 } t_PCB;

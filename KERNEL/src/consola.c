@@ -219,7 +219,7 @@ void procesar_comando(char* linea) {
 
                     //  ...se labura acá...
 
-                }{
+                }
                 else {
                     if (string_equals_ignore_case(tipo_de_consistencia, "EC")) {
                     printf("Se agrega la memoria %d al criterio EC.\n", numero_de_memoria);
