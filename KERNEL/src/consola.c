@@ -13,6 +13,18 @@ void consola() {
                 break;
         }
 
+        //  crearPCB(linea);
+
+        /*
+        Ingresan la request.
+        Se crea el PCB:
+            - si no es un RUN: PCB->lista_requests tendrá un único nodo. En él se debe cargar la request.
+            - si es un RUN: PCB->lista_requests tendrá uno o varios nodos... En cada uno se debe cargar, por separado, cada request.
+        
+        ¿Los estados?
+
+        */
+
         procesar_comando(linea);
 
         free(linea);
@@ -25,7 +37,6 @@ void procesar_comando(char* linea) {
     char** parametros = string_split(linea, " ");
 	int cantParametros = split_cant_elem(parametros);
 
-    //  En los siguientes 6 casos, hay que redireccionar a la memoria elegida por el criterio de la tabla en cuestión (pasada por parámetro: parametros[1])...
     if (string_equals_ignore_case(parametros[0], "SELECT")) {
         if (cantParametros == 3) {
             //  Ejemplo: SELECT nombre_de_la_tabla key
@@ -33,7 +44,28 @@ void procesar_comando(char* linea) {
             //  nombre_de_la_tabla = parametros[1];
             //  key = paramentros[2];
 
-            //  Delegar al módulo Memoria.
+            /*
+            criterio_de_consistencia_asociado = obtener_criterio_consistencia_tabla(nombre_de_la_tabla);
+
+            if (strcmp(criterio_de_consistencia_asociado, "SC")) {
+                memoria_ip = obtener_ip_memoria_de_lista_pool_memorias(numero_memoria_con_criterio_SC);
+                memoria_puerto = obtener_puerto_memoria_de_lista_pool_memorias(numero_memoria_con_criterio_SC);
+            }
+            else if (strcmp(criterio_de_consistencia_asociado, "SHC")) {
+                memoria_ip = obtener_ip_memoria_de_lista_pool_memorias(funcion_hash(key, cantidad_memorias_actuales_pool_de_memorias));
+                memoria_puerto = obtener_puerto_memoria_de_lista_pool_memorias(funcion_hash(key, cantidad_memorias_actuales_pool_de_memorias));
+            }
+            else if (strcmp(criterio_de_consistencia_asociado, "EC")) {
+                memoria_ip = obtener_ip_memoria_de_lista_pool_memorias(funcion_hash(key, cantidad_memorias_actuales_pool_de_memorias));
+                memoria_puerto = obtener_puerto_memoria_de_lista_pool_memorias(funcion_hash(key, cantidad_memorias_actuales_pool_de_memorias));
+            }
+
+            delegar_select_a_memoria(memoria_ip, memoria_puerto, nombre_de_la_tabla, key);
+
+            loggear();
+            recibir_resultados_de_memoria();
+            mostrar_resultados();
+            */
         }
         else {
             notificar_error_sintactico_en_parametros();
@@ -48,7 +80,27 @@ void procesar_comando(char* linea) {
             //  key = parametros[2];
             //  value = parametros[3];
 
-            //  Delegar al módulo Memoria.
+            /*
+            criterio_de_consistencia_asociado = obtener_criterio_consistencia_tabla(nombre_de_la_tabla);
+
+            if (strcmp(criterio_de_consistencia_asociado, "SC")) {
+                memoria_ip = obtener_ip_memoria_de_lista_pool_memorias(numero_memoria_con_criterio_SC);
+                memoria_puerto = obtener_puerto_memoria_de_lista_pool_memorias(numero_memoria_con_criterio_SC);
+            }
+            else if (strcmp(criterio_de_consistencia_asociado, "SHC")) {
+                memoria_ip = obtener_ip_memoria_de_lista_pool_memorias(funcion_hash(key, cantidad_memorias_actuales_pool_de_memorias));
+                memoria_puerto = obtener_puerto_memoria_de_lista_pool_memorias(funcion_hash(key, cantidad_memorias_actuales_pool_de_memorias));
+            }
+            else if (strcmp(criterio_de_consistencia_asociado, "EC")) {
+                memoria_ip = obtener_ip_memoria_de_lista_pool_memorias(funcion_hash(key, cantidad_memorias_actuales_pool_de_memorias));
+                memoria_puerto = obtener_puerto_memoria_de_lista_pool_memorias(funcion_hash(key, cantidad_memorias_actuales_pool_de_memorias));
+            }
+            */
+            //  delegar_insert_a_memoria(memoria_ip, memoria_puerto, nombre_de_la_tabla, key, value);
+
+            //  loggear();
+            //  recibir_resultados_de_memoria();
+            //  mostrar_resultados();
         }
         else {
             notificar_error_sintactico_en_parametros();
@@ -64,7 +116,12 @@ void procesar_comando(char* linea) {
             //  cantidad_de_particiones = parametros[3];
             //  tiempo_de_compactacion = parametros[4];
 
-            //  Delegar al módulo Memoria.
+            //  Se delega DIRECTAMENTE a la memoria del archivo de configuración.
+            //  delegar_create(memoria_ip, memoria_puerto, nombre_de_la_tabla, tipo_de_consistencia, cantidad_de_particiones, tiempo_de_compactacion);
+
+            //  loggear();
+            //  recibir_resultados_de_memoria();
+            //  mostrar_resultados();
         }
         else {
             notificar_error_sintactico_en_parametros();
@@ -75,8 +132,12 @@ void procesar_comando(char* linea) {
         if (cantParametros == 1) {
             //  Ejemplo (único): DESCRIBE
             
-            //  Delegar al módulo Memoria.
-            
+            //  Se delega DIRECTAMENTE a la memoria del archivo de configuración.
+            //  delegar_describe_global(memoria_ip, memoria_puerto);    
+
+            //  loggear();
+            //  recibir_resultados_de_memoria();
+            //  mostrar_resultados();       
         }
         else
         if (cantParametros == 2) {
@@ -84,7 +145,12 @@ void procesar_comando(char* linea) {
 
             //  nombre_de_la_tabla = parametros[1];
 
-            //  Delegar al módulo Memoria.
+            //  Se delega DIRECTAMENTE a la memoria del archivo de configuración.
+            //  delegar_describe_1_tabla(memoria_ip, memoria_puerto, nombre_de_la_tabla); 
+
+            //  loggear();
+            //  recibir_resultados_de_memoria();
+            //  mostrar_resultados();
         }
         else {
             notificar_error_sintactico_en_parametros();
@@ -99,7 +165,12 @@ void procesar_comando(char* linea) {
             int* nombre_de_la_tabla = parametros[1];
             printf("Se DROPea la tabla %s.\n", nombre_de_la_tabla);
             
-            //  Delegar al módulo Memoria.
+            //  Se delega DIRECTAMENTE a la memoria del archivo de configuración.
+            //  delegar_drop(memoria_ip, memoria_puerto, nombre_de_la_tabla); 
+
+            //  loggear();
+            //  recibir_resultados_de_memoria();
+            //  mostrar_resultados();
         }
         else {
             notificar_error_sintactico_en_parametros();
@@ -137,6 +208,9 @@ void procesar_comando(char* linea) {
                 printf("Se agrega la memoria %d al criterio SC.\n", numero_de_memoria);
 
                 //  ...se labura acá...
+                numero_memoria_con_criterio_SC = numero_de_memoria;
+
+                printf("Número de memoria con criterio SC: %d\n", numero_memoria_con_criterio_SC);
 
             }
             else 
@@ -145,7 +219,7 @@ void procesar_comando(char* linea) {
 
                     //  ...se labura acá...
 
-                }
+                }{
                 else {
                     if (string_equals_ignore_case(tipo_de_consistencia, "EC")) {
                     printf("Se agrega la memoria %d al criterio EC.\n", numero_de_memoria);
@@ -188,7 +262,8 @@ void procesar_comando(char* linea) {
             fflush(stdout);
             fclose(archivo);
             free(lineaLeida);          
-/*   
+            
+            /*   
             else {
                 while (!feof(archivo))
                 {
@@ -225,7 +300,7 @@ void procesar_comando(char* linea) {
             }
             
             fclose(archivo);
-*/
+            */
         }
         else {
             notificar_error_sintactico_en_parametros();
