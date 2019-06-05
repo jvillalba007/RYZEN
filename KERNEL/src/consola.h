@@ -6,6 +6,7 @@
 #include <commons/string.h>
 #include <pthread.h>
 #include "config/configKernel.h"
+#include <time.h>
 
 
 /* 
@@ -68,48 +69,20 @@ typedef struct Nodo_memorias{
     Tipo de dato: t_PCB
     Nodo con:
         - identificador del PCB.
-        - lista de requests.
+        - script de la request completa.
         - PC = próximo número de línea a ejecutar.
+        - instante en el que se inició la request (READY --> RUNNING).
+        - instante en el que se finalizó la request (RUNNING --> EXIT).
         - puntero al pŕóximo nodo
 */
 typedef struct PCB_request {
     int id;
-    
-    struct nodo_request* lista_requests;
-    /*
-    Podría ser un string directamente: char* request_script;
-    En ese caso, habría que agregar:
-        - instantes inicial.
-        - instante final.
-    No serían necesarios:
-        - los nodos por cada línea de código.
-        - los números de línea por cada línea de código
-    Sería necesario trabajar con funciones para eliminar caracteres/substrings de un string más grande...
-    */
-    
+    char* script_request;
     int PC;
+    time_t instante_inicial;
+    time_t instante_final;
     struct PCB_request* siguiente;
 } t_PCB;
-
-
-    /*
-        Tipo de dato: t_request
-        Nodo con:
-            - número de línea
-            - request (código a ejecutar de una única línea)
-            - instante en el que se inició la request (READY --> RUNNING).
-            - instante en el que se finalizó la request (RUNNING --> EXIT).
-    */
-    typedef struct nodo_request {
-        int numero_de_linea;
-        char* request;
-        time_t instante_inicial;
-        time_t instante_final;
-        struct nodo_request* siguiente;
-    } t_request;
-
-
-//  terminar de definir las listas de NEWs, READYs, EXECs y EXITs... para no perder la referencia de la request con las demás
 
 
 void consola();
