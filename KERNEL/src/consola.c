@@ -5,6 +5,16 @@
 #define AND &&
 
 void consola() {
+    //  Se crean las colas de NEW (1), READY (1), RUNNING (1 o más) y EXIT (1).
+    t_PCB* cola_NEW;
+    t_PCB* cola_READY;
+    int i; //Variable auxiliar, para subíndice de las colas de RUNNING
+    for (i = 0; i <= kernel_config.MULTIPROCESAMIENTO - 1; i++) {
+        t_PCB* cola_RUNNING[i];
+    }
+    t_PCB* cola_EXIT;
+    
+    int numero_PCB = 0; //Variable auxiliar, para contar cantidad de requests
     for(ever) {
         char* linea = console();
 
@@ -13,7 +23,11 @@ void consola() {
                 break;
         }
 
-        //  crearPCB(linea);
+
+
+        //  crearPCB(linea, numero_PCB);
+
+
 
         /*
         Ingresan la request.
@@ -32,6 +46,45 @@ void consola() {
     pthread_exit(0);
     //exit(EXIT_SUCCESS);
 }
+
+t_PCB* crear_PCB (char* string_codigo, int numero_PCB) {
+    t_PCB* PCB_nuevo;
+    PCB_nuevo->id = numero_PCB;
+    PCB_nuevo->script_request = string_codigo;
+    PCB_nuevo->PC = 1;
+    PCB_nuevo->instante_inicial = 0;
+    PCB_nuevo->instante_final = 0;
+    PCB_nuevo->siguiente = NULL;
+}
+
+unsigned long long obtener_tiempo_actual (void) { //revisar por qué no reconoce el "tv" que en las pruebas del Eclipse sí anda...
+    struct timeval tv;
+	unsigned long long milisegundos_unix_epoch;
+    gettimeofday(&tv, NULL);
+    milisegundos_unix_epoch = (unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000;
+    return milisegundos_unix_epoch;
+}
+
+void mover_PCB_de_NEW_a_READY (t_PCB* un_PCB) {
+    //  actualizar instante_inicial
+    //  eliminar de la cola de NEW
+    //  cargar en la cola de READY
+}
+
+void mover_PCB_de_READY_a_RUNNING (t_PCB* un_PCB) {
+    //  
+}
+
+void mover_PCB_de_RUNNING_a_READY (t_PCB* un_PCB) {
+    //  
+}
+
+void mover_PCB_de_RUNNING_a_EXIT (t_PCB* un_PCB) {
+    //  cambiar valor de instante_final
+    //  eliminar de la cola de RUNNING correspondiente
+    //  cargar en la cola de EXIT
+}
+
 
 void procesar_comando(char* linea) {
     char** parametros = string_split(linea, " ");
