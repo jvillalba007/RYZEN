@@ -70,4 +70,27 @@ void iniciar_montaje(){
 		log_info(g_logger, "Current mount directory is: %s \n", getcwd(s, 100));
 	}
 	split_liberar(folders);
+
+	char *carpeta = "tablas";
+	crear_carpeta(carpeta);
+	carpeta = "bloques";
+	crear_carpeta(carpeta);
+	carpeta = "metadata";
+	crear_carpeta(carpeta);
+
+	//free(carpeta);
+
+}
+
+void crear_carpeta(char* carpeta){
+	log_info(g_logger,"Directorio %s",carpeta);
+	char* directorio = string_from_format("%s/%s/",lfs_config.punto_montaje,carpeta);
+
+	struct stat st = {0};
+	if (stat(directorio, &st) == -1) {
+		// Create it
+		mkdir(directorio, 0700);
+	}
+	log_info(g_logger,"cree bien %s",directorio);
+	free(directorio);
 }

@@ -93,6 +93,7 @@ int main(void) {
 	pthread_join(tid_consola, NULL);
 	pthread_join(tid_server, NULL);
 
+
 	liberar_memoria();
 
 	return 0;

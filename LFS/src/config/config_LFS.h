@@ -31,5 +31,6 @@
 	void liberar_logger(t_log*);
 	void liberar_config(lfs_cfg);
 	void iniciar_montaje();
+	void crear_carpeta(char* carpeta);
 
 #endif
