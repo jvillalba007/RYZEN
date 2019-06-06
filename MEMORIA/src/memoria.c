@@ -202,6 +202,32 @@ void atender_kernel(int* cliente)
 	close(*cliente);
 }
 
+void ejecutar_drop( char* tabla ){
+
+	log_info(mem_log, "***************INICIA DROP**********************" ) ;
+
+	bool buscar_segmento(fila_TSegmentos *s) {
+
+		if(  string_equals_ignore_case(  s->nombre_tabla , tabla ) ) return true;
+		return false;
+	}
+
+	fila_TSegmentos* segmento = obtener_segmento( tabla );
+
+	if( segmento == NULL )
+	{
+		log_info(mem_log, "SEGMENTO DE TABLA: %s NO EXISTE" , tabla );
+	}
+	else
+	{
+		drop_tabla_paginas(segmento);
+		list_remove_by_condition(tabla_segmentos,(void*)buscar_segmento);
+		free( segmento->nombre_tabla );
+		free(segmento);
+		log_info(mem_log, "LIBERADO SEGMENTO");
+	}
+
+}
 
 fila_TPaginas* ejecutar_select( linea_select* linea ){
 
@@ -409,7 +435,11 @@ fila_TSegmentos* obtener_segmento( char *nombre_tabla ){
 	}
 
 	fila_TSegmentos *segmento = NULL;
+
+	if(!list_is_empty(tabla_segmentos))
+	{
 	segmento = list_find( tabla_segmentos , (void*)buscar_segmento );
+	}
 
 	return segmento;
 }
@@ -426,8 +456,10 @@ fila_TPaginas *obtener_pagina_segmento( fila_TSegmentos *segmento , u_int16_t ke
 	}
 
 	fila_TPaginas *pagina= NULL;
+	if(!list_is_empty(segmento->paginas))
+	{
 	pagina = list_find( segmento->paginas , (void*)buscar_pagina );
-
+	}
 	return pagina;
 }
 

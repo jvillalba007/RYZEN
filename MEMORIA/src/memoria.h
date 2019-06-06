@@ -40,7 +40,7 @@ fila_Frames inicializar_fila_frame( linea_insert linea ); //inicializa la linea 
 
 void ejecutar_insert(linea_insert *linea); //ejecuta comando insert tanto como desde consola como desde una request de kernel
 fila_TPaginas * ejecutar_select( linea_select* linea ); //ejecuta comando select tanto desde consola como request de kernel. devuelve la pagina para devolver la info
-
+void ejecutar_drop( char* tabla );
 linea_response_select* enviar_request_select_lfs( linea_select *linea ); //request de select a LFS devuelve puntero del struct o null si lfs no pudo resolverla
 
 #endif /* MEMORIA_H_ */

@@ -161,6 +161,21 @@ void liberar_tabla_segmentos(t_list* tabla_segmentos) {
 	log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
 }
 
+void drop_fila_paginas(fila_TPaginas* fila_pagina)
+{
+	int nro_frame = (int)(fila_pagina->frame_registro-memoria)   / tamanio_fila_Frames();
+	bitarray_clean_bit(bitmap_frames, nro_frame);
+	log_info(mem_log, "FRAME DISPONIBLE N°: %d",nro_frame);
+	free(fila_pagina);
+}
+
+void drop_tabla_paginas(fila_TSegmentos *segmento){
+	frames_ocupados = frames_ocupados - list_size(segmento->paginas);
+	list_iterate(segmento->paginas,(void*)drop_fila_paginas);
+	list_destroy(segmento->paginas);
+	log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+}
+
 void mem_exit_global() {
 	liberar_tablas();
 	liberar_memoria_contigua();

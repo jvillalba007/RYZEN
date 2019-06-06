@@ -80,6 +80,8 @@
 	void liberar_memoria_contigua();
 	void liberar_tabla_paginas(fila_TSegmentos *segmento);
 	void liberar_tabla_segmentos(t_list* tabla_segmentos);
+	void drop_tabla_paginas(fila_TSegmentos *segmento);
+	void drop_fila_paginas(fila_TPaginas* fila_pagina);
 	void mem_exit_global();
 	void mem_exit_simple();
 	void imprimir_arrays(char** split,char* nombre);

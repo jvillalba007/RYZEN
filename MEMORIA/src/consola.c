@@ -109,7 +109,8 @@ void consola_procesar_comando(char* linea)
 	}
 
 	else if(cantParametros == 2 && string_equals_ignore_case(parametros[0],"DROP")){
-		string_iterate_lines(parametros,puts);
+		char* tabla = parametros[1];
+		ejecutar_drop(tabla);
 	}
 
 	else if(cantParametros == 1 && string_equals_ignore_case(parametros[0],"JOURNAL")){
