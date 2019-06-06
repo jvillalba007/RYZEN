@@ -159,7 +159,6 @@ void atender_kernel(int* cliente)
 
 		switch (paquete->tipo_mensaje) {
 
-		/* TODO: SELECT en shared */
 		case SELECT:{
 			log_info(mem_log, "ALGORITMIA SELECT");
 
@@ -178,7 +177,6 @@ void atender_kernel(int* cliente)
 		break;
 
 		case INSERT:{
-			/* TODO: INSERT en shared */
 			log_info(mem_log, "ALGORITMIA INSERT");
 
 			char* payload;
@@ -192,6 +190,38 @@ void atender_kernel(int* cliente)
 
 			free(linea.tabla);
 			free(linea.value);
+		}
+		break;
+
+		case CREATE:{
+			log_info(mem_log, "ALGORITMIA CREATE");
+
+			char* payload;
+			linea_create linea;
+			payload = malloc(paquete->payload_size);
+			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
+			deserializar_create(payload,&linea);
+			free(payload);
+
+			log_info(mem_log, "CREATE tabla: %s , consistencia: %s , particiones: %d , tiempo_compactacion: %d",linea.tabla ,linea.tipo_consistencia , linea.nro_particiones , linea.tiempo_compactacion );
+			enviar_create_lfs( linea );
+
+			free(linea.tabla);
+			free(linea.tipo_consistencia);
+		}
+		break;
+
+		case DROP:{
+			log_info(mem_log, "ALGORITMIA DROP");
+
+			char* payload;
+			linea_create linea;
+			payload = malloc(paquete->payload_size);
+			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
+			log_info(mem_log, "DROP tabla: %s" , payload );
+			ejecutar_drop(payload);
+			free(payload);
+
 		}
 		break;
 
@@ -226,6 +256,8 @@ void ejecutar_drop( char* tabla ){
 		free(segmento);
 		log_info(mem_log, "LIBERADO SEGMENTO");
 	}
+
+	enviar_drop_lfs( tabla );
 
 }
 
@@ -263,7 +295,7 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 			log_info(mem_log, "Numero de frame obtenido: %d" , (int)(frame-memoria)   / tamanio_fila_Frames()   ) ;
 
 
-			linea_response_select* linea_response = enviar_request_select_lfs( linea );
+			linea_response_select* linea_response = enviar_select_lfs( linea );
 
 			if( linea_response == NULL ) return NULL;
 
@@ -296,18 +328,6 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 	return pagina;
 }
 
-
-linea_response_select* enviar_request_select_lfs( linea_select *linea ){
-
-	//TODO: hacer la request de select al lfs
-	log_info(mem_log, "REQUEST DE SELECT A LFS"  ) ;
-
-	linea_response_select* linea_response = malloc(sizeof(linea_response_select));
-	linea_response->timestamp = 10;
-    linea_response->value = strdup( "test" );
-
-    return linea_response;
-}
 
 void ejecutar_insert(linea_insert* linea){
 
@@ -555,6 +575,28 @@ char* ejecutar_lru(){
 	//Si Frame es NULL quiere decir que hay que hacer JOURNAL (fallo LRU)
 	return frame;
 }
+
+
+linea_response_select* enviar_select_lfs( linea_select *linea ){
+
+	//TODO: hacer la request de select al lfs
+	log_info(mem_log, "REQUEST DE SELECT A LFS"  ) ;
+
+	linea_response_select* linea_response = malloc(sizeof(linea_response_select));
+	linea_response->timestamp = 10;
+    linea_response->value = strdup( "test" );
+
+    return linea_response;
+}
+
+void enviar_drop_lfs( char *tabla ){
+
+}
+
+void enviar_create_lfs( linea_create linea_c ){
+
+}
+
 
 void ejecutar_gossiping(){
 

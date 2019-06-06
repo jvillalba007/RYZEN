@@ -101,7 +101,16 @@ void consola_procesar_comando(char* linea)
 	}
 
 	else if(cantParametros == 5 && string_equals_ignore_case(parametros[0],"CREATE")){
-		string_iterate_lines(parametros,puts);
+		//CREATE TABLA1 SC 4 60000
+		linea_create linea_c;
+		linea_c.tabla = parametros[1] ;
+		linea_c.tipo_consistencia = parametros[2] ;
+		linea_c.nro_particiones = (u_int8_t) atoi( parametros[3]);
+		linea_c.tiempo_compactacion = (u_int32_t) atoi( parametros[4]);
+
+		log_info(mem_log, "CREATE tabla: %s , consistencia: %s , particiones: %d , tiempo_compactacion: %d",linea_c.tabla ,linea_c.tipo_consistencia , linea_c.nro_particiones , linea_c.tiempo_compactacion );
+		enviar_create_lfs( linea_c );
+
 	}
 
 	else if(cantParametros >= 1 && string_equals_ignore_case(parametros[0],"DESCRIBE")){
@@ -110,6 +119,7 @@ void consola_procesar_comando(char* linea)
 
 	else if(cantParametros == 2 && string_equals_ignore_case(parametros[0],"DROP")){
 		char* tabla = parametros[1];
+		log_info(mem_log, "DROP tabla: %s" , tabla );
 		ejecutar_drop(tabla);
 	}
 
