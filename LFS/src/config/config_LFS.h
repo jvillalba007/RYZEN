@@ -35,7 +35,10 @@
 	void loggear_config(void);
 	void liberar_logger(t_log*);
 	void liberar_config(lfs_cfg);
-	void iniciar_montaje();
+	void iniciar_montaje(void);
+	void crear_metadata(void);
+	void leer_metadata(void);
+	void loggear_metadata(void);
 	//void crear_carpeta(char* carpeta);
 
 #endif
