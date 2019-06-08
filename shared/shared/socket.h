@@ -98,5 +98,5 @@
 	 * @DESC: Envia un mensaje al socketReceptor. Devuelve 0 si el envio fue exitoso,
 	 * o -1 si no se enviaron todos los bytes.
 	 */
-	int enviar_mensaje(int socketReceptor, void *mensaje, int largoMensaje);
+	int enviar_socket(int socketReceptor, void *mensaje, int largoMensaje);
 #endif /* SHARED_SOCKET_H_ */
