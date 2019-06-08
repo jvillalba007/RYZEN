@@ -75,6 +75,27 @@ void iniciar_config(){
 	crear_metadata();
 	leer_metadata();
 	loggear_metadata();
+
+	iniciar_bitmap();
+}
+
+void iniciar_bitmap(){
+	FILE * f_bitmap;
+	char* bin_bitmap;
+	int blocks_i;
+	sscanf(BLOCKS, "%d", &blocks_i);
+
+	bin_bitmap = generate_path("/Metadata/Bitmap", lfs_config.punto_montaje, ".bin");
+
+	if((f_bitmap = fopen(bin_bitmap, "rb+")) == NULL){ // Si no existe el archivo bitmap
+		f_bitmap = fopen(bin_bitmap, "wb+");
+		char* bitarray_limpio_temp = calloc(1, ceiling(blocks_i, 8));
+		fwrite((void*) bitarray_limpio_temp, ceiling(blocks_i, 8), 1, f_bitmap);
+		fflush(f_bitmap);
+		free(bitarray_limpio_temp);
+	}
+
+	free(bin_bitmap);
 }
 
 void iniciar_montaje(){

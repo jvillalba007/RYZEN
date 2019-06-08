@@ -1,5 +1,6 @@
 #ifndef CONFIG_LFS_H
 	#define CONFIG_LFS_H
+	#define ceiling(x,y) (((x) + (y) - 1) / (y))
 
 	#include <stdio.h>
 	#include <stdlib.h>
@@ -10,6 +11,8 @@
 	#include <commons/log.h>
 	#include <commons/config.h>
 	#include <commons/string.h>
+
+	#include "shared/utils.h"
 
 	typedef struct {
 		char* puerto_lfs;
