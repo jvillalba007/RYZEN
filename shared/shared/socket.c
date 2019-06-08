@@ -285,7 +285,7 @@ static bool close_conection_condition(void *conexion){
 	return false;
 }
 
-int enviar_mensaje(int socketReceptor, void *mensaje, int largoMensaje) {
+int enviar_socket(int socketReceptor, void *mensaje, int largoMensaje) {
 	// largoMensaje va por parametro para reutilizar la funcion en envio de headers y de mensajes
 	// (el tamanio del header se calcula con sizeof y el del mensaje con strlen)
 	int bytesEnviados = 0;
