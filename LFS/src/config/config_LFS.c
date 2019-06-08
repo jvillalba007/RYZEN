@@ -23,6 +23,32 @@ void leer_config() {
 	config_destroy(config);
 }
 
+void crear_metadata() {
+	char* metadata_path;
+
+	metadata_path = generate_path("/Metadata/Metadata", lfs_config.punto_montaje, ".bin");
+
+	log_info(g_logger, "Metadata path is: %s", metadata_path);
+    metadata = config_create(metadata_path);
+
+    free(metadata_path);
+}
+
+void leer_metadata() {
+	BLOCK_SIZE = strdup(config_get_string_value(metadata, "BLOCK_SIZE"));
+	BLOCKS = strdup(config_get_string_value(metadata, "BLOCKS"));
+	MAGIC_NUMBER = strdup(config_get_string_value(metadata, "MAGIC_NUMBER"));
+
+	//	Clausura de la estructura config
+	config_destroy(metadata);
+}
+
+void loggear_metadata() {
+    log_info(g_logger, "BLOCK SIZE: %s", BLOCK_SIZE);
+    log_info(g_logger, "BLOCKS: %s", BLOCKS);
+    log_info(g_logger, "MAGIC NUMBER: %s", MAGIC_NUMBER);
+}
+
 void loggear_config() {
     log_info(g_logger, "PUERTO LFS: %s", lfs_config.puerto_lfs);
     log_info(g_logger, "PUNTO MONTAJE: %s", lfs_config.punto_montaje);
@@ -45,6 +71,10 @@ void iniciar_config(){
 	crear_config();
 	leer_config();
 	loggear_config();
+
+	crear_metadata();
+	leer_metadata();
+	loggear_metadata();
 }
 
 void iniciar_montaje(){

@@ -21,7 +21,12 @@
 
 	t_log* g_logger;
 	t_config* config;
+	t_config* metadata;
 	lfs_cfg lfs_config;
+
+	char* BLOCK_SIZE;
+	char* BLOCKS;
+	char* MAGIC_NUMBER;
 
 	void iniciar_logger(void);
 	void iniciar_config(void);
@@ -31,6 +36,6 @@
 	void liberar_logger(t_log*);
 	void liberar_config(lfs_cfg);
 	void iniciar_montaje();
-	void crear_carpeta(char* carpeta);
+	//void crear_carpeta(char* carpeta);
 
 #endif
