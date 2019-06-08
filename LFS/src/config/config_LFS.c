@@ -48,7 +48,6 @@ void iniciar_config(){
 }
 
 void iniciar_montaje(){
-	log_info(g_logger, "Llega");
 	char** folders = string_split(lfs_config.punto_montaje, "/");
 	int cant_folders = split_cant_elem(folders);
 
@@ -71,26 +70,26 @@ void iniciar_montaje(){
 	}
 	split_liberar(folders);
 
-	char *carpeta = "tablas";
-	crear_carpeta(carpeta);
-	carpeta = "bloques";
-	crear_carpeta(carpeta);
-	carpeta = "metadata";
-	crear_carpeta(carpeta);
-
-	//free(carpeta);
+//	char *carpeta = "tablas";
+//	crear_carpeta(carpeta);
+//	carpeta = "bloques";
+//	crear_carpeta(carpeta);
+//	carpeta = "metadata";
+//	crear_carpeta(carpeta);
+//
+//	//free(carpeta);
 
 }
 
-void crear_carpeta(char* carpeta){
-	log_info(g_logger,"Directorio %s",carpeta);
-	char* directorio = string_from_format("%s/%s/",lfs_config.punto_montaje,carpeta);
-
-	struct stat st = {0};
-	if (stat(directorio, &st) == -1) {
-		// Create it
-		mkdir(directorio, 0700);
-	}
-	log_info(g_logger,"cree bien %s",directorio);
-	free(directorio);
-}
+//void crear_carpeta(char* carpeta){
+//	log_info(g_logger,"Directorio %s",carpeta);
+//	char* directorio = string_from_format("%s/%s/",lfs_config.punto_montaje,carpeta);
+//
+//	struct stat st = {0};
+//	if (stat(directorio, &st) == -1) {
+//		// Create it
+//		mkdir(directorio, 0700);
+//	}
+//	log_info(g_logger,"cree bien %s",directorio);
+//	free(directorio);
+//}
