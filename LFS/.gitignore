@@ -1,2 +1,3 @@
-/Debug/
+/Debug/*
+!*/create_FS.sh
 !*/LFS.cfg
