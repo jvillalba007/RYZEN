@@ -70,3 +70,12 @@ char* generate_path(char* table_name, char* table_folder, char* file_extension) 
 	return full_path;
 }
 
+int isNumeric (const char * s)
+{
+    if (s == NULL || *s == '\0' || isspace(*s))
+      return 0;
+    char * p;
+    strtod (s, &p);
+    return *p == '\0';
+}
+

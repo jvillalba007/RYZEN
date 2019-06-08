@@ -4,6 +4,7 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
+	#include <ctype.h>
 
 	// Libera memoria de un array de chars recorriendo 1 por 1
 	void split_liberar(char **);
@@ -43,5 +44,8 @@
 	 * ADVERTENCIA: LIBERAR ESE STRING DESPUES DE USAR.
 	 */
 	char* generate_path(char*, char*, char*);
+
+	/* Si el string es un número devuelve 1, sino 0.*/
+	int isNumeric (const char*);
 
 #endif /* SHARED_SOCKET_H_ */
