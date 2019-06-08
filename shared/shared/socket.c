@@ -285,3 +285,25 @@ static bool close_conection_condition(void *conexion){
 	return false;
 }
 
+int enviar_socket(int socketReceptor, void *mensaje, int largoMensaje) {
+	// largoMensaje va por parametro para reutilizar la funcion en envio de headers y de mensajes
+	// (el tamanio del header se calcula con sizeof y el del mensaje con strlen)
+	int bytesEnviados = 0;
+	int bytesRestantes = largoMensaje;
+	int resultadoSend;
+	while (bytesEnviados < bytesRestantes) {
+		resultadoSend = send(socketReceptor, mensaje + bytesEnviados, bytesRestantes, 0);
+		if (resultadoSend == -1) {
+			break;
+		}
+		bytesEnviados += resultadoSend;
+		bytesRestantes -= resultadoSend;
+	}
+	if(bytesEnviados == largoMensaje) {
+		return 0;
+	}
+	else {
+		return -1; // Cada vez que se usa enviarMensaje se debe chequear su valor de retorno
+	}
+}
+
