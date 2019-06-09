@@ -14,14 +14,12 @@
     Nodo con:
         - nombre de la tabla.
         - criterio de consistencia.
-        - puntero al próximo nodo.
     Estos nodos serán parte de la lista de tablas-consistencias tendrá estos nodos
 */
-typedef struct Nodo_tabla_consistencia{
+typedef struct tabla_consistencia{
     char* nombre_tabla;
     char* criterio_consistencia;
-    struct Nodo_tabla_consistencia* siguiente;
-} t_tabla;
+} t_tabla_consistencia;
 
 
 /*
@@ -30,60 +28,49 @@ typedef struct Nodo_tabla_consistencia{
         - número de memoria.
         - ip.
         - puerto.
-        - puntero al próximo nodo.
     Estos nodos serán parte de la lista de memorias del pool de memorias
 */
 typedef struct t_memoria_del_pool{
     int numero_memoria;
     char* ip;
     char* puerto;
-    int cant_inserts_ejecutados;
-    int cant_selects_ejecutados;
-    struct t_memoria_del_pool* siguiente;
-} t_memoria_del_pool;
+} t_memoria_ip_puerto;
 
 
 /*
     Tipo de dato: int
     Variable que alojará el número de memoria correspondiente a la única memoria con criterio de consistencia SC
+    (Nodo) que alojará el número de memoria correspondiente a las memorias con criterio de consistencia SHC
+    (Nodo) que alojará el número de memoria correspondiente a las memorias con criterio de consistencia EC
 */
-int numero_memoria_con_criterio_SC;
-
-
-/*
-    Tipo de dato: t_memoria
-    Nodo con:
-        - número de memoria.
-        - puntero al próximo nodo.
-    Estos nodos serán parte de dos listas:
-        - la lista de memorias con criterio de consistencia SHC.
-        - la lista de memorias con criterio de consistencia EC.
-*/
-typedef struct Nodo_memorias{
-    int numero_memoria;
-    struct Nodo_memorias* siguiente;
-} t_memoria;
+typedef int t_memoria;
+memoria_SC t_memoria;
 
 
 /*
     Tipo de dato: t_PCB
     Nodo con:
-        - identificador del PCB.
-        - script de la request completa.
+        - request/comando = lo ingresado por consola.
+        - tipo de request = al ejecutar no es lo mismo ejecutar un request/comando simple o un request/comando compuesto
         - PC = próximo número de línea a ejecutar.
-        - instante en el que se inició la request (READY --> RUNNING).
-        - instante en el que se finalizó la request (RUNNING --> EXIT).
-        - puntero al pŕóximo nodo
 */
+typedef enum {
+    REQUEST_SIMPLE,     // 0    //  cualquier request/comando que no sea RUN, será de tipo REQUEST_SIMPLE
+    REQUEST_COMPUESTA   // 1    //  cualquier request/comando RUN, será de tipo REQUEST_COMPUESTA
+} t_tipo_request;
+
 typedef struct PCB_request {
-    int id;
-    char* script_request;
+    char* request_comando;
+    t_tipo_request tipo_request;
     int PC;
-    time_t instante_inicial;
-    time_t instante_final;
-    struct PCB_request* siguiente;
 } t_PCB;
 
+
+/*
+Las estructuras de las estadísticas las veremos más adelante.
+
+Tanto el instante_inicial como el instante final tienen que ser de tipo time_t.
+*/
 
 void consola();
 void procesar_comando(char*);
