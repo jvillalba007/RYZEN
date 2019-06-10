@@ -1,4 +1,12 @@
-#include "configKernel.h"
+/*
+ * commons.c
+ *
+ *  Created on: 9 jun. 2019
+ *      Author: utnso
+ */
+
+
+#include "commons.h"
 
 void inicializar_logs_y_configs() {
     abrir_log();
@@ -8,7 +16,7 @@ void inicializar_logs_y_configs() {
 	loggear_configs();
 }
 
-void abrir_log() { 
+void abrir_log() {
     logger = log_create("kernel.log", "KERNEL", 1, LOG_LEVEL_INFO);
 }
 
@@ -21,7 +29,7 @@ void leer_configs() {
 	kernel_config.PUERTO_MEMORIA = strdup(config_get_string_value(config, "PUERTO_MEMORIA"));
 	kernel_config.MULTIPROCESAMIENTO = config_get_int_value(config, "MULTIPROCESAMIENTO");
 	kernel_config.SLEEP_EJECUCION = config_get_int_value(config, "SLEEP_EJECUCION");
-	kernel_config.METADATA_REFRESH = config_get_int_value(config, "METADATA_REFRESH");	
+	kernel_config.METADATA_REFRESH = config_get_int_value(config, "METADATA_REFRESH");
     kernel_config.QUANTUM = config_get_int_value(config, "QUANTUM");
 
 	//	Clausura de la estructura config

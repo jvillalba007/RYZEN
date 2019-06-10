@@ -5,16 +5,7 @@
 #define AND &&
 
 void consola() {
-    //  Se crean las colas de NEW (1), READY (1), RUNNING (1 o más) y EXIT (1).
-    t_PCB* cola_NEW;
-    t_PCB* cola_READY;
-    int i; //Variable auxiliar, para subíndice de las colas de RUNNING
-    for (i = 0; i <= kernel_config.MULTIPROCESAMIENTO - 1; i++) {
-        t_PCB* cola_RUNNING[i];
-    }
-    t_PCB* cola_EXIT;
     
-    int numero_PCB = 0; //Variable auxiliar, para contar cantidad de requests
     for(ever) {
         char* linea = console();
 
@@ -22,22 +13,6 @@ void consola() {
                 free(linea);
                 break;
         }
-
-
-
-        //  crearPCB(linea, numero_PCB);
-
-
-
-        /*
-        Ingresan la request.
-        Se crea el PCB:
-            - si no es un RUN: PCB->lista_requests tendrá un único nodo. En él se debe cargar la request.
-            - si es un RUN: PCB->lista_requests tendrá uno o varios nodos... En cada uno se debe cargar, por separado, cada request.
-        
-        ¿Los estados?
-
-        */
 
         procesar_comando(linea);
 
@@ -47,14 +22,18 @@ void consola() {
     //exit(EXIT_SUCCESS);
 }
 
-t_PCB* crear_PCB (char* string_codigo, int numero_PCB) {
-    t_PCB* PCB_nuevo;
-    PCB_nuevo->id = numero_PCB;
-    PCB_nuevo->script_request = string_codigo;
-    PCB_nuevo->PC = 1;
-    PCB_nuevo->instante_inicial = 0;
-    PCB_nuevo->instante_final = 0;
-    PCB_nuevo->siguiente = NULL;
+void crear_pcb (char* string_codigo, t_tipo_request tipo) {
+    t_PCB* pcb = malloc( sizeof(t_PCB) );
+    pcb->request_comando = strdup( string_codigo );
+    pcb->pc = 0;
+    pcb->tipo_request = tipo;
+    pcb->id = id_pcbs;
+
+    list_add( l_pcb_nuevos , pcb );
+
+    log_info(logger, "Se crea el PCB de la request: %s con id: %d ", pcb->request_comando , pcb->id);
+
+    id_pcbs++;
 }
 
 unsigned long long obtener_tiempo_actual (void) { //revisar por qué no reconoce el "tv" que en las pruebas del Eclipse sí anda...
@@ -65,32 +44,22 @@ unsigned long long obtener_tiempo_actual (void) { //revisar por qué no reconoce
     return milisegundos_unix_epoch;
 }
 
-void mover_PCB_de_NEW_a_READY (t_PCB* un_PCB) {
-    //  actualizar instante_inicial
-    //  eliminar de la cola de NEW
-    //  cargar en la cola de READY
-}
-
-void mover_PCB_de_READY_a_RUNNING (t_PCB* un_PCB) {
-    //  
-}
-
-void mover_PCB_de_RUNNING_a_READY (t_PCB* un_PCB) {
-    //  
-}
-
-void mover_PCB_de_RUNNING_a_EXIT (t_PCB* un_PCB) {
-    //  cambiar valor de instante_final
-    //  eliminar de la cola de RUNNING correspondiente
-    //  cargar en la cola de EXIT
-}
-
 
 void procesar_comando(char* linea) {
     char** parametros = string_split(linea, " ");
 	int cantParametros = split_cant_elem(parametros);
 
-    if (string_equals_ignore_case(parametros[0], "SELECT")) {
+    if (string_equals_ignore_case(parametros[0], "SELECT") || string_equals_ignore_case(parametros[0], "INSERT") ||
+    	string_equals_ignore_case(parametros[0], "CREATE") || string_equals_ignore_case(parametros[0], "DROP")	)
+    {
+
+    	t_tipo_request tipo = SIMPLE;
+    	crear_pcb( linea , tipo );
+
+    	/*TODO: si quieren aca se puede chequear en funciones auxiliares los parametros segun el tipo de comando que ingresa
+    	 * es decir if(parametro[0] == select) chequear_select y asi con las demas y listo. pero la idea es que aca se cree el pcb de todos estos comandos)
+    	 */
+
         if (cantParametros == 3) {
             //  Ejemplo: SELECT nombre_de_la_tabla key
 
@@ -255,15 +224,15 @@ void procesar_comando(char* linea) {
             limpiar_caracter_final_de_nueva_linea(tipo_de_consistencia);
             //  FIN PRUEBA
 
-
+            //TODO refactor de esto, SC tambien sera una lista no se va a guardar en un int
             if (string_equals_ignore_case(tipo_de_consistencia, "SC")) {
-                numero_memoria_con_criterio_SC = numero_de_memoria;
+                //numero_memoria_con_criterio_SC = numero_de_memoria;
                 printf("Se agrega la memoria %d al criterio SC.\n", numero_de_memoria);
 
                 //  ...se labura acá...
-                numero_memoria_con_criterio_SC = numero_de_memoria;
+                //numero_memoria_con_criterio_SC = numero_de_memoria;
 
-                printf("Número de memoria con criterio SC: %d\n", numero_memoria_con_criterio_SC);
+                //printf("Número de memoria con criterio SC: %d\n", numero_memoria_con_criterio_SC);
 
             }
             else 
@@ -302,6 +271,10 @@ void procesar_comando(char* linea) {
                 puts("Archivo no encontrado.");
             }
             
+
+            //TODO aca se tiene que ejecutar crear_pcb y listo con el tipo_request en 1 (compuesta)
+
+
             size_t buffer_size = 100;
             char *lineaLeida = malloc(buffer_size * sizeof(char));
 
