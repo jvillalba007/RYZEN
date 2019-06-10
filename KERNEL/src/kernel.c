@@ -16,11 +16,7 @@ int main() {
 
 	
 	//INICIA HILOS DE EJECUCION
-	//TODO: aca van a tener que generar un array de hilos e ir guardando en el array el id del hilo. Generar los hilos con un for desde 0 hasta la cantidad de de multiprogramacion
-	//del archivo de config
-	pthread_t hilo_ejecucion;
-	pthread_create(&hilo_ejecucion, NULL , (void*) ejecutar, NULL);
-	log_info(logger, "Hilo de ejecucion creado");
+	crear_procesadores();
 
 
 	//TODO: hagan limpieza en consola, fijense los comentarios que deje y prueben si funciona insertar una request de tipo select, crear el cpb ponerlo en lista de nuevos
@@ -32,6 +28,8 @@ int main() {
 
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
+
+	liberar_kernel();
 
 	//	Se liberan los char* pedidos anteriormente
 	liberar_kernel_config(kernel_config);
@@ -54,9 +52,8 @@ void ejecutar(){
 
 		//TODO aca se haria la ejecucion del proceso
 
-
 	}
-
+	close(0);
 }
 
 
@@ -92,6 +89,9 @@ void inicializar_kernel(){
 	l_pcb_finalizados = list_create();
 
 	l_memorias = list_create();
+
+	l_procesadores = list_create();
+
 }
 
 
@@ -116,6 +116,33 @@ void conectar_memoria(){
 
 }
 
+void crear_procesadores(){
+	for(int i=0; i<kernel_config.MULTIPROCESAMIENTO; i++){
+		pthread_t hilo_ejecucion;
+		pthread_create(&hilo_ejecucion, NULL , (void*) ejecutar, NULL);
+		log_info(logger, "Hilo de ejecucion creado");
+		list_add(l_procesadores, &hilo_ejecucion);
+		pthread_detach(hilo_ejecucion);
+	}
+}
+
+void liberar_kernel(){
+
+	//FIN lista criterios
+		list_destroy(l_criterio_SHC);
+		list_destroy(l_criterio_SC);
+		list_destroy(l_criterio_EC);
+
+	//FIN lista de estados
+		list_destroy(l_pcb_nuevos);
+		list_destroy(l_pcb_listos);
+		list_destroy(l_pcb_ejecutando);
+		list_destroy(l_pcb_finalizados);
+
+		list_destroy(l_memorias);
+
+		list_destroy(l_procesadores);
+}
 
 //	Lineamientos del Kernel
 //	https://docs.google.com/document/d/1nus6JWLj3mjzUATejoatIK_qFewLztolEKRa0jXsa0I

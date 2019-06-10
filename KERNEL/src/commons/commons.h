@@ -90,6 +90,9 @@ t_list* l_criterio_EC;
 //LISTA DE MEMORIAS
 t_list* l_memorias;
 
+//LISTA DE PROCESADORES
+t_list* l_procesadores;
+
 
 void inicializar_logs_y_configs(void);
 void abrir_log(void);
