@@ -7,7 +7,7 @@ int main() {
 	inicializar_kernel();
 
 	//INICIA CLIENTE MEMORIA
-	conectar_memoria();
+	//conectar_memoria();
 
 	//INICIA CONSOLA
 	pthread_t hilo_consola;
@@ -53,7 +53,7 @@ void ejecutar(){
 		//TODO aca se haria la ejecucion del proceso
 
 	}
-	close(0);
+	pthread_exit(0);
 }
 
 
@@ -65,8 +65,8 @@ t_PCB* obtener_pcb_ejecutar(){
 	}
 	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
 
-	t_PCB *pcb = list_take_and_remove( l_pcb_listos , 0 ); //tomo primero por ser RR  TODO verificar si esto funciona
-	list_add( l_pcb_listos , pcb  );
+	t_PCB *pcb = list_remove( l_pcb_listos , 0 ); //tomo primero por ser RR  TODO verificar si esto funciona
+	list_add( l_pcb_ejecutando , pcb  );
 	log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
 
 	return pcb;
@@ -134,14 +134,20 @@ void liberar_kernel(){
 		list_destroy(l_criterio_EC);
 
 	//FIN lista de estados
-		list_destroy(l_pcb_nuevos);
-		list_destroy(l_pcb_listos);
-		list_destroy(l_pcb_ejecutando);
-		list_destroy(l_pcb_finalizados);
+		list_destroy_and_destroy_elements(l_pcb_nuevos, free_Pcb);
+		list_destroy_and_destroy_elements(l_pcb_listos, free_Pcb);
+		list_destroy_and_destroy_elements(l_pcb_ejecutando, free_Pcb);
+		list_destroy_and_destroy_elements(l_pcb_finalizados, free_Pcb);
 
 		list_destroy(l_memorias);
 
 		list_destroy(l_procesadores);
+}
+
+void free_Pcb(void* pcb_Void){
+	t_PCB* pcb = (t_PCB*) pcb_Void;
+	free(pcb->request_comando);
+	free(pcb);
 }
 
 //	Lineamientos del Kernel

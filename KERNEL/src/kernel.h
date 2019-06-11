@@ -18,4 +18,5 @@ t_PCB* obtener_pcb_ejecutar(); // obtiene un pcb a ejecutar de la listo de ready
 
 void liberar_kernel();
 void crear_procesadores();
+void free_Pcb(void* pcb_Void);
 #endif
