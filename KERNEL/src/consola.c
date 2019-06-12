@@ -25,34 +25,27 @@ void consola() {
 void procesar_comando (char* linea) {
     char** parametros = string_split(linea, " ");
     int cant_parametros = split_cant_elem(parametros);
-    int id_PCB_actual; //¿para tener la referencia al mover el PCB de una lista a la otra?
-
-    if (es_comando_conocido(parametros)) { //  Verificamos si es un comando conocido
+    t_tipo_request tipo;
+    
+    //  Se verifica si es un comando correcto, de los conocidos
+    if (es_comando_conocido(parametros)) {
         
-        if (es_correcta_cantidad_parametros(parametros[0], cant_parametros)) { //  Verificamos si es la cantidad de parámetros es correcta
+        //  Se verifica si la cantidad de parámetros es correcta
+        if (es_correcta_cantidad_parametros(parametros[0], cant_parametros)) {
             
+            //  Se verifica si el comando es "planificable"
             if (es_comando_planificable(parametros[0])) {
-
-/*TODO: si quieren aca se puede chequear en funciones auxiliares los parametros segun el tipo de comando que ingresa
-* es decir if(parametro[0] == select) chequear_select y asi con las demas y listo. pero la idea es que aca se cree el pcb de todos estos comandos)
-*/
-
-                //  Creo el PCB
-                //  crear_pcb(linea, tipo); <----- ver bien esos parámetros!!!
-                //  Lo paso a NEW
                 
+                //  Se verifica si el comando es un RUN (request compuesta) u otro (request simple)
                 if (es_comando(parametros[0], "RUN")) {
-                    //  la request es COMPUESTA
-                    //  t_tipo_request tipo = COMPUESTA;
+                    tipo = COMPUESTA;
                 }
                 else {
-                    //  la request es SIMPLE
-                    //  t_tipo_request tipo = SIMPLE;
+                    tipo = SIMPLE;
                 }
                 
-                //  Lo busco en NEW y le actualizo algunos valores (como la línea o el tipo de request)
-                //  Lo saco de NEW y lo pongo en READY
-
+                //  Se crea el PCB, se lo carga en la lista de NEW y se lo mueve a la lista de READY
+                crear_pcb(linea, tipo);
 
             }
             else {
@@ -73,18 +66,20 @@ void procesar_comando (char* linea) {
 }
 
 void crear_pcb (char* string_codigo, t_tipo_request tipo) { //devolvería un void o un int (la id)
-    int i;
     t_PCB* pcb = malloc(sizeof(t_PCB));
     pcb->id = id_pcbs;
     pcb->request_comando = strdup(string_codigo);
     pcb->pc = 1;
     pcb->tipo_request = tipo;  
     
-    i = pcb->id;
-    list_add(l_pcb_nuevos, pcb);    //esto debería ir afuera de esta función... pero para eso necesito (en el 2do parámetro) la referencia al PCB: teniendo el ID, debería obtener el PCB de la lista de NEW para después pasarlo a READY
+    //  Se crea el PCB
+    list_add(l_pcb_nuevos, pcb);
+    
+    //  Se mueve el PCB de la lista de NEW a la lista de READY
+    list_add(l_pcb_listos, list_remove(l_pcb_nuevos, 1));
+
     log_info(logger, "Se crea el PCB de la request: %s con id: %d ", pcb->request_comando , pcb->id);
     id_pcbs++;
-    return i;
 }
 
 bool es_comando_conocido (char** parametros) {
@@ -263,7 +258,7 @@ else
     mostrar_resultados();
 }
 */
-
+string_equals_ignore_case
 /* DROP
 Ejemplo: DROP nombre_de_la_tabla
 
@@ -289,7 +284,7 @@ limpiar_caracter_final_de_nueva_linea(tipo_de_consistencia);
 //  FIN PRUEBA
 
 //TODO refactor de esto, SC tambien sera una lista no se va a guardar en un int
-if (es_comando(tipo_de_consistencia, "SC")) {
+if (string_equals_ignore_case(tipo_de_consistencia, "SC")) {
     //numero_memoria_con_criterio_SC = numero_de_memoria;
     printf("Se agrega la memoria %d al criterio SC.\n", numero_de_memoria);
 
@@ -300,14 +295,14 @@ if (es_comando(tipo_de_consistencia, "SC")) {
 
 }
 else 
-    if (es_comando(tipo_de_consistencia, "SHC")) {
+    if (string_equals_ignore_case(tipo_de_consistencia, "SHC")) {
         printf("Se agrega la memoria %d al criterio SHC.\n", numero_de_memoria);
 
         //  ...se labura acá...
 
     }
     else {
-        if (es_comando(tipo_de_consistencia, "EC")) {
+        if (string_equals_ignore_case(tipo_de_consistencia, "EC")) {
         printf("Se agrega la memoria %d al criterio EC.\n", numero_de_memoria);
         
         //  ...se labura acá...
@@ -331,8 +326,6 @@ if (cantParametros == 2) {
         puts("Archivo no encontrado.");
     }
     
-    //TODO aca se tiene que ejecutar crear_pcb y listo con el tipo_request en 1 (compuesta)
-
     size_t buffer_size = 100;
     char *lineaLeida = malloc(buffer_size * sizeof(char));
 
