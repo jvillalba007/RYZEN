@@ -7,7 +7,7 @@ int main() {
 	inicializar_kernel();
 
 	//INICIA CLIENTE MEMORIA
-	//conectar_memoria();
+	conectar_memoria();
 
 	//INICIA CONSOLA
 	pthread_t hilo_consola;
