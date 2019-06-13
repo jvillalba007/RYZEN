@@ -29,19 +29,31 @@ void procesar_comando (char* linea) {
     
     //  Se verifica si es un comando correcto, de los conocidos
     if (es_comando_conocido(parametros)) {
+
+        log_info(logger, "Es un comando conocido.");
         
         //  Se verifica si la cantidad de parámetros es correcta
         if (es_correcta_cantidad_parametros(parametros[0], cant_parametros)) {
-            
+
+            log_info(logger, "Es correcta la cantidad de parámetros.");
+
             //  Se verifica si el comando es "planificable"
             if (es_comando_planificable(parametros[0])) {
+
+                log_info(logger, "Es un comando planificable.");
                 
                 //  Se verifica si el comando es un RUN (request compuesta) u otro (request simple)
                 if (es_comando(parametros[0], "RUN")) {
                     tipo = COMPUESTA;
+
+                    log_info(logger, "Es un RUN.");
+
                 }
                 else {
                     tipo = SIMPLE;
+
+                    log_info(logger, "Es un CREATE, un INSERT, un SELECT o un DROP.");
+
                 }
                 
                 //  Se crea el PCB, se lo carga en la lista de NEW y se lo mueve a la lista de READY
@@ -49,7 +61,11 @@ void procesar_comando (char* linea) {
 
             }
             else {
+
+                log_info(logger, "NO es un comando planificable.");
+
                 //  Hago otra cosa...
+
             }
 
         }
@@ -160,6 +176,10 @@ void notificar_error_tipo_consistencia(void) {
     log_info(logger, "Error: criterio de consistencia incorrecto.");
 }
 
+
+
+//  PARA EL HILO DE EJECUCIÓN:
+
 /* SELECT
     Ejemplo: SELECT nombre_de_la_tabla key
     
@@ -258,7 +278,7 @@ else
     mostrar_resultados();
 }
 */
-string_equals_ignore_case
+//string_equals_ignore_case
 /* DROP
 Ejemplo: DROP nombre_de_la_tabla
 
@@ -391,6 +411,9 @@ else {
 
 
 
+
+//  PARA EL HILO QUE HACE EL DESCRIBE GLOBAL CADA CIERTO TIEMPO
+
 /*
 unsigned long long obtener_tiempo_actual (void) { //revisar por qué no reconoce el "tv" que en las pruebas del Eclipse sí anda...
     struct timeval tv;
@@ -403,6 +426,9 @@ unsigned long long obtener_tiempo_actual (void) { //revisar por qué no reconoce
 
 
 
+
+
+//  Otros...
 //  PRUEBA_DEL_BARRA_N clean_new_line_ch
 /*void limpiar_caracter_final_de_nueva_linea(char *linea) {
     int posicion_nueva_linea = strlen(linea) - 1;
