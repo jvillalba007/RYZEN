@@ -21,7 +21,7 @@ void abrir_log() {
 }
 
 void crear_config() {
-    config = config_create("kernel.cfg");
+    config = config_create("../kernel.cfg");
 }
 
 void leer_configs() {
