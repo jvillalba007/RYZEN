@@ -81,7 +81,7 @@ void procesar_comando (char* linea) {
     split_liberar(parametros);
 }
 
-void crear_pcb (char* string_codigo, t_tipo_request tipo) { //devolvería un void o un int (la id)
+void crear_pcb (char* string_codigo, t_tipo_request tipo) {
     t_PCB* pcb = malloc(sizeof(t_PCB));
     pcb->id = id_pcbs;
     pcb->request_comando = strdup(string_codigo);

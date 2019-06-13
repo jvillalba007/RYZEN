@@ -11,7 +11,7 @@
 
 void consola();
 void procesar_comando(char*);
-int crear_pcb (char* string_codigo, t_tipo_request tipo); //permite crear pcb y psaarlo a lista de nuevos
+void crear_pcb (char* string_codigo, t_tipo_request tipo);
 
 bool es_comando_conocido (char**);
 bool es_correcta_cantidad_parametros (char*, int);
