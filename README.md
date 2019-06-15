@@ -9,7 +9,7 @@
 CONFLICT (content): Merge conflict in LFS/src/API.c
 Automatic merge failed; fix conflicts and then commit the result.
 ```
-	Esto se hace yendo al código y viendo aquellas partes que tienen una separación con `===============`. La parte de arriba de ese separador es lo que vos tenes y la parte de abajo esta el otro separador es lo que quiere cambiar lo que acabas de pullear.
+Esto se hace yendo al código y viendo aquellas partes que tienen una separación con `===============`. La parte de arriba de ese separador es lo que vos tenes y la parte de abajo esta el otro separador es lo que quiere cambiar lo que acabas de pullear.
 5. `git add los-archivos-que-quiero-commitear`
 6. `git status` para ver si los archivos que quiero commitear están en **verde**.
 7. `git diff HEAD` para ver que lo que estoy añadiendo en verde y lo que estoy sacando en rojo es lo correcto.
