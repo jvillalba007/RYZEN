@@ -9,7 +9,6 @@
 #include <string.h>
 #include <pthread.h>
 
-
 t_log* logger;
 t_config* config;
 
@@ -54,12 +53,14 @@ typedef struct{
 
 
 /*
-    serán parte de la lista de memorias del pool de memorias
+    serán parte de la lista de memorias del pool de memorias. TODO:confirmar definicion de estos atributos
 */
 typedef struct{
     int numero_memoria;
     char* ip;
     char* puerto;
+    char* criterio;
+    bool activa;
 } t_memoria_del_pool;
 
 
@@ -82,16 +83,19 @@ t_list* l_pcb_listos;
 t_list* l_pcb_ejecutando;
 t_list* l_pcb_finalizados;
 
-//LISTAS DE CRITERIOS DE MEMORIA
+//LISTAS DE CRITERIOS DE MEMORIA memorias activas para redirigir las request segun criterio
 t_list* l_criterio_SC;
 t_list* l_criterio_SHC;
 t_list* l_criterio_EC;
 
-//LISTA DE MEMORIAS
+//LISTA DE MEMORIAS , estaran todas las memorias con las que alguna vez interactuo el sistema
 t_list* l_memorias;
 
-//LISTA DE PROCESADORES
+//LISTA DE HILOS PROCESADORES
 t_list* l_procesadores;
+
+//LISTA DE TABLAS
+t_list* l_tablas;
 
 
 void inicializar_logs_y_configs(void);
@@ -100,6 +104,12 @@ void crear_config(void);
 void leer_configs(void);
 void loggear_inicio_logger(void);
 void loggear_configs(void);
-void liberar_kernel_config(ck);
+
+void liberar_kernel();//libera todos los pedidos de la memoria del proceso
+void liberar_config();
+void free_Pcb(void* pcb_borrar);
+void free_memoria(void* memoria_borrar);
+void free_tabla(void* tabla_borrar);
+void terminar_hilos_procesadores();
 
 #endif

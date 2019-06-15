@@ -12,11 +12,20 @@
 
 void conectar_memoria();
 void inicializar_kernel(); //inicializa las listas que se utilizaran en kernel
-void ejecutar(); //ejecuta en un hilo los pcb
+void ejecutar_procesador(); //ejecuta en un hilo los pcb
 
 t_PCB* obtener_pcb_ejecutar(); // obtiene un pcb a ejecutar de la listo de ready.
+void ejecutar_linea( char *linea ); //recibe una linea y la envia a ejecutar a alguna memoria
+char* obtener_nombre_tabla( char* linea ); //me devuelve el nombre de la tabla a partir de una linea de request
+t_tabla_consistencia *obtener_tabla( char* n_tabla ); //devuelve la tabla a partir del nombre
+t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla ); //a partir de una tabla me indica que memoria va a realizar la request segun criterio
+void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ); //ejecuta en memoria la linea
 
-void liberar_kernel();
 void crear_procesadores();
-void free_Pcb(void* pcb_Void);
+void ejecutar_describe();
+
+
+
+
+
 #endif

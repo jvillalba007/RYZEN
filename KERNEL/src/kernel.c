@@ -7,7 +7,7 @@ int main() {
 	inicializar_kernel();
 
 	//INICIA CLIENTE MEMORIA
-	conectar_memoria();
+	/*conectar_memoria();*/
 
 	//INICIA CONSOLA
 	pthread_t hilo_consola;
@@ -18,42 +18,79 @@ int main() {
 	//INICIA HILOS DE EJECUCION
 	crear_procesadores();
 
-
-	//TODO: hagan limpieza en consola, fijense los comentarios que deje y prueben si funciona insertar una request de tipo select, crear el cpb ponerlo en lista de nuevos
-	//y luego pasarlo a lista de ready verifiquen si hay leaks. Pasen el valgrind. pero pruebenlo, no sigan codeando de mas si no funciona todo ok.
-
-
-
-	//TODO funcion para cerrar todo sin leaks. las listas, semaforos...etc
-
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
 
 	liberar_kernel();
 
-	//	Se liberan los char* pedidos anteriormente
-	liberar_kernel_config(kernel_config);
-
-	//	Log: clausura
-	log_destroy(logger);
-	
 	return EXIT_SUCCESS;
 }
 
 
-void ejecutar(){
+void ejecutar_procesador(){
 
 	while(1){
 
+		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
+
 			t_PCB* pcb = obtener_pcb_ejecutar();
 			log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 		pthread_mutex_unlock(&sem_ejecutar);
 
-		//TODO aca se haria la ejecucion del proceso
+		if( pcb->tipo_request == SIMPLE ){
+			log_info(logger, "Se recibe a ejecucion request simple: %s" , pcb->request_comando  );
+			ejecutar_linea( pcb->request_comando );
+		}
+		else
+		{
+			int k= 0;
+			log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
 
+			while( k < kernel_config.MULTIPROCESAMIENTO ){
+
+				//TODO aca habria que obtener la linea a leer en el archivo segun el PC del pcb
+				char* linea;
+				log_info(logger, "la linea a ejecutar es: %s" , linea  );
+
+				ejecutar_linea( linea );
+
+				k++;
+			}
+		}
 	}
-	pthread_exit(0);
+}
+
+
+void ejecutar_linea( char *linea ){
+
+	char* n_tabla = obtener_nombre_tabla( linea );
+
+	t_tabla_consistencia *tabla = obtener_tabla( n_tabla );
+
+	t_memoria_del_pool *memoria = obtener_memoria_criterio( tabla );
+
+	ejecutar_linea_memoria( memoria , linea );
+}
+
+
+char* obtener_nombre_tabla( char* linea ){
+
+	return NULL;
+}
+
+t_tabla_consistencia *obtener_tabla( char* n_tabla ){
+
+	return NULL;
+}
+
+t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla ){
+
+	return NULL;
+}
+
+void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
+
 }
 
 
@@ -92,13 +129,15 @@ void inicializar_kernel(){
 
 	l_procesadores = list_create();
 
+	l_tablas = list_create();
+
 }
 
 
 void conectar_memoria(){
-
+	log_info(logger, "entro a socket");
 	socket_memoria = socket_connect_to_server(kernel_config.IP_MEMORIA, kernel_config.PUERTO_MEMORIA);
-
+	log_info(logger, "El socket devuelto es: %d", socket_memoria);
 	if( socket_memoria == -1  ){
 
 		log_error(logger, "¡Error no se pudo conectar con MEMORIA");
@@ -119,36 +158,15 @@ void conectar_memoria(){
 void crear_procesadores(){
 	for(int i=0; i<kernel_config.MULTIPROCESAMIENTO; i++){
 		pthread_t hilo_ejecucion;
-		pthread_create(&hilo_ejecucion, NULL , (void*) ejecutar, NULL);
-		log_info(logger, "Hilo de ejecucion creado");
+		pthread_create(&hilo_ejecucion, NULL , (void*) ejecutar_procesador, NULL);
+		log_info(logger, "Hilo de ejecucion creado id: %d" , hilo_ejecucion);
 		list_add(l_procesadores, &hilo_ejecucion);
 		pthread_detach(hilo_ejecucion);
 	}
 }
 
-void liberar_kernel(){
 
-	//FIN lista criterios
-		list_destroy(l_criterio_SHC);
-		list_destroy(l_criterio_SC);
-		list_destroy(l_criterio_EC);
+void ejecutar_describe(){
 
-	//FIN lista de estados
-		list_destroy_and_destroy_elements(l_pcb_nuevos, free_Pcb);
-		list_destroy_and_destroy_elements(l_pcb_listos, free_Pcb);
-		list_destroy_and_destroy_elements(l_pcb_ejecutando, free_Pcb);
-		list_destroy_and_destroy_elements(l_pcb_finalizados, free_Pcb);
-
-		list_destroy(l_memorias);
-
-		list_destroy(l_procesadores);
 }
 
-void free_Pcb(void* pcb_Void){
-	t_PCB* pcb = (t_PCB*) pcb_Void;
-	free(pcb->request_comando);
-	free(pcb);
-}
-
-//	Lineamientos del Kernel
-//	https://docs.google.com/document/d/1nus6JWLj3mjzUATejoatIK_qFewLztolEKRa0jXsa0I
