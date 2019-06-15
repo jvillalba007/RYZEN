@@ -62,7 +62,7 @@ void console_process() {
 }
 
 
-void liberar_memoria(){
+void liberar_general(){
 	liberar_config(lfs_config);
 	liberar_logger(g_logger);
 }
@@ -93,9 +93,10 @@ int main(void) {
 	pthread_join(tid_consola, NULL);
 	pthread_join(tid_server, NULL);
 
-
-	liberar_memoria();
 	liberar_memtable();
+	liberar_bitmap();
+	liberar_general();
+
 
 	return 0;
 }

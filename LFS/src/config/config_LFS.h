@@ -7,12 +7,15 @@
 	#include <string.h>
 	#include <unistd.h>
 	#include <sys/types.h>
+	#include <sys/mman.h>
 	#include <sys/stat.h>
 	#include <commons/log.h>
 	#include <commons/config.h>
 	#include <commons/string.h>
 	#include <commons/collections/list.h>
 	#include <shared/utils.h>
+	#include <commons/bitarray.h>
+	#include <errno.h>
 
 	typedef struct {
 		char* puerto_lfs;
@@ -28,6 +31,7 @@
 	lfs_cfg lfs_config;
 
 	t_list* memtable;
+	t_bitarray* bitmap;
 
 	char* BLOCK_SIZE;
 	char* BLOCKS;
@@ -40,6 +44,7 @@
 	void loggear_config(void);
 	void liberar_logger(t_log*);
 	void liberar_config(lfs_cfg);
+	void liberar_bitmap();
 	void iniciar_memtable();
 	void iniciar_bitmap();
 	void iniciar_montaje(void);

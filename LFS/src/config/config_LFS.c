@@ -66,6 +66,12 @@ void liberar_logger(t_log* g_logger){
 	log_destroy(g_logger);
 }
 
+void liberar_bitmap()
+{
+	bitarray_destroy(bitmap);
+	log_info(g_logger, "LIBERADO BITMAP");
+}
+
 void iniciar_memtable() {
 	memtable = list_create();
 }
@@ -89,7 +95,7 @@ void iniciar_bitmap(){
 	FILE * f_bitmap;
 	char* bin_bitmap;
 	int blocks_i;
-	sscanf(BLOCKS, "%d", &blocks_i);
+	sscanf(BLOCK_SIZE, "%d", &blocks_i);
 
 	bin_bitmap = generate_path("/Metadata/Bitmap", lfs_config.punto_montaje, ".bin");
 
@@ -101,6 +107,16 @@ void iniciar_bitmap(){
 		free(bitarray_limpio_temp);
 	}
 
+	fseek(f_bitmap, 0, SEEK_END);
+	int file_size = ftell(f_bitmap);
+	fseek(f_bitmap, 0, SEEK_SET);
+	char* bitarray_str = (char*) mmap(NULL, file_size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fileno(f_bitmap), 0);
+	if(bitarray_str == (char*) -1) {
+		log_error(g_logger, "Fallo el mmap: %s", strerror(errno));
+	}
+	fread((void*) bitarray_str, sizeof(char), file_size, f_bitmap);
+	bitmap = bitarray_create_with_mode(bitarray_str, file_size, MSB_FIRST);
+	log_info(g_logger, "Creado el archivo Bitmap.bin");
 	free(bin_bitmap);
 }
 

@@ -31,6 +31,7 @@ void liberador_registros(fila_memtable* ftabla);
 void drop_memtable(char* tabla);
 void liberar_tablas(fila_memtable* ftabla);
 void liberar_tablas_memtable(t_list* memtable);
+void liberar_memtable();
 
 
 
