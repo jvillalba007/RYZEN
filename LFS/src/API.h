@@ -13,6 +13,7 @@
 
 		#include <shared/utils.h>
 		#include "config/config_LFS.h"
+		#include "filesystem.h"
 
 		#define TABLES_FOLDER "tables/"
 

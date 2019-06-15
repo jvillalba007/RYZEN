@@ -136,26 +136,9 @@ void procesar_create(char** parametros){
 	fputs(compact, fPtr);
 	fputs("\n", fPtr);
 
-	// Create partitions
-	int partitions_i = 0;
-	sscanf(partitions, "%d", &partitions_i); // castear a int
-	char* partition_path;
-	for (int i = 0; i < partitions_i; ++i) {
-		char* n = string_itoa(i);
-		char* path_to_n = (char*) calloc(strlen(n) + 1 + 1, sizeof(char));
-		strcat(path_to_n, "/");
-		strcat(path_to_n, n);
-		partition_path = generate_path(path_to_n, table_path, ".bin");
-
-		FILE * f;
-		f = fopen(partition_path, "a");
-		fclose(f);
-		free(partition_path);
-		free(path_to_n);
-		free(n);
-
-	}
-
+	int ok;
+	crearParticiones(table_name,atoi(partitions),&ok);
+	log_info(g_logger, "Resultado del Create %d", ok);
 
 	// Free everything
 	fclose(fPtr);
