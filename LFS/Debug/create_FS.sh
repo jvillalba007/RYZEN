@@ -42,4 +42,4 @@ mkdir Metadata
 
 create_blocks
 create_metadata
-create_bitmap
+# create_bitmap
