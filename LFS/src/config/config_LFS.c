@@ -95,7 +95,7 @@ void iniciar_bitmap(){
 	FILE * f_bitmap;
 	char* bin_bitmap;
 	int blocks_i;
-	sscanf(BLOCK_SIZE, "%d", &blocks_i);
+	sscanf(BLOCKS, "%d", &blocks_i);
 
 	bin_bitmap = generate_path("/Metadata/Bitmap", lfs_config.punto_montaje, ".bin");
 
