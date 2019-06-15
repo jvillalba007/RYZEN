@@ -11,8 +11,8 @@
 	#include <commons/log.h>
 	#include <commons/config.h>
 	#include <commons/string.h>
-
-	#include "shared/utils.h"
+	#include <commons/collections/list.h>
+	#include <shared/utils.h>
 
 	typedef struct {
 		char* puerto_lfs;
@@ -27,6 +27,8 @@
 	t_config* metadata;
 	lfs_cfg lfs_config;
 
+	t_list* memtable;
+
 	char* BLOCK_SIZE;
 	char* BLOCKS;
 	char* MAGIC_NUMBER;
@@ -38,6 +40,8 @@
 	void loggear_config(void);
 	void liberar_logger(t_log*);
 	void liberar_config(lfs_cfg);
+	void iniciar_memtable();
+	void iniciar_bitmap();
 	void iniciar_montaje(void);
 	void crear_metadata(void);
 	void leer_metadata(void);

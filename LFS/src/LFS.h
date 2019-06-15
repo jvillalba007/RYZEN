@@ -10,9 +10,10 @@
 	#include <shared/socket.h>
 	#include <shared/console.h>
 
-	#include "shared/utils.h"
+	#include <shared/utils.h>
 	#include "config/config_LFS.h"
 	#include "API.h"
+	#include "memtable.h"
 
 	bool EXIT_PROGRAM;
 	int socketServidor;

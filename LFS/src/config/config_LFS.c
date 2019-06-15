@@ -66,6 +66,10 @@ void liberar_logger(t_log* g_logger){
 	log_destroy(g_logger);
 }
 
+void iniciar_memtable() {
+	memtable = list_create();
+}
+
 void iniciar_config(){
 	iniciar_logger();
 	crear_config();
@@ -77,6 +81,8 @@ void iniciar_config(){
 	loggear_metadata();
 
 	iniciar_bitmap();
+
+	iniciar_memtable();
 }
 
 void iniciar_bitmap(){

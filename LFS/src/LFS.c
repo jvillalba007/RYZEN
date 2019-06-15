@@ -95,6 +95,7 @@ int main(void) {
 
 
 	liberar_memoria();
+	liberar_memtable();
 
 	return 0;
 }
