@@ -6,7 +6,8 @@ blocks="$2"
 
 create_blocks(){
 	cd bloques
-	for i in `seq 1 $blocks`
+	n=$(( blocks-1 ))
+	for i in `seq 0 $n`
 	do
 	    touch "$i".bin	
 	    echo "$i".bin created
