@@ -30,6 +30,11 @@ create_bitmap(){
 }
 
 # Main
+if [[ $# -eq 0 ]] ; then
+    echo 'Please pass arguments: first is folder where LFS should be, second is amount of blocks'
+    exit 0
+fi
+
 echo $blocks blocks
 echo folder is $folder
 
