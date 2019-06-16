@@ -207,6 +207,64 @@ void procesar_create(char** parametros){
 	free(compact);
 }
 
+char* procesar_describe(int cant_parametros, char** parametros){
+
+	// DESCRIBE TABLA
+	if (cant_parametros == 2){
+		char* table_name = parametros[1];
+
+		string_to_upper(table_name);
+
+		// Does the table exist?
+		struct stat st = {0};
+		char* table_path;
+		table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+		if( access( table_path, F_OK ) == -1 ) {
+		    // file doesn't exist
+			free(table_path);
+			log_error(g_logger, "No existe la tabla especificada.");
+			return NULL;
+		}
+
+		char* metadata_path;
+		metadata_path = generate_path("/Metadata", table_path, "");
+
+		FILE * fPtr;
+		fPtr = fopen(metadata_path, "rt");
+
+		if(fPtr == NULL)
+		{
+			printf("Unable to read file: %s \n %s \n", metadata_path, (char *) strerror(errno));
+			return 1;
+		}
+
+	    free(metadata_path);
+
+	    char* buffer;
+	    long length;
+	    /* Get the number of bytes */
+	    fseek(fPtr, 0L, SEEK_END);
+	    length = ftell(fPtr);
+	    fseek(fPtr, 0L, SEEK_SET);
+	    buffer = (char*)calloc(length, sizeof(char));
+
+	    fread(buffer, sizeof(char), length, fPtr);
+
+		printf(buffer);
+
+		log_info(g_logger, "Describe de %s : %s", table_name, buffer);
+
+		free(table_path);
+
+	    return buffer;
+	}
+
+
+
+
+}
+
 void consola_procesar_comando(char* linea)
 {
 
@@ -264,7 +322,9 @@ void consola_procesar_comando(char* linea)
 
 	else if(string_equals_ignore_case(parametros[0],"DESCRIBE")){
 		if (cant_parametros >= 1 && cant_parametros < 3) {
-			string_iterate_lines(parametros,puts);
+
+			procesar_describe(cant_parametros, parametros);
+
 		} else {
 			printf("API Error: ninguno o 1 argumento es requerido.\n");
 		}
