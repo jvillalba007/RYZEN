@@ -5,12 +5,15 @@
 		#include <string.h>
 		#include <stdlib.h>
 		#include <unistd.h>
+		#include <sys/types.h>
+		#include <sys/stat.h>
 		#include <commons/string.h>
 		#include <errno.h>
 		#include <time.h>
 
 		#include <shared/utils.h>
 		#include "config/config_LFS.h"
+		#include "filesystem.h"
 
 		#define TABLES_FOLDER "tables/"
 
