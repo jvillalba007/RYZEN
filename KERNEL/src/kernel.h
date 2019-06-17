@@ -19,6 +19,9 @@ void ejecutar_linea( char *linea ); //recibe una linea y la envia a ejecutar a a
 char* obtener_nombre_tabla( char* linea ); //me devuelve el nombre de la tabla a partir de una linea de request
 t_tabla_consistencia *obtener_tabla( char* n_tabla ); //devuelve la tabla a partir del nombre
 t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla ); //a partir de una tabla me indica que memoria va a realizar la request segun criterio
+t_memoria_del_pool *obtener_memoria_SC( t_tabla_consistencia* tabla );
+t_memoria_del_pool *obtener_memoria_EC( t_tabla_consistencia* tabla );
+t_memoria_del_pool *obtener_memoria_SHC( t_tabla_consistencia* tabla );
 void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ); //ejecuta en memoria la linea
 
 void crear_procesadores();

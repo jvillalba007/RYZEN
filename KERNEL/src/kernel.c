@@ -29,12 +29,14 @@ int main() {
 
 void ejecutar_procesador(){
 
+	t_PCB* pcb =NULL;
+
 	while(1){
 
 		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
 
-			t_PCB* pcb = obtener_pcb_ejecutar();
+		 	pcb = obtener_pcb_ejecutar();
 			log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 		pthread_mutex_unlock(&sem_ejecutar);
 
@@ -42,10 +44,7 @@ void ejecutar_procesador(){
 			log_info(logger, "Se recibe a ejecucion request simple: %s" , pcb->request_comando  );
 			ejecutar_linea( pcb->request_comando );
 
-
-
 			finalizar_pcb(pcb);
-			//TODO:finalizar pcb. quitarlo de listos y pasarlo a fin
 		}
 		else
 		{
@@ -63,7 +62,7 @@ void ejecutar_procesador(){
 				k++;
 			}
 
-			//TODO: verificar si es la ultima linea de archivo. si es asi quitalro de listos y enviarlos a fin sino devolverlo a listos
+			//TODO: verificar si es la ultima linea de archivo. si es asi quitarlo de listos y enviarlos a fin con finalizar_pcb sino devolverlo a listos
 		}
 	}
 }
@@ -92,6 +91,38 @@ t_tabla_consistencia *obtener_tabla( char* n_tabla ){
 }
 
 t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla ){
+
+	t_memoria_del_pool *memoria;
+
+	if( string_equals_ignore_case( tabla->criterio_consistencia ,"SC" ) ){
+
+		memoria = obtener_memoria_SC( tabla );
+	}
+
+	else if(string_equals_ignore_case( tabla->criterio_consistencia ,"EC") ){
+
+		memoria = obtener_memoria_EC( tabla );
+	}
+
+	else if( string_equals_ignore_case( tabla->criterio_consistencia ,"SHC") ){
+
+		memoria = obtener_memoria_SHC( tabla );
+	}
+
+	return memoria;
+}
+
+t_memoria_del_pool *obtener_memoria_SC( t_tabla_consistencia* tabla ){
+
+	return NULL;
+}
+
+t_memoria_del_pool *obtener_memoria_EC( t_tabla_consistencia* tabla ){
+
+	return NULL;
+}
+
+t_memoria_del_pool *obtener_memoria_SHC( t_tabla_consistencia* tabla ){
 
 	return NULL;
 }
