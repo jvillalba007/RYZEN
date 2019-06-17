@@ -234,11 +234,12 @@ char* procesar_select(char** parametros){
 	partition_path = get_partition_for_key(table_name, key);
 
 	char* registros_buffer;
-	int buffer_size;
+	int buffer_size = 0;
+
 	obtenerDatos(partition_path, &registros_buffer, &buffer_size);
 
 	t_list* select_fs;
-	select_fs = buffer_to_list_registros(registros_buffer);
+	select_fs = buffer_size ? buffer_to_list_registros(registros_buffer) : NULL;
 
 	t_list* filtered_list;
 

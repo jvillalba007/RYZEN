@@ -277,7 +277,7 @@ void crearTemporal(char* table_name,char* temporal, int* ok){
 	list_destroy(lista_nro_bloques);
 }
 
-void obtenerDatos(char* pathParticion, void** ret_buffer, int* ret_buffer_size){
+void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 	t_config* config_archivo;
 	config_archivo = config_create(pathParticion);
 
