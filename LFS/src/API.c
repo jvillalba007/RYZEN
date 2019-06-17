@@ -354,10 +354,14 @@ void consola_procesar_comando(char* linea)
 	else if(string_equals_ignore_case(parametros[0],"DESCRIBE")){
 		if (cant_parametros >= 1 && cant_parametros < 3) {
 			void* response;
-
 			response = procesar_describe(cant_parametros, parametros);
-			list_destroy_and_destroy_elements(response, liberar_metadata_struct);
-			free(response);
+
+			if (cant_parametros == 1){
+				list_destroy_and_destroy_elements(response, liberar_metadata_struct);
+			}else{
+				liberar_metadata_struct(response);
+			}
+
 
 		} else {
 			printf("API Error: ninguno o 1 argumento es requerido.\n");
