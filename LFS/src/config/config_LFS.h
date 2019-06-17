@@ -27,6 +27,8 @@
 	#include <commons/bitarray.h>
 	#include <errno.h>
 
+	#define TABLES_FOLDER "tables/"
+
 	typedef struct {
 		char* puerto_lfs;
 		char* punto_montaje;

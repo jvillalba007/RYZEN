@@ -6,6 +6,47 @@
  */
 
 #include "config/config_LFS.h"
+#include "filesystem.h"
+
+char* get_partition_for_key(char* table_name, char* key){
+
+	string_to_upper(table_name);
+	char* table_path;
+	table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+	char* metadata_path;
+	metadata_path = generate_path("/Metadata", table_path, "");
+
+	t_config* metadata;
+    metadata = config_create(metadata_path);
+
+    free(metadata_path);
+
+    int partitions;
+	partitions = strdup(config_get_int_value(metadata, "PARTITIONS"));
+
+	config_destroy(metadata);
+
+	int partition_assigned;
+	partition_assigned = key % partitions;
+
+	char* partition_c;
+	sprintf(partition_c, "%d", partition_assigned);
+
+	char* partition_path;
+
+	char* partition_p = (char*) calloc(1 + strlen(partition_c) + 1, sizeof(char));
+	strcat(partition_p, "/");
+	strcat(partition_p, partition_c);
+
+	partition_path = generate_path(partition_p, table_path, ".bin");
+
+    free(partition_p);
+    free(partition_c);
+
+	return partition_path;
+
+}
 
 void crearParticiones(char* table_name, int partitions, int* ok){
 
