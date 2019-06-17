@@ -24,8 +24,8 @@
 fila_memtable* create_memtable(char* tabla);
 fila_memtable* obtener_tabla(char *nombre_tabla);
 void insert_memtable(char* tabla,fila_registros* registro);
-fila_registros* obtener_tabla_registro(fila_memtable* ftabla, u_int16_t key);
-fila_registros* select_memtable(char* tabla,u_int16_t key);
+t_list* obtener_tabla_registros(fila_memtable* ftabla, u_int16_t key);
+t_list* select_memtable(char* tabla,u_int16_t key);
 void liberar_registros(fila_registros* registro);
 void liberador_registros(fila_memtable* ftabla);
 void drop_memtable(char* tabla);

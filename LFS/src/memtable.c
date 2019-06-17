@@ -47,31 +47,47 @@
 
 	}
 
-	//Obtener registro de tabla que esta en memtable que coincide con la key buscada
-	fila_registros* obtener_tabla_registro(fila_memtable* ftabla, u_int16_t key){
+	//Obtener registros de tabla que esta en memtable que coincide con la key buscada
+	t_list* obtener_tabla_registros(fila_memtable* ftabla, u_int16_t key){
 
-		bool buscar_registro(fila_registros* r) {
-			if( r->key == key ) return true;
-			return false;
+		t_list* registros = list_create();
+
+		void buscar_registros(fila_registros* r) {
+			if( r->key == key )
+			{
+				fila_registros* registro = malloc(sizeof(fila_registros));
+				registro->timestamp = r->timestamp;
+				registro->key = r->key;
+				registro->value = strdup(r->value);
+				list_add(registros,registro);
+			}
 		}
 
-		fila_registros* registro = NULL;
+
+
 		if(!list_is_empty(ftabla->registros))
 		{
-		registro = list_find(ftabla->registros,(void*)buscar_registro);
+			list_iterate(ftabla->registros,(void*)buscar_registros);
 		}
-		return registro;
+
+		if(list_is_empty(registros))
+		{
+			list_destroy(registros);
+			return NULL;
+		}
+
+		return registros;
 	}
 
 	//select_memtable
-	fila_registros* select_memtable(char* tabla,u_int16_t key)
+	t_list* select_memtable(char* tabla,u_int16_t key)
 	{
 		fila_memtable* ftabla = obtener_tabla(tabla);
 		if( ftabla == NULL ) log_info(g_logger, "NO SE ENCONTRO %s en memtable", tabla);
-		fila_registros* registro =  obtener_tabla_registro(ftabla,key);
-		if( registro == NULL ) log_info(g_logger, "NO SE ENCONTRO KEY %d en TABLA %s de memtable",key,tabla);
+		t_list* registros =  obtener_tabla_registros(ftabla,key);
+		if( registros == NULL ) log_info(g_logger, "NO SE ENCONTRO KEY %d en TABLA %s de memtable",key,tabla);
 
-		return registro;
+		return registros;
 
 	}
 
@@ -79,6 +95,7 @@
 	void liberar_registros(fila_registros* registro)
 	{
 		free(registro->value);
+		free(registro);
 	}
 
 

@@ -36,38 +36,27 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 
 	char* table_name = parametros_no_value[1];
 	string_to_upper(table_name);
-	char* full_path;
-	full_path = generate_path(table_name, TABLES_FOLDER, ".txt");
-
-	if( access( full_path, F_OK ) == -1 ) {
-	    // file doesn't exist
-		free(full_path);
-		printf("No existe la tabla especificada. Creala.");
-		return;
-	}
-
 	char* key = parametros_no_value[2];
 	char* timestamp;
 
+	fila_registros* registro = malloc(sizeof(fila_registros));
+
 	if (cant_parametros == 3){
 		// Timestamp no proporcionado
-		timestamp = (char*)calloc(sizeof(int32_t) + 1, sizeof(char));
-		time_t current_time;
-		current_time = (int32_t) time(NULL);
-		sprintf(timestamp, "%lu", current_time );
-		file_write_key_value(full_path, key, value, timestamp);
-
-		free(timestamp);
+		registro->timestamp = time(NULL);
+		registro->key = atoi(key);
+		registro->value = strdup(value);
+		insert_memtable(table_name,registro);
 
 	} else if (cant_parametros == 4) {
 		//Timestamp proporcionado
 		timestamp = parametros_no_value[3];
-		file_write_key_value(full_path, key, value, timestamp);
+		registro->timestamp = atoi(timestamp);
+		registro->key = atoi(key);
+		registro->value = strdup(value);
+		insert_memtable(table_name,registro);
 
 	}
-
-	free(full_path);
-
 }
 
 void drop_table(char* table_name, char* table_path){
