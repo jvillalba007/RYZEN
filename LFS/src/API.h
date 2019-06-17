@@ -29,6 +29,7 @@
 		void* procesar_describe(int, char**);
 		linea_create* read_table_metadata(char*);
 		void liberar_metadata_struct(linea_create*);
+		void drop_table(char*, char*);
 
 		const char* folder_path;
 

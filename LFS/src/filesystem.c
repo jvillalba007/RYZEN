@@ -91,7 +91,7 @@ void crearParticiones(char* table_name, int partitions, int* ok){
 	t_list* lista_nro_bloques = list_create();
 
 	/* Busco en el bitmap la cantidad de bloques necesarios */
-	for(i = 0; i < bitmap->size * 8 && lista_nro_bloques->elements_count < bloques_necesarios; i++){
+	for(i = 0; i < atoi(BLOCKS) && lista_nro_bloques->elements_count < bloques_necesarios; i++){
 		if(!bitarray_test_bit(bitmap, i)){ // Bloque disponible
 			list_add(lista_nro_bloques, (void*) i);
 			bitarray_set_bit(bitmap, i);
