@@ -8,7 +8,7 @@
 #include <shared/console.h>
 #include "shared/utils.h"
 
-
+int exit_global = 0;
 
 void conectar_memoria();
 void inicializar_kernel(); //inicializa las listas que se utilizaran en kernel
@@ -23,6 +23,7 @@ void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ); //ejec
 
 void crear_procesadores();
 void ejecutar_describe();
+char* obtenerLinea(int pc, FILE* programa);
 
 
 

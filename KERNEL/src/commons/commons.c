@@ -80,7 +80,7 @@ void liberar_kernel(){
 	list_destroy_and_destroy_elements(l_pcb_finalizados, free_Pcb);
 
 	log_info(logger, "libera hilos procesadores");
-	terminar_hilos_procesadores();
+	//terminar_hilos_procesadores();
 	list_destroy(l_procesadores);
 
 	log_info(logger, "libera config");

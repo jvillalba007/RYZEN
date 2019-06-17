@@ -20,6 +20,7 @@ int main() {
 
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
+	exit_global = 1;
 
 	liberar_kernel();
 
@@ -28,13 +29,13 @@ int main() {
 
 
 void ejecutar_procesador(){
-
-	while(1){
+	t_PCB* pcb;
+	while(!exit_global){
 
 		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
 
-			t_PCB* pcb = obtener_pcb_ejecutar();
+			pcb = obtener_pcb_ejecutar();
 			log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 		pthread_mutex_unlock(&sem_ejecutar);
 
@@ -46,19 +47,25 @@ void ejecutar_procesador(){
 		{
 			int k= 0;
 			log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
-
+			FILE* archivo = fopen("hola.txt", "r"); //TODO poner la ruta del archivo a leer
+			char* linea;
 			while( k < kernel_config.MULTIPROCESAMIENTO ){
 
-				//TODO aca habria que obtener la linea a leer en el archivo segun el PC del pcb
-				char* linea;
+
+				linea = obtenerLinea( pcb->pc, archivo);
+
 				log_info(logger, "la linea a ejecutar es: %s" , linea  );
 
 				ejecutar_linea( linea );
-
+				pcb->pc ++;
 				k++;
+				free(linea);
 			}
 		}
+		free(pcb);
 	}
+	log_info(logger,"cerrando hilo");
+	pthread_exit(0);
 }
 
 
@@ -97,7 +104,7 @@ void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 t_PCB* obtener_pcb_ejecutar(){
 
 	//si lista vacia se queda loopeando esperando que entre alguno
-	while( list_is_empty( l_pcb_listos ) ){
+	while( list_is_empty( l_pcb_listos ) ){ //TODO ver por que me tira un invalid read size 4
 
 	}
 	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
@@ -170,3 +177,16 @@ void ejecutar_describe(){
 
 }
 
+char* obtenerLinea( int pc, FILE* archivo){
+
+	char* linea;
+	char leido;
+	for(int i=0; i<pc; i++){
+		while (!feof(archivo) && fread(&leido, sizeof(char),1,archivo) && leido != '\n'){}
+	}
+	while (!feof(archivo) && fread(&leido, sizeof(char),1,archivo) && leido != '\n'){
+
+		string_append_with_format(&linea, "%c", leido);
+	}
+	return linea;
+}
