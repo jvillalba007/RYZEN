@@ -77,3 +77,107 @@ void crearParticiones(char* table_name, int partitions, int* ok){
 	list_destroy(lista_nro_bloques);
 }
 
+void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok){
+	char* bloques_string;
+	int offset_buffer = 0;
+	int tamanio_total;
+	int nuevo_indice_bloque = 0;
+
+	void _escribir_bloque(char* nro_bloque, int offset){
+		char* ruta_bloque = string_new();
+		string_append(&ruta_bloque, "bloques/");
+		string_append(&ruta_bloque, nro_bloque);
+		char* ruta_bloqueFinal = generate_path(ruta_bloque, "", ".bin");
+		FILE* bloque = fopen(ruta_bloqueFinal, "rb+");
+		fseek(bloque, offset, SEEK_SET);
+		free(ruta_bloque);
+		free(ruta_bloqueFinal);
+
+		int cant_bytes_a_escribir = min(atoi(BLOCK_SIZE) - offset, bytes);
+		tamanio_total = max(tamanio_total, offset + cant_bytes_a_escribir + (nuevo_indice_bloque * atoi(BLOCK_SIZE)));
+		fwrite(buffer + offset_buffer, 1, cant_bytes_a_escribir, bloque);
+		offset_buffer += cant_bytes_a_escribir;
+
+		fclose(bloque);
+	}
+
+	char* _obtener_bloque(){
+		char* nro_bloque_str;
+		int nro_bloque;
+		bool bloque_disponible;
+
+		for(nro_bloque = 0;
+			nro_bloque < bitmap->size * 8 && !(bloque_disponible = !(bitarray_test_bit(bitmap, nro_bloque)));
+			nro_bloque++);
+
+		if(!bloque_disponible){
+			*ok = -1;
+			return NULL;
+		}
+		bitarray_set_bit(bitmap, nro_bloque);
+		nro_bloque_str = string_itoa(nro_bloque);
+
+		bloques_string[strlen(bloques_string) - 1] = '\0';
+		string_append(&bloques_string, ",");
+		string_append(&bloques_string, nro_bloque_str);
+		string_append(&bloques_string, "]");
+
+		return nro_bloque_str;
+	}
+
+	*ok = 1;
+
+	t_config* config_archivo = config_create(pathParticion);
+
+	tamanio_total = config_get_int_value(config_archivo, "TAMANIO");
+	char** bloques_arr_strings = config_get_array_value(config_archivo, "BLOQUES");
+	bloques_string = strdup(config_get_string_value(config_archivo, "BLOQUES"));
+	int bloques_arr_strings_len = split_cant_elem(bloques_arr_strings);
+	int indice_bloque_inicial = tamanio_total/atoi(BLOCK_SIZE);
+	int offset_bloque_inicial = tamanio_total - (indice_bloque_inicial * atoi(BLOCK_SIZE));
+
+	// Guardo lo del buffer en bloques
+	int bytes_guardados_bloque_actual, offset_bloque_actual;
+	for(nuevo_indice_bloque = indice_bloque_inicial;
+			bytes > 0;
+			nuevo_indice_bloque++, bytes -= bytes_guardados_bloque_actual){
+
+		if(nuevo_indice_bloque == indice_bloque_inicial){ // Primer bloque{
+			bytes_guardados_bloque_actual =  atoi(BLOCK_SIZE) - offset_bloque_inicial;
+			offset_bloque_actual = offset_bloque_inicial;
+		}
+		else{
+			bytes_guardados_bloque_actual = atoi(BLOCK_SIZE);
+			offset_bloque_actual = 0;
+		}
+
+		if(nuevo_indice_bloque > bloques_arr_strings_len - 1){
+			char* nro_bloque = _obtener_bloque();
+
+			if(*ok != 1){ // No hay espacio
+				log_info(g_logger, "NO HAY ESPACIO");
+				free(bloques_string);
+				split_liberar(bloques_arr_strings);
+				config_destroy(config_archivo);
+				return;
+			}
+
+			_escribir_bloque(nro_bloque, offset_bloque_actual);
+			free(nro_bloque);
+		}
+		else{
+			_escribir_bloque(bloques_arr_strings[nuevo_indice_bloque], offset_bloque_actual);
+		}
+	}
+
+	/* Actualizo config */
+	config_set_value(config_archivo, "BLOQUES", bloques_string);
+	free(bloques_string);
+	char* tamanio_str = string_itoa(tamanio_total);
+	config_set_value(config_archivo, "TAMANIO", tamanio_str);
+	config_save(config_archivo);
+	free(tamanio_str);
+	split_liberar(bloques_arr_strings);
+	config_destroy(config_archivo);
+	return;
+}

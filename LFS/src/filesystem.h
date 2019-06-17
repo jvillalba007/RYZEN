@@ -9,5 +9,6 @@
 #define FILESYSTEM_H_
 
 void crearParticiones(char* table_name, int partitions, int* ok);
+void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok);
 
 #endif /* FILESYSTEM_H_ */
