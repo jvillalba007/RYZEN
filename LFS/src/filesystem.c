@@ -8,6 +8,80 @@
 #include "config/config_LFS.h"
 #include "filesystem.h"
 
+char* get_last_value(t_list* registros){
+
+	char* last_value = 0;
+	int32_t max_timestamp = 0;
+
+
+	void update_max_timestamp(fila_registros* registro){
+
+		if (registro->timestamp > max_timestamp){
+			max_timestamp = registro->timestamp;
+			if (last_value != 0){
+				free(last_value);
+			}
+			last_value = strdup(registro->value);
+		}
+	}
+
+	list_iterate(registros, update_max_timestamp);
+
+	return last_value;
+}
+
+t_list* filter_registro_list_by_key(t_list* list, char* key){
+
+	bool filter_key(fila_registros* registro){
+		if ( strcmp(registro->key, key) == 0 ){
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	t_list* filtered_list;
+	filtered_list = list_filter(list, filter_key);
+
+	if(list_is_empty(filtered_list))
+	{
+		list_destroy(filtered_list);
+		return NULL;
+	}
+
+	return filtered_list;
+}
+
+t_list* buffer_to_list_registros(char* buffer){
+
+	t_list* registros = list_create();
+	char * line = strtok(strdup(buffer), "\n");
+
+	while(line) {
+		fila_registros* registro = malloc(sizeof(fila_registros));
+		char** partes = string_split(line, ";");
+
+		registro->timestamp = atoi(partes[0]);
+		registro->key = atoi(partes[1]);
+		registro->value = strdup(partes[2]);
+
+
+		list_add(registros, registro);
+
+		split_liberar(partes);
+		line  = strtok(NULL, "\n");
+	}
+
+	if(list_is_empty(registros))
+	{
+		list_destroy(registros);
+		return NULL;
+	}
+
+	return registros;
+}
+
+
 void borrar_archivo(char* path, int* ok){
 
 	void _borrar_bloque(char* nro_bloque){

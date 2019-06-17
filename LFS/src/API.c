@@ -220,16 +220,63 @@ void procesar_create(char** parametros){
 
 }
 
-void procesar_select(char** parametros){
+char* procesar_select(char** parametros){
+
 	char* table_name = parametros[1];
 	char* key = parametros[2];
 	char* table_path;
 	table_path = generate_path(table_name, TABLES_FOLDER, "");
 
+	t_list* select_mem;
+	select_mem = select_memtable(table_name, (u_int16_t) atoi(key));
+
+	char* partition_path;
+	partition_path = get_partition_for_key(table_name, key);
+
+	char* registros_buffer;
+	int buffer_size;
+	obtenerDatos(partition_path, &registros_buffer, &buffer_size);
+
+	t_list* select_fs;
+	select_fs = buffer_to_list_registros(registros_buffer);
+
+	t_list* filtered_list;
+
+
+	if (select_mem == NULL && select_fs == NULL){ // ninguna tiene datos
+
+		log_info(g_logger, "No existe la clave %s en la tabla %s", key, table_name);
+		return NULL;
+
+	} else if (select_mem == NULL){ // solo hay datos en bloques
+
+		filtered_list = filter_registro_list_by_key(select_fs, key);
+
+	} else if (select_fs == NULL){ 	// solo hay datos en memtable
+
+		filtered_list = select_mem;
+
+	} else { // los 2 tienen datos
+
+		filtered_list = filter_registro_list_by_key(select_fs, key);
+
+		list_add_all(filtered_list, select_mem);
+
+	}
+
+	if (filtered_list == NULL){
+		log_info(g_logger, "No existe la clave %s en la tabla %s", key, table_name);
+		return NULL;
+	}
+
+	char* last_value;
+	last_value = get_last_value(filtered_list);
 
  	free(table_path);
 
- }
+ 	return last_value;
+
+}
 
 linea_create* read_table_metadata(char* table_name){
 
