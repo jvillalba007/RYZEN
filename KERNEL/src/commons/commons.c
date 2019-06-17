@@ -67,17 +67,17 @@ void liberar_kernel(){
 	list_destroy(l_criterio_EC);
 
 	log_info(logger, "libera lista tablas");
-	list_destroy_and_destroy_elements(l_tablas , free_memoria);
+	list_destroy_and_destroy_elements(l_tablas , (void*)free_tabla);
 
 	log_info(logger, "libera lista memorias");
-	list_destroy_and_destroy_elements(l_memorias , free_memoria);
+	list_destroy_and_destroy_elements(l_memorias , (void*)free_memoria);
 
 	//FIN lista de estados
 	log_info(logger, "libera lista estados");
-	list_destroy_and_destroy_elements(l_pcb_nuevos, free_Pcb);
-	list_destroy_and_destroy_elements(l_pcb_listos, free_Pcb);
-	list_destroy_and_destroy_elements(l_pcb_ejecutando, free_Pcb);
-	list_destroy_and_destroy_elements(l_pcb_finalizados, free_Pcb);
+	list_destroy_and_destroy_elements(l_pcb_nuevos, (void*)free_Pcb);
+	list_destroy_and_destroy_elements(l_pcb_listos, (void*)free_Pcb);
+	list_destroy_and_destroy_elements(l_pcb_ejecutando, (void*)free_Pcb);
+	list_destroy_and_destroy_elements(l_pcb_finalizados, (void*)free_Pcb);
 
 	log_info(logger, "libera hilos procesadores");
 	terminar_hilos_procesadores();
@@ -88,18 +88,18 @@ void liberar_kernel(){
 	log_destroy(logger);
 }
 
-void free_Pcb(void* pcb_borrar){
-	t_PCB* pcb = (t_PCB*) pcb_borrar;
+void free_Pcb(t_PCB* pcb){
+	log_info(logger, "libera pcb id:%d" , pcb->id );
 	free(pcb->request_comando);
 	free(pcb);
 }
 
-void free_memoria(void* memoria_borrar){
+void free_memoria(t_memoria_del_pool* memoria_borrar){
 
 
 }
 
-void free_tabla(void* tabla_borrar){
+void free_tabla(t_tabla_consistencia* tabla_borrar){
 
 
 }
@@ -108,9 +108,9 @@ void terminar_hilos_procesadores(){
 
 	void terminar_hilo_procesador(pthread_t* id_hilo)
 	{
-		log_info(logger, "cierro hilo de ejecucion id :%d" , *id_hilo);
-		//pthread_cleanup_push( id_hilo );
-		pthread_cancel( *id_hilo);
+		log_info(logger, "cierro hilo de ejecucion id :%d" , *(id_hilo));
+		/* TODO: solucionar esto. esta rompiendo */
+		/*pthread_cancel( *(id_hilo) );*/
 	}
 
 	list_iterate(l_procesadores,(void*)terminar_hilo_procesador);

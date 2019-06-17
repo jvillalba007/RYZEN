@@ -41,6 +41,11 @@ void ejecutar_procesador(){
 		if( pcb->tipo_request == SIMPLE ){
 			log_info(logger, "Se recibe a ejecucion request simple: %s" , pcb->request_comando  );
 			ejecutar_linea( pcb->request_comando );
+
+
+
+			finalizar_pcb(pcb);
+			//TODO:finalizar pcb. quitarlo de listos y pasarlo a fin
 		}
 		else
 		{
@@ -50,13 +55,15 @@ void ejecutar_procesador(){
 			while( k < kernel_config.MULTIPROCESAMIENTO ){
 
 				//TODO aca habria que obtener la linea a leer en el archivo segun el PC del pcb
-				char* linea;
+				char* linea=NULL;
 				log_info(logger, "la linea a ejecutar es: %s" , linea  );
 
 				ejecutar_linea( linea );
 
 				k++;
 			}
+
+			//TODO: verificar si es la ultima linea de archivo. si es asi quitalro de listos y enviarlos a fin sino devolverlo a listos
 		}
 	}
 }
@@ -102,11 +109,29 @@ t_PCB* obtener_pcb_ejecutar(){
 	}
 	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
 
-	t_PCB *pcb = list_remove( l_pcb_listos , 0 ); //tomo primero por ser RR  TODO verificar si esto funciona
+	t_PCB *pcb = list_remove( l_pcb_listos , 0 );
 	list_add( l_pcb_ejecutando , pcb  );
 	log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
+	log_info(logger, "nuevo tamanio de la lista de listos %d", list_size( l_pcb_listos ));
 
 	return pcb;
+}
+
+void finalizar_pcb(t_PCB* pcb){
+
+	bool buscar_pcb( t_PCB* pcb_it ){
+
+		if(  pcb_it->id == pcb->id  ) return true;
+		return false;
+	}
+
+	log_info(logger, "tamanio de lista ejecutando: %d", list_size( l_pcb_ejecutando ));
+	//quito de la lista pcb y lo agrego a finalizados
+	list_remove_by_condition(l_pcb_ejecutando,(void*)buscar_pcb);
+	log_info(logger, "nuevo tamanio de lista ejecutando: %d", list_size( l_pcb_ejecutando ));
+	list_add( l_pcb_finalizados , pcb );
+	log_info(logger, "tamanio lista finalizados: %d", list_size( l_pcb_finalizados ));
+
 }
 
 void inicializar_kernel(){

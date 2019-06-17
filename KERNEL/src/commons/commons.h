@@ -63,15 +63,6 @@ typedef struct{
     bool activa;
 } t_memoria_del_pool;
 
-
-/*
-    Tipo de dato: int
-    Variable que alojará el número de memoria correspondiente a la única memoria con criterio de consistencia SC
-    (Nodo) que alojará el número de memoria correspondiente a las memorias con criterio de consistencia SHC
-    (Nodo) que alojará el número de memoria correspondiente a las memorias con criterio de consistencia EC
-*/
-typedef int t_memoria;
-
 int id_pcbs; //para controlar los id de pcbs entrantes
 int socket_memoria;
 pthread_mutex_t sem_ejecutar; //mutex para obtener los pcb de los hilos de ejecucion
@@ -107,9 +98,9 @@ void loggear_configs(void);
 
 void liberar_kernel();//libera todos los pedidos de la memoria del proceso
 void liberar_config();
-void free_Pcb(void* pcb_borrar);
-void free_memoria(void* memoria_borrar);
-void free_tabla(void* tabla_borrar);
+void free_Pcb(t_PCB* pcb_borrar);
+void free_memoria(t_memoria_del_pool* memoria_borrar);
+void free_tabla(t_tabla_consistencia* tabla_borrar);
 void terminar_hilos_procesadores();
 
 #endif
