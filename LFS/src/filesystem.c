@@ -5,7 +5,6 @@
  *      Author: utnso
  */
 
-#include "config/config_LFS.h"
 #include "filesystem.h"
 
 char* get_last_value(t_list* registros){
@@ -14,7 +13,7 @@ char* get_last_value(t_list* registros){
 	int32_t max_timestamp = 0;
 
 
-	void update_max_timestamp(fila_registros* registro){
+	void _update_max_timestamp(fila_registros* registro){
 
 		if (registro->timestamp > max_timestamp){
 			max_timestamp = registro->timestamp;
@@ -25,15 +24,15 @@ char* get_last_value(t_list* registros){
 		}
 	}
 
-	list_iterate(registros, update_max_timestamp);
+	list_iterate(registros, (void*) _update_max_timestamp);
 
 	return last_value;
 }
 
 t_list* filter_registro_list_by_key(t_list* list, char* key){
 
-	bool filter_key(fila_registros* registro){
-		if ( strcmp(registro->key, key) == 0 ){
+	bool _filter_key(fila_registros* registro){
+		if ( strcmp(string_itoa(registro->key), key) == 0 ){
 			return true;
 		}else{
 			return false;
@@ -41,7 +40,7 @@ t_list* filter_registro_list_by_key(t_list* list, char* key){
 	}
 
 	t_list* filtered_list;
-	filtered_list = list_filter(list, filter_key);
+	filtered_list = list_filter(list, (void*)_filter_key);
 
 	if(list_is_empty(filtered_list))
 	{

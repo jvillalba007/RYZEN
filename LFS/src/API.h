@@ -24,7 +24,7 @@
 		void procesar_insert(int, char** , char*);
 		int file_write_key_value (char*, char*, char*, char*);
 		char* extract_value_from_key(char*, char*);
-		void procesar_select(char**);
+		char* procesar_select(char**);
 		int procesar_drop(char**);
 		void* procesar_describe(int, char**);
 		linea_create* read_table_metadata(char*);

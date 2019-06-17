@@ -27,6 +27,8 @@
 	#include <commons/bitarray.h>
 	#include <errno.h>
 
+	#include "shared/protocolo.h"
+
 	#define TABLES_FOLDER "tables/"
 
 	typedef struct {
