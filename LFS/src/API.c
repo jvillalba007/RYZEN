@@ -74,7 +74,7 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 
 void drop_table(char* table_name, char* table_path){
 
-	int* ok;
+	int ok;
 	// Already exists
 	drop_memtable(table_name);
 
