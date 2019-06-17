@@ -39,6 +39,17 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 	char* key = parametros_no_value[2];
 	char* timestamp;
 
+	char* full_path;
+	full_path = generate_path(table_name, TABLES_FOLDER, "");
+
+	if( access( full_path, F_OK ) == -1 ) {
+	    // file doesn't exist
+		free(full_path);
+		log_error(g_logger, "La tabla %s no existe", table_name);
+		printf("No existe la tabla especificada. Creala.");
+		return;
+	}
+
 	fila_registros* registro = malloc(sizeof(fila_registros));
 
 	if (cant_parametros == 3){
@@ -57,6 +68,8 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 		insert_memtable(table_name,registro);
 
 	}
+
+	free(full_path);
 }
 
 void drop_table(char* table_name, char* table_path){

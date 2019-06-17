@@ -14,6 +14,7 @@
 	#include "config/config_LFS.h"
 	#include "API.h"
 	#include "memtable.h"
+	#include "dump.h"
 
 	bool EXIT_PROGRAM;
 	int socketServidor;

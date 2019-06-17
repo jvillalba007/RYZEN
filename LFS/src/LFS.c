@@ -89,8 +89,16 @@ int main(void) {
 	pthread_t tid_consola;
 	pthread_create(&tid_consola, &attr_consola, (void*)console_process, NULL);
 
+	// INICIAR DUMP
+	pthread_attr_t attr_dump;
+	pthread_attr_init(&attr_dump);
+
+	pthread_t tid_dump;
+	pthread_create(&tid_dump, &attr_dump, (void*)dump, NULL);
+
 	//Esperar a que el hilo termine
 	pthread_join(tid_consola, NULL);
+	pthread_join(tid_dump, NULL);
 	pthread_join(tid_server, NULL);
 
 	liberar_memtable();

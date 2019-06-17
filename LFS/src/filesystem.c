@@ -140,6 +140,70 @@ void crearParticiones(char* table_name, int partitions, int* ok){
 	list_destroy(lista_nro_bloques);
 }
 
+void crearTemporal(char* table_name,char* temporal, int* ok){
+
+	char* _list_to_string(t_list* list, int i){
+		char* ret = string_new();
+		char* aux;
+		string_append(&ret, "[");
+		aux = string_itoa((int) list_get(list, i));
+		string_append(&ret, aux);
+		free(aux);
+
+		string_append(&ret, "]");
+		return ret;
+	}
+
+	FILE *archivo;
+	int blocks_size;
+	sscanf(BLOCK_SIZE, "%d", &blocks_size);
+	int i, bloques_necesarios = 1;
+	t_list* lista_nro_bloques = list_create();
+
+	/* Busco en el bitmap la cantidad de bloques necesarios */
+	for(i = 0; i < atoi(BLOCKS) && lista_nro_bloques->elements_count < bloques_necesarios; i++){
+		if(!bitarray_test_bit(bitmap, i)){ // Bloque disponible
+			list_add(lista_nro_bloques, (void*) i);
+			bitarray_set_bit(bitmap, i);
+		}
+	}
+
+	if(lista_nro_bloques->elements_count < bloques_necesarios){ // Espacio insuficiente
+		*ok = -1;
+		/* Limpio del bitmap los bloques que reserve */
+		for(i = 0; i < list_size(lista_nro_bloques); i++){
+			bitarray_clean_bit(bitmap, (int) list_get(lista_nro_bloques, i));
+		}
+		list_destroy(lista_nro_bloques);
+		return;
+	}
+
+	/* OK, puedo crear el archivo */
+	*ok = 1;
+
+		/* Creo el temporla */
+		char* rutaTemporal = string_new();
+		string_append(&rutaTemporal, "tables/");
+		string_append(&rutaTemporal, table_name);
+		string_append(&rutaTemporal, "/");
+		string_append(&rutaTemporal, temporal);
+
+		char* rutaTemporalFinal = generate_path(rutaTemporal, "", "");
+		archivo = fopen(rutaTemporalFinal, "wb+");
+		fclose(archivo);
+		t_config* config_archivo = config_create(rutaTemporalFinal);
+		config_set_value(config_archivo, "TAMANIO", "0");
+		char* bloques_str = _list_to_string(lista_nro_bloques,0);
+		config_set_value(config_archivo, "BLOQUES", bloques_str);
+		config_save(config_archivo);
+		free(bloques_str);
+		config_destroy(config_archivo);
+		free(rutaTemporal);
+		free(rutaTemporalFinal);
+
+	list_destroy(lista_nro_bloques);
+}
+
 void obtenerDatos(char* pathParticion, void** ret_buffer, int* ret_buffer_size){
 	t_config* config_archivo;
 	config_archivo = config_create(pathParticion);
@@ -236,7 +300,7 @@ void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok){
 		bool bloque_disponible;
 
 		for(nro_bloque = 0;
-			nro_bloque < bitmap->size * 8 && !(bloque_disponible = !(bitarray_test_bit(bitmap, nro_bloque)));
+			nro_bloque < atoi(BLOCKS) && !(bloque_disponible = !(bitarray_test_bit(bitmap, nro_bloque)));
 			nro_bloque++);
 
 		if(!bloque_disponible){
