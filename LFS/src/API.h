@@ -25,7 +25,8 @@
 		char* extract_value_from_key(char*, char*);
 		void procesar_select(char**);
 		int procesar_drop(char**);
-
+		char* procesar_describe(int, char**);
+		char* read_table_metadata(char*);
 
 		const char* folder_path;
 

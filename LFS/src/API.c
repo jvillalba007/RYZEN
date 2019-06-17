@@ -207,62 +207,97 @@ void procesar_create(char** parametros){
 	free(compact);
 }
 
+char* read_table_metadata(char* table_name){
+
+	string_to_upper(table_name);
+
+	// Does the table exist?
+	struct stat st = {0};
+	char* table_path;
+	table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+	if( access( table_path, F_OK ) == -1 ) {
+	    // file doesn't exist
+		free(table_path);
+		log_error(g_logger, "No existe la tabla especificada.");
+		return NULL;
+	}
+
+	char* metadata_path;
+	metadata_path = generate_path("/Metadata", table_path, "");
+
+	FILE * fPtr;
+	fPtr = fopen(metadata_path, "rt");
+
+	if(fPtr == NULL)
+	{
+		printf("Unable to read file: %s \n %s \n", metadata_path, (char *) strerror(errno));
+		return 1;
+	}
+
+    free(metadata_path);
+
+    char* buffer;
+    long length;
+    /* Get the number of bytes */
+    fseek(fPtr, 0L, SEEK_END);
+    length = ftell(fPtr);
+    fseek(fPtr, 0L, SEEK_SET);
+    buffer = (char*)calloc(length, sizeof(char));
+
+    fread(buffer, sizeof(char), length, fPtr);
+
+	printf(buffer);
+
+	log_info(g_logger, "Describe de %s : %s", table_name, buffer);
+
+	free(table_path);
+
+    return buffer;
+}
+
 char* procesar_describe(int cant_parametros, char** parametros){
+
+	char* buffer;
 
 	// DESCRIBE TABLA
 	if (cant_parametros == 2){
 		char* table_name = parametros[1];
+		buffer = read_table_metadata(table_name);
 
-		string_to_upper(table_name);
-
-		// Does the table exist?
-		struct stat st = {0};
-		char* table_path;
-		table_path = generate_path(table_name, TABLES_FOLDER, "");
-
-		if( access( table_path, F_OK ) == -1 ) {
-		    // file doesn't exist
-			free(table_path);
-			log_error(g_logger, "No existe la tabla especificada.");
-			return NULL;
-		}
-
-		char* metadata_path;
-		metadata_path = generate_path("/Metadata", table_path, "");
-
-		FILE * fPtr;
-		fPtr = fopen(metadata_path, "rt");
-
-		if(fPtr == NULL)
-		{
-			printf("Unable to read file: %s \n %s \n", metadata_path, (char *) strerror(errno));
-			return 1;
-		}
-
-	    free(metadata_path);
-
-	    char* buffer;
-	    long length;
-	    /* Get the number of bytes */
-	    fseek(fPtr, 0L, SEEK_END);
-	    length = ftell(fPtr);
-	    fseek(fPtr, 0L, SEEK_SET);
-	    buffer = (char*)calloc(length, sizeof(char));
-
-	    fread(buffer, sizeof(char), length, fPtr);
-
-		printf(buffer);
-
-		log_info(g_logger, "Describe de %s : %s", table_name, buffer);
-
-		free(table_path);
-
-	    return buffer;
+		return buffer;
 	}
 
+	char* buffer_all = 0;
+
+    DIR *d;
+    struct dirent *dir;
+    d = opendir("tables");
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            if(strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
+                continue;
+            printf("%s\n", dir->d_name);
+
+            if (buffer_all == 0){
+            	buffer = (char*) calloc(strlen(dir->d_name), sizeof(char));
+            }
+
+            buffer_all = read_table_metadata(dir->d_name);
+
+            buffer = (char*) realloc(buffer, strlen(buffer_all) + strlen(buffer) + 1 );
+            strcat(buffer, buffer_all);
+            free(buffer_all);
+
+        }
+        closedir(d);
+    }
 
 
 
+    return buffer;
 }
 
 void consola_procesar_comando(char* linea)
@@ -322,8 +357,10 @@ void consola_procesar_comando(char* linea)
 
 	else if(string_equals_ignore_case(parametros[0],"DESCRIBE")){
 		if (cant_parametros >= 1 && cant_parametros < 3) {
+			char* response;
 
-			procesar_describe(cant_parametros, parametros);
+			response = procesar_describe(cant_parametros, parametros);
+			free(response);
 
 		} else {
 			printf("API Error: ninguno o 1 argumento es requerido.\n");
