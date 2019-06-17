@@ -11,10 +11,15 @@
 
 void consola();
 void procesar_comando(char*);
-void notificar_error_sintactico_en_comando(void);
-void notificar_error_sintactico_en_parametros(void);
-void notificar_error_tipo_consistencia(void);
+void crear_pcb (char* string_codigo, t_tipo_request tipo);
 
-void crear_pcb (char* string_codigo, t_tipo_request tipo); //permite crear pcb y psaarlo a lista de nuevos
+bool es_comando_conocido (char**);
+bool es_correcta_cantidad_parametros (char*, int);
+bool es_comando_planificable (char*);
+bool es_comando(char*, char*);
+
+void notificar_error_comando_incorrecto (void);
+void notificar_error_comando_cantidad_parametros(void);
+void notificar_error_tipo_consistencia(void);
 
 #endif
