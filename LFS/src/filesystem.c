@@ -421,7 +421,7 @@ void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok){
 			char* nro_bloque = _obtener_bloque();
 
 			if(*ok != 1){ // No hay espacio
-				log_info(g_logger, "NO HAY ESPACIO");
+				log_error(g_logger, "NO HAY MAS ESPACIO");
 				free(bloques_string);
 				split_liberar(bloques_arr_strings);
 				config_destroy(config_archivo);

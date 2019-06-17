@@ -74,6 +74,9 @@ void dumpear_tablas(fila_memtable* ftabla){
 		int ok;
 		obtenerArchivoTemp(ftabla->tabla);
 		crearTemporal(ftabla->tabla, _tmp, &ok);
+
+		if(ok != -1)
+		{
 		obtenerPathTemporal(ftabla);
 		list_iterate(ftabla->registros, (void*) dump_registros);
 		list_destroy(ftabla->registros);
@@ -84,6 +87,13 @@ void dumpear_tablas(fila_memtable* ftabla){
 		free(ftabla);
 		log_info(g_logger, "DUMP DE TABLA");
 		log_info(g_logger, "LIBERADO TABLA de memtable");
+		}
+		else
+		{
+			liberador_registros(ftabla);
+			log_error(g_logger, "NO SE PUEDE HACER DUMP DE TABLA");
+			log_error(g_logger, "LIBERADO TABLA de memtable");
+		}
 
 }
 
