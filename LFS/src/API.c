@@ -207,7 +207,7 @@ void procesar_create(char** parametros){
 	free(compact);
 }
 
-char* read_table_metadata(char* table_name){
+linea_create* read_table_metadata(char* table_name){
 
 	string_to_upper(table_name);
 
@@ -226,49 +226,50 @@ char* read_table_metadata(char* table_name){
 	char* metadata_path;
 	metadata_path = generate_path("/Metadata", table_path, "");
 
-	FILE * fPtr;
-	fPtr = fopen(metadata_path, "rt");
-
-	if(fPtr == NULL)
-	{
-		printf("Unable to read file: %s \n %s \n", metadata_path, (char *) strerror(errno));
-		return 1;
-	}
+	t_config* metadata_t;
+	metadata_t = config_create(metadata_path);
 
     free(metadata_path);
 
-    char* buffer;
-    long length;
-    /* Get the number of bytes */
-    fseek(fPtr, 0L, SEEK_END);
-    length = ftell(fPtr);
-    fseek(fPtr, 0L, SEEK_SET);
-    buffer = (char*)calloc(length, sizeof(char));
+    char* consistency;
+    u_int8_t partitions;
+    u_int32_t compaction_time;
 
-    fread(buffer, sizeof(char), length, fPtr);
+	consistency = strdup(config_get_string_value(metadata_t, "CONSISTENCY"));
+	partitions = config_get_int_value(metadata_t, "PARTITIONS");
+	compaction_time = config_get_int_value(metadata_t, "COMPACTION_TIME");
 
-	printf(buffer);
+	linea_create* metadata_s = malloc(sizeof(linea_create));
+	metadata_s->tabla = strdup(table_name);
+	metadata_s->tipo_consistencia = strdup(consistency);
+	metadata_s->nro_particiones = partitions;
+	metadata_s->tiempo_compactacion = compaction_time;
 
-	log_info(g_logger, "Describe de %s : %s", table_name, buffer);
+	printf("Tabla: %s\n", table_name);
+	printf("Consistencia: %s\n", consistency);
+	printf("Particiones: %d\n", partitions);
+	printf("Tiempo de compactación: %d\n", compaction_time);
 
+	free(consistency);
 	free(table_path);
+	config_destroy(metadata_t);
 
-    return buffer;
+    return metadata_s;
 }
 
-char* procesar_describe(int cant_parametros, char** parametros){
+void* procesar_describe(int cant_parametros, char** parametros){
 
-	char* buffer;
 
 	// DESCRIBE TABLA
 	if (cant_parametros == 2){
 		char* table_name = parametros[1];
-		buffer = read_table_metadata(table_name);
+		linea_create* metadata;
+		metadata = read_table_metadata(table_name);
 
-		return buffer;
+		return metadata;
 	}
 
-	char* buffer_all = 0;
+	t_list * list_metadata = list_create();
 
     DIR *d;
     struct dirent *dir;
@@ -279,25 +280,20 @@ char* procesar_describe(int cant_parametros, char** parametros){
         {
             if(strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
                 continue;
-            printf("%s\n", dir->d_name);
 
-            if (buffer_all == 0){
-            	buffer = (char*) calloc(strlen(dir->d_name), sizeof(char));
-            }
-
-            buffer_all = read_table_metadata(dir->d_name);
-
-            buffer = (char*) realloc(buffer, strlen(buffer_all) + strlen(buffer) + 1 );
-            strcat(buffer, buffer_all);
-            free(buffer_all);
+            list_add(list_metadata, read_table_metadata(dir->d_name));
 
         }
         closedir(d);
     }
 
+    return list_metadata;
+}
 
-
-    return buffer;
+void liberar_metadata_struct (linea_create* metadata){
+	free(metadata->tabla);
+	free(metadata->tipo_consistencia);
+	free(metadata);
 }
 
 void consola_procesar_comando(char* linea)
@@ -357,9 +353,10 @@ void consola_procesar_comando(char* linea)
 
 	else if(string_equals_ignore_case(parametros[0],"DESCRIBE")){
 		if (cant_parametros >= 1 && cant_parametros < 3) {
-			char* response;
+			void* response;
 
 			response = procesar_describe(cant_parametros, parametros);
+			list_destroy_and_destroy_elements(response, liberar_metadata_struct);
 			free(response);
 
 		} else {
