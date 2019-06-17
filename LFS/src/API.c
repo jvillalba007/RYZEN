@@ -220,6 +220,17 @@ void procesar_create(char** parametros){
 
 }
 
+void procesar_select(char** parametros){
+	char* table_name = parametros[1];
+	char* key = parametros[2];
+	char* table_path;
+	table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+
+ 	free(table_path);
+
+ }
+
 linea_create* read_table_metadata(char* table_name){
 
 	string_to_upper(table_name);
