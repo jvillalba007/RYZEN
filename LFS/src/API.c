@@ -404,7 +404,12 @@ void consola_procesar_comando(char* linea)
 
 	else if(string_equals_ignore_case(parametros[0],"SELECT")){
 		if (cant_parametros == 3) {
-			string_iterate_lines(parametros,puts);
+
+			char* response;
+			response = procesar_select(parametros);
+			printf("El valor de la última clave %s es %s \n", parametros[2], response);
+			free(response);
+
 		} else {
 			printf("API Error: 2 argumentos son requeridos.\n");
 		}
