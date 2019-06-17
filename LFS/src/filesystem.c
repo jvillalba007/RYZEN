@@ -8,6 +8,28 @@
 #include "config/config_LFS.h"
 #include "filesystem.h"
 
+void borrar_archivo(char* path, int* ok){
+
+	void _borrar_bloque(char* nro_bloque){
+		bitarray_clean_bit(bitmap, atoi(nro_bloque));
+	}
+
+	*ok = 1;
+
+	t_config* config_archivo = config_create(path);
+
+
+	char** bloques_strings = config_get_array_value(config_archivo, "BLOQUES");
+	string_iterate_lines(bloques_strings, _borrar_bloque);
+
+	remove(path);
+	free(path);
+
+	config_destroy(config_archivo);
+	split_liberar(bloques_strings);
+}
+
+
 char* get_partition_for_key(char* table_name, char* key){
 
 	string_to_upper(table_name);

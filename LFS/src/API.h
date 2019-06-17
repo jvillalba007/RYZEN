@@ -24,6 +24,7 @@
 		int file_write_key_value (char*, char*, char*, char*);
 		char* extract_value_from_key(char*, char*);
 		void procesar_select(char**);
+		int procesar_drop(char**);
 
 
 		const char* folder_path;
