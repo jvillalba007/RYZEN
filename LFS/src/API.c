@@ -73,6 +73,28 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 
 }
 
+int procesar_drop(char** parametros){
+	char* table_name;
+	table_name = parametros[1];
+
+	struct stat st = {0};
+	char* table_path;
+	table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+	if (stat(table_path, &st) == -1) {
+		printf("La tabla especificada no existe. \n");
+		log_error(g_logger, "La tabla %s no existe", table_name);
+		free(table_path);
+
+		return 1;
+	}else{
+		// Already exists
+
+		return 0;
+	}
+
+}
+
 void procesar_create(char** parametros){
 
 	char* table_name = parametros[1];
