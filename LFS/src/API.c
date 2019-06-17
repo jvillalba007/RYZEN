@@ -76,10 +76,13 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 int procesar_drop(char** parametros){
 	char* table_name;
 	table_name = parametros[1];
+	string_to_upper(table_name);
 
 	struct stat st = {0};
 	char* table_path;
 	table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+	int* ok;
 
 	if (stat(table_path, &st) == -1) {
 		printf("La tabla especificada no existe. \n");
@@ -89,11 +92,66 @@ int procesar_drop(char** parametros){
 		return 1;
 	}else{
 		// Already exists
+		drop_memtable(table_name);
+
+	    DIR *d;
+	    struct dirent *dir;
+	    char* file_path;
+
+	    d = opendir(table_path);
+	    if (d)
+	    {
+	        while ((dir = readdir(d)) != NULL)
+	        {
+	            if(strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0 || strcmp(dir->d_name, "Metadata") == 0)
+	                continue;
+
+	            file_path = strdup(table_path);
+	            string_append(&file_path, "/");
+	            string_append(&file_path, dir->d_name);
+	            log_info(g_logger, "Accedí a %s ", file_path);
+	            borrar_archivo(file_path, &ok);
+
+	         }
+	        closedir(d);
+	    }
+
+	    char* metadata_path;
+		metadata_path = generate_path("/Metadata", table_path, "");
+		remove(metadata_path);
+		free(metadata_path);
+
+		rmdir(table_path);
+
+	    free(table_path);
 
 		return 0;
 	}
 
 }
+
+
+void borrar_archivo(char* path, int* ok){
+
+	void _borrar_bloque(char* nro_bloque){
+		bitarray_clean_bit(bitmap, atoi(nro_bloque));
+	}
+
+	*ok = 1;
+
+	t_config* config_archivo = config_create(path);
+
+
+	char** bloques_strings = config_get_array_value(config_archivo, "BLOQUES");
+	string_iterate_lines(bloques_strings, _borrar_bloque);
+
+	remove(path);
+	free(path);
+
+	config_destroy(config_archivo);
+	split_liberar(bloques_strings);
+}
+
 
 void procesar_create(char** parametros){
 
@@ -240,7 +298,10 @@ void consola_procesar_comando(char* linea)
 
 	else if(string_equals_ignore_case(parametros[0],"DROP")){
 		if (cant_parametros == 2) {
-			string_iterate_lines(parametros,puts);
+			int response;
+
+			response = procesar_drop(parametros);
+
 		} else {
 			printf("API Error: 1 argumento es requerido.\n");
 		}

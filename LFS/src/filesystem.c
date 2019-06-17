@@ -23,15 +23,15 @@ char* get_partition_for_key(char* table_name, char* key){
     free(metadata_path);
 
     int partitions;
-	partitions = strdup(config_get_int_value(metadata, "PARTITIONS"));
+	partitions = config_get_int_value(metadata, "PARTITIONS");
 
 	config_destroy(metadata);
 
 	int partition_assigned;
-	partition_assigned = key % partitions;
+	partition_assigned = atoi(key) % partitions;
 
 	char* partition_c;
-	sprintf(partition_c, "%d", partition_assigned);
+	partition_c = string_itoa(partition_assigned);
 
 	char* partition_path;
 

@@ -5,6 +5,7 @@
 		#include <string.h>
 		#include <stdlib.h>
 		#include <unistd.h>
+		#include <dirent.h>
 		#include <sys/types.h>
 		#include <sys/stat.h>
 		#include <commons/string.h>
@@ -14,6 +15,7 @@
 		#include <shared/utils.h>
 		#include "config/config_LFS.h"
 		#include "filesystem.h"
+		#include "memtable.h"
 
 		#define TABLES_FOLDER "tables/"
 
