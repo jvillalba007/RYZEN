@@ -140,6 +140,72 @@ void crearParticiones(char* table_name, int partitions, int* ok){
 	list_destroy(lista_nro_bloques);
 }
 
+void obtenerDatos(char* pathParticion, void** ret_buffer, int* ret_buffer_size){
+	t_config* config_archivo;
+	config_archivo = config_create(pathParticion);
+
+	int bytes = config_get_int_value(config_archivo, "TAMANIO");
+
+	int offset = 0;
+	*ret_buffer = malloc(bytes);
+	*ret_buffer_size = 0;
+	int i = 0, indice_bloque_inicial;
+	char** bloques_strings;
+
+
+	// Retorna si el archivo se ha terminado
+	bool _agregar_bloque_a_buffer(char* nro_bloque, int offset, int indice_bloque){
+		bool ret_eof = false;
+
+		char* ruta_bloque = string_new();
+		string_append(&ruta_bloque, "bloques/");
+		string_append(&ruta_bloque, nro_bloque);
+		char* ruta_bloqueFinal = generate_path(ruta_bloque, "", ".bin");
+		FILE* bloque = fopen(ruta_bloqueFinal, "rb");
+		fseek(bloque, offset, SEEK_SET);
+		free(ruta_bloque);
+		free(ruta_bloqueFinal);
+
+		int cant_bytes_a_leer = min(atoi(BLOCK_SIZE) - offset, bytes);
+		/* Me fijo si es el ultimo bloque */
+		if(split_cant_elem(bloques_strings) - 1 == indice_bloque){
+			int tam_ultimo_bloque = config_get_int_value(config_archivo, "TAMANIO") -
+					((indice_bloque_inicial + i) * atoi(BLOCK_SIZE));
+			ret_eof = tam_ultimo_bloque - offset <= cant_bytes_a_leer; // Llegue al EOF
+			cant_bytes_a_leer = min(tam_ultimo_bloque - offset, cant_bytes_a_leer);
+		}
+
+		void* data = malloc(cant_bytes_a_leer);
+		int bytes_leidos = fread(data, 1, cant_bytes_a_leer, bloque);
+		memcpy((char*) (*ret_buffer) + (*ret_buffer_size), data, bytes_leidos);
+		*ret_buffer_size += bytes_leidos;
+		free(data);
+		fclose(bloque);
+		return ret_eof;
+	}
+
+	bloques_strings = config_get_array_value(config_archivo, "BLOQUES");
+	// Agrego el bloque inicial:
+	indice_bloque_inicial = offset/atoi(BLOCK_SIZE);
+	int offset_bloque_inicial = offset - (indice_bloque_inicial * atoi(BLOCK_SIZE));
+	bool eof = _agregar_bloque_a_buffer(bloques_strings[indice_bloque_inicial],  offset_bloque_inicial, indice_bloque_inicial);
+	if(eof) // No tengo que ir a leer mas bloques
+		bytes = 0;
+	else
+		bytes -= (atoi(BLOCK_SIZE) - offset_bloque_inicial);
+
+	// Agrego el resto de bloques a abrir
+	while(bytes > 0 && !eof){
+		int indice = indice_bloque_inicial + ++i;
+		log_debug(g_logger, "AGREGO BLOQUE INDICE: %d, NRO: %s | BYTES_RESTANTES: %d", indice, bloques_strings[indice], bytes);
+		eof = _agregar_bloque_a_buffer(bloques_strings[indice], 0, indice);
+		bytes -= atoi(BLOCK_SIZE);
+	}
+
+	config_destroy(config_archivo);
+	split_liberar(bloques_strings);
+}
+
 void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok){
 	char* bloques_string;
 	int offset_buffer = 0;
