@@ -32,9 +32,12 @@ char* get_last_value(t_list* registros){
 t_list* filter_registro_list_by_key(t_list* list, char* key){
 
 	bool _filter_key(fila_registros* registro){
-		if ( strcmp(string_itoa(registro->key), key) == 0 ){
+		char* strkey = string_itoa(registro->key);
+		if ( strcmp(strkey, key) == 0 ){
+			free(strkey);
 			return true;
 		}else{
+			free(strkey);
 			return false;
 		}
 	}
@@ -54,7 +57,8 @@ t_list* filter_registro_list_by_key(t_list* list, char* key){
 t_list* buffer_to_list_registros(char* buffer){
 
 	t_list* registros = list_create();
-	char * line = strtok(strdup(buffer), "\n");
+	char* strbuffer = strdup(buffer);
+	char * line = strtok(strbuffer, "\n");
 
 	while(line) {
 		fila_registros* registro = malloc(sizeof(fila_registros));
@@ -76,6 +80,8 @@ t_list* buffer_to_list_registros(char* buffer){
 		list_destroy(registros);
 		return NULL;
 	}
+
+	free(strbuffer);
 
 	return registros;
 }
@@ -138,6 +144,7 @@ char* get_partition_for_key(char* table_name, char* key){
 
     free(partition_p);
     free(partition_c);
+    free(table_path);
 
 	return partition_path;
 
@@ -284,7 +291,7 @@ void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 	int bytes = config_get_int_value(config_archivo, "TAMANIO");
 
 	int offset = 0;
-	*ret_buffer = malloc(bytes);
+	*ret_buffer = calloc(bytes+1,sizeof(char));
 	*ret_buffer_size = 0;
 	int i = 0, indice_bloque_inicial;
 	char** bloques_strings;
@@ -312,7 +319,7 @@ void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 			cant_bytes_a_leer = min(tam_ultimo_bloque - offset, cant_bytes_a_leer);
 		}
 
-		void* data = malloc(cant_bytes_a_leer);
+		char* data = calloc(cant_bytes_a_leer,sizeof(char));
 		int bytes_leidos = fread(data, 1, cant_bytes_a_leer, bloque);
 		memcpy((char*) (*ret_buffer) + (*ret_buffer_size), data, bytes_leidos);
 		*ret_buffer_size += bytes_leidos;

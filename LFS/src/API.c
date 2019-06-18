@@ -273,7 +273,13 @@ char* procesar_select(char** parametros){
 	char* last_value;
 	last_value = get_last_value(filtered_list);
 
+	select_mem ? list_destroy_and_destroy_elements(select_mem, (void*) liberar_registros) : 0;
+	select_fs ? list_destroy_and_destroy_elements(select_fs, (void*) liberar_registros) : 0;
+	filtered_list ? list_destroy_and_destroy_elements(filtered_list, (void*) liberar_registros) : 0;
+
+	free(registros_buffer);
  	free(table_path);
+ 	free(partition_path);
 
  	return last_value;
 
@@ -284,7 +290,6 @@ linea_create* read_table_metadata(char* table_name){
 	string_to_upper(table_name);
 
 	// Does the table exist?
-	struct stat st = {0};
 	char* table_path;
 	table_path = generate_path(table_name, TABLES_FOLDER, "");
 
@@ -434,7 +439,7 @@ void consola_procesar_comando(char* linea)
 			response = procesar_describe(cant_parametros, parametros);
 
 			if (cant_parametros == 1){
-				list_destroy_and_destroy_elements(response, liberar_metadata_struct);
+				list_destroy_and_destroy_elements(response, (void*) liberar_metadata_struct);
 			}else{
 				liberar_metadata_struct(response);
 			}
@@ -451,6 +456,7 @@ void consola_procesar_comando(char* linea)
 			int response;
 
 			response = procesar_drop(parametros);
+			log_info(g_logger,"Resultado DROP %d",response);
 
 		} else {
 			printf("API Error: 1 argumento es requerido.\n");
