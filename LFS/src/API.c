@@ -239,8 +239,6 @@ char* procesar_select(char** parametros){
 	t_list* select_mem;
 	select_mem = select_memtable(table_name, (u_int16_t) atoi(key));
 
-	log_info(g_logger, "la cago antes");
-
 	char* partition_path;
 	partition_path = get_partition_for_key(table_name, key);
 
@@ -266,7 +264,7 @@ char* procesar_select(char** parametros){
 
 	} else if (select_fs == NULL){ 	// solo hay datos en memtable
 
-		filtered_list = select_mem;
+		filtered_list = list_duplicate(select_mem);
 
 	} else { // los 2 tienen datos
 
@@ -281,12 +279,14 @@ char* procesar_select(char** parametros){
 		return NULL;
 	}
 
+
 	char* last_value;
 	last_value = get_last_value(filtered_list);
 
-	select_mem ? list_destroy_and_destroy_elements(select_mem, (void*) liberar_registros) : 0;
+	select_mem ?  list_destroy(select_mem) : 0;
 	select_fs ? list_destroy_and_destroy_elements(select_fs, (void*) liberar_registros) : 0;
 	filtered_list ? list_destroy_and_destroy_elements(filtered_list, (void*) liberar_registros) : 0;
+
 
 	free(registros_buffer);
  	free(table_path);
