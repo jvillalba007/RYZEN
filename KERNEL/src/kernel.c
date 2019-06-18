@@ -20,6 +20,7 @@ int main() {
 
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
+	exit_global = 1;
 
 	liberar_kernel();
 
@@ -37,7 +38,9 @@ void ejecutar_procesador(){
 		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
 
+
 		 	pcb = obtener_pcb_ejecutar();
+
 			log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 		pthread_mutex_unlock(&sem_ejecutar);
 
@@ -51,6 +54,7 @@ void ejecutar_procesador(){
 		{
 			int k= 0;
 			log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
+
 			FILE* archivo = fopen( pcb->request_comando , "r");
 			apuntar_archivo(archivo, pcb->pc);
 			while( (k < kernel_config.QUANTUM) && (!feof(archivo)) ){
@@ -74,7 +78,10 @@ void ejecutar_procesador(){
 
 
 		}
+		free(pcb);
 	}
+	log_info(logger,"cerrando hilo");
+	pthread_exit(0);
 }
 
 
@@ -145,7 +152,7 @@ void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 t_PCB* obtener_pcb_ejecutar(){
 
 	//si lista vacia se queda loopeando esperando que entre alguno
-	while( list_is_empty( l_pcb_listos ) ){
+	while( list_is_empty( l_pcb_listos ) ){ //TODO ver por que me tira un invalid read size 4
 
 	}
 	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
