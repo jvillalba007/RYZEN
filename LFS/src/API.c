@@ -223,6 +223,7 @@ void procesar_create(char** parametros){
 char* procesar_select(char** parametros){
 
 	char* table_name = parametros[1];
+	string_to_upper(table_name);
 	char* key = parametros[2];
 	char* table_path;
 	table_path = generate_path(table_name, TABLES_FOLDER, "");
@@ -237,6 +238,8 @@ char* procesar_select(char** parametros){
 
 	t_list* select_mem;
 	select_mem = select_memtable(table_name, (u_int16_t) atoi(key));
+
+	log_info(g_logger, "la cago antes");
 
 	char* partition_path;
 	partition_path = get_partition_for_key(table_name, key);
@@ -424,6 +427,8 @@ void consola_procesar_comando(char* linea)
 			if (response != NULL){
 				printf("El valor de la última clave %s es %s \n", parametros[2], response);
 				free(response);
+			}else{
+				printf("No se encuentra la clave %s \n", parametros[2]);
 			}
 
 		} else {
