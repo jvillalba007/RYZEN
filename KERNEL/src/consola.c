@@ -9,7 +9,7 @@ void consola() {
     for(ever) {
         char* linea = console();
 
-        if(es_comando(linea, "EXIT")) {
+        if(es_string(linea, "EXIT")) {
             free(linea);
             break;
         }
@@ -62,18 +62,20 @@ void procesar_comando (char* linea) {
 				if (es_string(parametros[0], "ADD")) {
 	                    
                     //TODO: ejecutar el ADD
+                    //  ADD MEMORY numero_de_memoria TO criterio_de_consistencia
 
                     log_info(logger, "Ejecuto add");
                     //  Ya se sabe que es algo así: ADD MEMORY ___ TO ___
 
-                    if (atoi(parametros[2]) /*está en la lista t_memoria_del_pool (campo numero_memoria)*/) {
+                    t_memoria_del_pool* m = obtener_memoria(atoi(parametros[2]));
+                    if (m != NULL) {
                         //  El número de memoria está en la lista de memorias
                         
                         if (es_string(parametros[4], "SC") OR es_string(parametros[4], "SHC") OR es_string(parametros[4], "EC")) {
                             
                             if (es_string(parametros[4], "SC")) {
                                 
-                                if (list_size(l_criterio_SC) == 0) {
+                                if (list_size(l_criterio_SC) == 0) { //usar list_is_empty
                                     list_add(l_criterio_SC, parametros[2]);
                                 }
                                 else {
@@ -104,7 +106,7 @@ void procesar_comando (char* linea) {
                         puts("Error en el comando ADD: número de memoria desconocido.");
                     }
 
-
+                    free(m);
 				}
 				if (es_string(parametros[0], "METRICS")) {
 
@@ -144,6 +146,25 @@ void crear_pcb (char* string_codigo, t_tipo_request tipo) {
     log_info(logger, "Se crea el PCB de la request: %s con id: %d ", pcb->request_comando , pcb->id);
     log_info(logger, "Cantida de pcb listos: %d ", list_size( l_pcb_listos ));
     id_pcbs++;
+}
+
+t_memoria_del_pool* obtener_memoria(int numero_de_memoria) {
+    t_memoria_del_pool* mem = NULL;
+
+	bool buscar_memoria (t_memoria_del_pool *s) {
+        if (s->numero_memoria == numero_de_memoria) {
+            return true;
+        } 
+        else {
+            return false;
+        }
+    }
+    
+    if (!list_is_empty(l_memorias)) {
+        mem = list_find(l_memorias, (void*) buscar_memoria);
+    }
+
+    return mem;
 }
 
 bool es_comando_conocido (char** parametros) {
