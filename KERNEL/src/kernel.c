@@ -20,6 +20,7 @@ int main() {
 
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
+	exit_global = 1;
 
 	liberar_kernel();
 
@@ -30,13 +31,16 @@ int main() {
 void ejecutar_procesador(){
 
 	t_PCB* pcb =NULL;
+	char* linea = NULL;
 
 	while(1){
 
 		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
 
+
 		 	pcb = obtener_pcb_ejecutar();
+
 			log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 		pthread_mutex_unlock(&sem_ejecutar);
 
@@ -51,20 +55,33 @@ void ejecutar_procesador(){
 			int k= 0;
 			log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
 
-			while( k < kernel_config.MULTIPROCESAMIENTO ){
+			FILE* archivo = fopen( pcb->request_comando , "r");
+			apuntar_archivo(archivo, pcb->pc);
+			while( (k < kernel_config.QUANTUM) && (!feof(archivo)) ){
 
-				//TODO aca habria que obtener la linea a leer en el archivo segun el PC del pcb
-				char* linea=NULL;
-				log_info(logger, "la linea a ejecutar es: %s" , linea  );
+				linea = obtener_linea(archivo);
 
+				if(linea != NULL){
 				ejecutar_linea( linea );
-
+				log_info(logger, "la linea a ejecutar es: %s" , linea  );
 				k++;
+				pcb->pc++;
+				free(linea);
+				}
 			}
-
+			if(feof(archivo)){
 			//TODO: verificar si es la ultima linea de archivo. si es asi quitarlo de listos y enviarlos a fin con finalizar_pcb sino devolverlo a listos
+			} else{
+
+			}
+			fclose(archivo);
+
+
 		}
+		free(pcb);
 	}
+	log_info(logger,"cerrando hilo");
+	pthread_exit(0);
 }
 
 
@@ -135,7 +152,7 @@ void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 t_PCB* obtener_pcb_ejecutar(){
 
 	//si lista vacia se queda loopeando esperando que entre alguno
-	while( list_is_empty( l_pcb_listos ) ){
+	while( list_is_empty( l_pcb_listos ) ){ //TODO ver por que me tira un invalid read size 4
 
 	}
 	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
@@ -226,3 +243,22 @@ void ejecutar_describe(){
 
 }
 
+char* obtener_linea(FILE* archivo){
+
+	char leido;
+	fread(&leido, sizeof(char),1,archivo);
+	char* linea = string_from_format("%c", leido);
+	while (!feof(archivo) && fread(&leido, sizeof(char),1,archivo) && leido != '\n'){
+		string_append_with_format(&linea, "%c", leido);
+	}
+
+	return linea;
+}
+
+void apuntar_archivo(FILE* archivo, int pc){
+	char leido;
+	for(int i=0; i<pc; i++){
+	while (!feof(archivo) && fread(&leido, sizeof(char),1,archivo) && leido != '\n'){}
+	}
+
+}

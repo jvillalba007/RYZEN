@@ -8,8 +8,6 @@
 #include <shared/console.h>
 #include "shared/utils.h"
 
-
-
 void conectar_memoria();
 void inicializar_kernel(); //inicializa las listas que se utilizaran en kernel
 void ejecutar_procesador(); //ejecuta en un hilo los pcb
@@ -26,6 +24,9 @@ void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ); //ejec
 
 void crear_procesadores();
 void ejecutar_describe();
+char* obtener_linea(FILE* archivo);
+void apuntar_archivo(FILE* archivo, int pc);
+
 
 void finalizar_pcb(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a finalizados
 
