@@ -46,7 +46,7 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 	    // file doesn't exist
 		free(full_path);
 		log_error(g_logger, "La tabla %s no existe", table_name);
-		printf("No existe la tabla especificada. Creala.");
+		printf("No existe la tabla especificada. \n");
 		return;
 	}
 
@@ -226,6 +226,14 @@ char* procesar_select(char** parametros){
 	char* key = parametros[2];
 	char* table_path;
 	table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+	if( access( table_path, F_OK ) == -1 ) {
+	    // file doesn't exist
+		free(table_path);
+		log_error(g_logger, "La tabla %s no existe", table_name);
+		printf("No existe la tabla especificada. \n");
+		return NULL;
+	}
 
 	t_list* select_mem;
 	select_mem = select_memtable(table_name, (u_int16_t) atoi(key));
@@ -413,8 +421,10 @@ void consola_procesar_comando(char* linea)
 
 			char* response;
 			response = procesar_select(parametros);
-			printf("El valor de la última clave %s es %s \n", parametros[2], response);
-			free(response);
+			if (response != NULL){
+				printf("El valor de la última clave %s es %s \n", parametros[2], response);
+				free(response);
+			}
 
 		} else {
 			printf("API Error: 2 argumentos son requeridos.\n");
