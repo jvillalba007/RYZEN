@@ -30,6 +30,7 @@ int main() {
 void ejecutar_procesador(){
 
 	t_PCB* pcb =NULL;
+	char* linea = NULL;
 
 	while(1){
 
@@ -50,19 +51,28 @@ void ejecutar_procesador(){
 		{
 			int k= 0;
 			log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
+			FILE* archivo = fopen( pcb->request_comando , "r");
+			apuntar_archivo(archivo, pcb->pc);
+			while( (k < kernel_config.QUANTUM) && (!feof(archivo)) ){
 
-			while( k < kernel_config.MULTIPROCESAMIENTO ){
+				linea = obtener_linea(archivo);
 
-				//TODO aca habria que obtener la linea a leer en el archivo segun el PC del pcb
-				char* linea=NULL;
-				log_info(logger, "la linea a ejecutar es: %s" , linea  );
-
+				if(linea != NULL){
 				ejecutar_linea( linea );
-
+				log_info(logger, "la linea a ejecutar es: %s" , linea  );
 				k++;
+				pcb->pc++;
+				free(linea);
+				}
 			}
-
+			if(feof(archivo)){
 			//TODO: verificar si es la ultima linea de archivo. si es asi quitarlo de listos y enviarlos a fin con finalizar_pcb sino devolverlo a listos
+			} else{
+
+			}
+			fclose(archivo);
+
+
 		}
 	}
 }
@@ -226,3 +236,22 @@ void ejecutar_describe(){
 
 }
 
+char* obtener_linea(FILE* archivo){
+
+	char leido;
+	fread(&leido, sizeof(char),1,archivo);
+	char* linea = string_from_format("%c", leido);
+	while (!feof(archivo) && fread(&leido, sizeof(char),1,archivo) && leido != '\n'){
+		string_append_with_format(&linea, "%c", leido);
+	}
+
+	return linea;
+}
+
+void apuntar_archivo(FILE* archivo, int pc){
+	char leido;
+	for(int i=0; i<pc; i++){
+	while (!feof(archivo) && fread(&leido, sizeof(char),1,archivo) && leido != '\n'){}
+	}
+
+}
