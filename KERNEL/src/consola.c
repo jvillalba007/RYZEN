@@ -218,6 +218,7 @@ bool es_correcta_cantidad_parametros (char* comando, int cantidad) {
     else if (es_string(comando, "CLEAR") AND (cantidad == 1)) {
         return true;
     }
+    return false;
 }
 
 bool es_comando_planificable (char* comando) {
