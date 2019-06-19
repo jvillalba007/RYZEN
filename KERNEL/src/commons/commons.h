@@ -8,6 +8,7 @@
 #include <commons/collections/list.h>
 #include <string.h>
 #include <pthread.h>
+#include "shared/utils.h"
 
 t_log* logger;
 t_config* config;

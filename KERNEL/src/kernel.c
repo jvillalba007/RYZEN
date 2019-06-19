@@ -6,6 +6,19 @@ int main() {
 	
 	inicializar_kernel();
 
+	//inicializo memoria y tabla de pruebas
+	t_memoria_del_pool* memoria_sc = malloc( sizeof( t_memoria_del_pool ) );
+	memoria_sc->activa=true;
+	memoria_sc->numero_memoria=0;
+	memoria_sc->criterio = strdup("SC");
+	list_add(l_memorias , memoria_sc );
+
+	t_tabla_consistencia* tabla = malloc( sizeof( t_tabla_consistencia ) );
+	tabla->criterio_consistencia= strdup("SC");
+	tabla->nombre_tabla= strdup( "test" );
+	list_add( l_tablas , tabla );
+
+
 	//INICIA CLIENTE MEMORIA
 	/*conectar_memoria();*/
 
@@ -20,7 +33,7 @@ int main() {
 
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
-	exit_global = 1;
+	//exit_global = 1;
 
 	liberar_kernel();
 
@@ -88,18 +101,44 @@ void ejecutar_procesador(){
 void ejecutar_linea( char *linea ){
 
 	char* n_tabla = obtener_nombre_tabla( linea );
-
 	t_tabla_consistencia *tabla = obtener_tabla( n_tabla );
 
-	t_memoria_del_pool *memoria = obtener_memoria_criterio( tabla );
+	if( tabla != NULL )
+	{
+		t_memoria_del_pool *memoria = obtener_memoria_criterio( tabla );
 
-	ejecutar_linea_memoria( memoria , linea );
+		if( memoria != NULL ){
+
+			log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
+			ejecutar_linea_memoria( memoria , linea );
+		}
+		else{
+			//TODO: si memoria es null definir que hacer. Supongo que no va a realizar nada .
+			log_info(logger, "Memoria para ejecutar no encontrada" );
+		}
+	}
+
+	free(n_tabla);
+
 }
 
 
 char* obtener_nombre_tabla( char* linea ){
 
-	return NULL;
+	char* n_tabla=NULL;
+	char** parametros = string_split(linea, " ");
+
+	log_info(logger, "Elementos %d" , split_cant_elem(parametros) );
+	if( string_equals_ignore_case(parametros[0], "DESCRIBE") && split_cant_elem(parametros) < 2  ){
+		log_info(logger, "DESCRIBE general sin nombre de tabla" );
+		split_liberar(parametros);
+		return n_tabla;
+	}
+	n_tabla= strdup(parametros[1]);
+	log_info(logger, "tabla de request:%s", n_tabla );
+	split_liberar(parametros);
+
+	return n_tabla;
 }
 
 t_tabla_consistencia *obtener_tabla( char* n_tabla ){
@@ -109,7 +148,7 @@ t_tabla_consistencia *obtener_tabla( char* n_tabla ){
 
 t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla ){
 
-	t_memoria_del_pool *memoria;
+	t_memoria_del_pool *memoria=NULL;
 
 	if( string_equals_ignore_case( tabla->criterio_consistencia ,"SC" ) ){
 
@@ -130,6 +169,9 @@ t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla ){
 }
 
 t_memoria_del_pool *obtener_memoria_SC( t_tabla_consistencia* tabla ){
+
+
+	if( !list_is_empty( l_criterio_SC ) ) return list_get( l_criterio_SC , 0 );
 
 	return NULL;
 }

@@ -96,12 +96,19 @@ void free_Pcb(t_PCB* pcb){
 
 void free_memoria(t_memoria_del_pool* memoria_borrar){
 
-
+	log_info(logger, "libera memoria:%d" , memoria_borrar->numero_memoria );
+	free(memoria_borrar->criterio);
+	free(memoria_borrar->ip);
+	free(memoria_borrar->puerto);
+	free(memoria_borrar);
 }
 
 void free_tabla(t_tabla_consistencia* tabla_borrar){
 
-
+	log_info(logger, "libera tabla:%s" , tabla_borrar->nombre_tabla );
+	free(tabla_borrar->nombre_tabla);
+	free(tabla_borrar->criterio_consistencia);
+	free(tabla_borrar);
 }
 
 void terminar_hilos_procesadores(){
@@ -113,7 +120,7 @@ void terminar_hilos_procesadores(){
 		/*pthread_cancel( *(id_hilo) );*/
 	}
 
-	list_iterate(l_procesadores,(void*)terminar_hilo_procesador);
+	/*list_iterate(l_procesadores,(void*)terminar_hilo_procesador);*/
 
 }
 
