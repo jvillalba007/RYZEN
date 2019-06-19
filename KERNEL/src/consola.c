@@ -9,7 +9,7 @@ void consola() {
     for(ever) {
         char* linea = console();
 
-        if(es_comando(linea, "EXIT")) {
+        if(es_string(linea, "EXIT")) {
             free(linea);
             break;
         }
@@ -37,14 +37,14 @@ void procesar_comando (char* linea) {
             if (es_comando_planificable(parametros[0])) {
 
                 //  Se verifica si el comando es un RUN (request compuesta) u otro (request simple)
-                if (es_comando(parametros[0], "RUN")) {
+                if (es_string(parametros[0], "RUN")) {
                     tipo = COMPUESTA;
 
                     log_info(logger, "Es un RUN.");
                 }
                 else {
                     tipo = SIMPLE;
-                    log_info(logger, "Es un CREATE, un INSERT, un SELECT o un DROP.");
+                    log_info(logger, "Es un CREATE, un INSERT, un SELECT, un DROP o un DESCRIBE.");
                 }
                 
                 //  Se crea el PCB, se lo carga en la lista de NEW y se lo mueve a la lista de READY
@@ -54,17 +54,61 @@ void procesar_comando (char* linea) {
             else {
 
                 log_info(logger, "NO es un comando planificable.");
-                if( string_equals_ignore_case(parametros[0],"JOURNAL" ) ){
+                if (es_string(parametros[0],"JOURNAL")) {
 
                 	log_info(logger, "Ejecuto journal");
                 	//TODO: ejecutar el journal
                 }
-				if( string_equals_ignore_case(parametros[0],"ADD" ) ){
+				if (es_string(parametros[0], "ADD")) {
+	                    
+                    //TODO: ejecutar el ADD
+                    //  ADD MEMORY numero_de_memoria TO criterio_de_consistencia
 
-					log_info(logger, "Ejecuto add");
-					//TODO: ejecutar el ADD
+                    log_info(logger, "Ejecuto add");
+                    //  Ya se sabe que es algo así: ADD MEMORY ___ TO ___
+
+                    t_memoria_del_pool* m = obtener_memoria(atoi(parametros[2]));
+                    if (m != NULL) {
+                        //  El número de memoria está en la lista de memorias
+                        
+                        if (es_string(parametros[4], "SC") OR es_string(parametros[4], "SHC") OR es_string(parametros[4], "EC")) {
+                            
+                            if (es_string(parametros[4], "SC")) {
+                                
+                                if (list_size(l_criterio_SC) == 0) { //usar list_is_empty
+                                    list_add(l_criterio_SC, parametros[2]);
+                                }
+                                else {
+                                    //  Ya hay asignada una memoria al criterio SC
+                                    log_info(logger, "Error en el comando ADD: Ya existe una memoria asignada al criterio SC.");
+                                    puts("Error en el comando ADD: Ya existe una memoria asignada al criterio SC.");
+                                }
+                                
+                            }
+                            else if (es_string(parametros[4], "SHC")) {
+                                //  Se agrega el número de memoria ingresado por parámetro a la lista l_criterio_SHC 
+                                list_add(l_criterio_SHC, parametros[2]);
+                            }
+                            else {
+                                //  Se agrega el número de memoria ingresado por parámetro a la lista l_criterio_SHC
+                                list_add(l_criterio_EC, parametros[2]);
+                            }
+                        }
+                        else {
+                            //  Criterio de consistencia incorrecto
+                            log_info(logger, "Error en el comando ADD: criterio de consistencia desconocido.");
+                            puts("Error en el comando ADD: criterio de consistencia desconocido.");
+                        }
+                    }
+                    else {
+                        //  El número de memoria NO está en la lista de memorias
+                        log_info(logger, "Error en el comando ADD: número de memoria desconocido.");
+                        puts("Error en el comando ADD: número de memoria desconocido.");
+                    }
+
+                    free(m);
 				}
-				if( string_equals_ignore_case(parametros[0],"METRICS" ) ){
+				if (es_string(parametros[0], "METRICS")) {
 
 					log_info(logger, "Ejecuto metrics");
 					//TODO: ejecutar metrics
@@ -104,21 +148,38 @@ void crear_pcb (char* string_codigo, t_tipo_request tipo) {
     id_pcbs++;
 }
 
+t_memoria_del_pool* obtener_memoria(int numero_de_memoria) {
+    t_memoria_del_pool* mem = NULL;
+
+	bool buscar_memoria (t_memoria_del_pool *s) {
+        if (s->numero_memoria == numero_de_memoria) {
+            return true;
+        } 
+        else {
+            return false;
+        }
+    }
+    
+    if (!list_is_empty(l_memorias)) {
+        mem = list_find(l_memorias, (void*) buscar_memoria);
+    }
+
+    return mem;
+}
+
 bool es_comando_conocido (char** parametros) {
-    if (es_comando(parametros[0], "CREATE") OR
-    es_comando(parametros[0], "INSERT") OR
-    es_comando(parametros[0], "SELECT") OR
-    es_comando(parametros[0], "DROP") OR
-    es_comando(parametros[0], "RUN") OR
-    es_comando(parametros[0], "DESCRIBE")OR
-    es_comando(parametros[0], "JOURNAL") OR
-    (   
-        es_comando(parametros[0], "ADD") AND
-        es_comando(parametros[1], "MEMORY") AND
-        es_comando(parametros[3], "TO")
-    ) OR
-    es_comando(parametros[0], "METRICS") OR
-    es_comando(parametros[0], "CLEAR")) {
+    if (es_string(parametros[0], "CREATE") OR
+    es_string(parametros[0], "INSERT") OR
+    es_string(parametros[0], "SELECT") OR
+    es_string(parametros[0], "DROP") OR
+    es_string(parametros[0], "RUN") OR
+    es_string(parametros[0], "DESCRIBE")OR
+    es_string(parametros[0], "JOURNAL") OR
+    (   es_string(parametros[0], "ADD") AND
+        es_string(parametros[1], "MEMORY") AND
+        es_string(parametros[3], "TO")) OR
+    es_string(parametros[0], "METRICS") OR
+    es_string(parametros[0], "CLEAR")) {
         return true;
     }
     else {
@@ -127,43 +188,43 @@ bool es_comando_conocido (char** parametros) {
 }
 
 bool es_correcta_cantidad_parametros (char* comando, int cantidad) {
-    if (es_comando(comando, "CREATE") AND (cantidad == 5)) {
+    if (es_string(comando, "CREATE") AND (cantidad == 5)) {
         return true;
     }
-    else if (es_comando(comando, "INSERT") AND (cantidad == 4)) {
+    else if (es_string(comando, "INSERT") AND (cantidad == 4)) {
         return true;
     }
-    else if (es_comando(comando, "SELECT") AND (cantidad == 3)) {
+    else if (es_string(comando, "SELECT") AND (cantidad == 3)) {
         return true;
     }
-    else if (es_comando(comando, "DROP") AND (cantidad == 2)) {
+    else if (es_string(comando, "DROP") AND (cantidad == 2)) {
         return true;
     }
-    else if (es_comando(comando, "RUN") AND (cantidad == 2)) {
+    else if (es_string(comando, "RUN") AND (cantidad == 2)) {
         return true;
     }
-    else if (es_comando(comando, "DESCRIBE") AND ((cantidad == 1) OR (cantidad = 2))) {
+    else if (es_string(comando, "DESCRIBE") AND ((cantidad == 1) OR (cantidad = 2))) {
         return true;
     }
-    else if (es_comando(comando, "JOURNAL") AND (cantidad == 1)) {
+    else if (es_string(comando, "JOURNAL") AND (cantidad == 1)) {
         return true;
     }
-    else if (es_comando(comando, "ADD") AND (cantidad == 5)) {
+    else if (es_string(comando, "ADD") AND (cantidad == 5)) {
         return true;
     }
-    else if (es_comando(comando, "METRICS") AND (cantidad == 1)) {
+    else if (es_string(comando, "METRICS") AND (cantidad == 1)) {
         return true;
     }
-    else if (es_comando(comando, "CLEAR") AND (cantidad == 1)) {
+    else if (es_string(comando, "CLEAR") AND (cantidad == 1)) {
         return true;
     }
 }
 
 bool es_comando_planificable (char* comando) {
-    return (es_comando(comando, "CREATE") OR es_comando(comando, "INSERT") OR es_comando(comando, "SELECT") OR es_comando(comando, "DROP") OR es_comando(comando, "RUN") OR es_comando(comando, "DESCRIBE") );
+    return (es_string(comando, "CREATE") OR es_string(comando, "INSERT") OR es_string(comando, "SELECT") OR es_string(comando, "DROP") OR es_string(comando, "RUN") OR es_string(comando, "DESCRIBE") );
 }
 
-bool es_comando(char* string, char* comando) {
+bool es_string(char* string, char* comando) {
     return string_equals_ignore_case(string, comando);
 }
 
