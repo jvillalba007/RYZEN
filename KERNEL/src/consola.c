@@ -61,12 +61,7 @@ void procesar_comando (char* linea) {
                 }
 				if (es_string(parametros[0], "ADD")) {
 	                    
-                    //TODO: ejecutar el ADD
                     //  ADD MEMORY numero_de_memoria TO criterio_de_consistencia
-
-                    log_info(logger, "Ejecuto add");
-                    //  Ya se sabe que es algo así: ADD MEMORY ___ TO ___
-
                     t_memoria_del_pool* m = obtener_memoria(atoi(parametros[2]));
                     if (m != NULL) {
                         //  El número de memoria está en la lista de memorias
@@ -75,28 +70,27 @@ void procesar_comando (char* linea) {
                             
                             if (es_string(parametros[4], "SC")) {
                                 
-                                if (list_size(l_criterio_SC) == 0) { //usar list_is_empty
-                                    list_add(l_criterio_SC, parametros[2]);
+                                if ( list_is_empty(l_criterio_SC) ) {
+                                	log_info(logger, "Se agrega a criterio SC memoria: %d", m->numero_memoria );
+                                    list_add(l_criterio_SC, m );
                                 }
                                 else {
-                                    //  Ya hay asignada una memoria al criterio SC
                                     log_info(logger, "Error en el comando ADD: Ya existe una memoria asignada al criterio SC.");
                                     puts("Error en el comando ADD: Ya existe una memoria asignada al criterio SC.");
                                 }
                                 
                             }
                             else if (es_string(parametros[4], "SHC")) {
-                                //  Se agrega el número de memoria ingresado por parámetro a la lista l_criterio_SHC 
-                                list_add(l_criterio_SHC, parametros[2]);
+                            	log_info(logger, "Se agrega a criterio SHC memoria: %d", m->numero_memoria );
+                                list_add(l_criterio_SHC, m );
                             }
                             else {
-                                //  Se agrega el número de memoria ingresado por parámetro a la lista l_criterio_SHC
-                                list_add(l_criterio_EC, parametros[2]);
+                                log_info(logger, "Se agrega a criterio EC memoria: %d", m->numero_memoria );
+                                list_add(l_criterio_EC, m );
                             }
                         }
                         else {
                             //  Criterio de consistencia incorrecto
-                            log_info(logger, "Error en el comando ADD: criterio de consistencia desconocido.");
                             puts("Error en el comando ADD: criterio de consistencia desconocido.");
                         }
                     }
@@ -106,7 +100,6 @@ void procesar_comando (char* linea) {
                         puts("Error en el comando ADD: número de memoria desconocido.");
                     }
 
-                    free(m);
 				}
 				if (es_string(parametros[0], "METRICS")) {
 
@@ -148,6 +141,7 @@ void crear_pcb (char* string_codigo, t_tipo_request tipo) {
     id_pcbs++;
 }
 
+
 t_memoria_del_pool* obtener_memoria(int numero_de_memoria) {
     t_memoria_del_pool* mem = NULL;
 
@@ -166,6 +160,7 @@ t_memoria_del_pool* obtener_memoria(int numero_de_memoria) {
 
     return mem;
 }
+
 
 bool es_comando_conocido (char** parametros) {
     if (es_string(parametros[0], "CREATE") OR

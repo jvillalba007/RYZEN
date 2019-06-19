@@ -14,7 +14,7 @@ int main() {
 	list_add(l_memorias , memoria_sc );
 
 	t_tabla_consistencia* tabla = malloc( sizeof( t_tabla_consistencia ) );
-	tabla->criterio_consistencia= strdup("SC");
+	tabla->criterio_consistencia= strdup("EC");
 	tabla->nombre_tabla= strdup( "test" );
 	list_add( l_tablas , tabla );
 
@@ -75,6 +75,8 @@ void ejecutar_procesador(){
 				linea = obtener_linea(archivo);
 
 				if(linea != NULL){
+
+				//TODO: verificar lo que devuelve ejecutar_linea. si devuelve 0 esta ok, si devuelve -1 finalizar la ejecucion del script (usar finalizar_pcb)
 				ejecutar_linea( linea );
 				log_info(logger, "la linea a ejecutar es: %s" , linea  );
 				k++;
@@ -98,52 +100,96 @@ void ejecutar_procesador(){
 }
 
 
-void ejecutar_linea( char *linea ){
+int ejecutar_linea( char *linea ){
 
-	char* n_tabla = obtener_nombre_tabla( linea );
-	t_tabla_consistencia *tabla = obtener_tabla( n_tabla );
+	int res;
+	t_tabla_consistencia *tabla=NULL;
+	t_memoria_del_pool *memoria=NULL;
 
-	if( tabla != NULL )
-	{
-		t_memoria_del_pool *memoria = obtener_memoria_criterio( tabla, linea);
+	char** parametros = string_split(linea, " ");
+
+	char* n_tabla = obtener_nombre_tabla( parametros );
+
+	if( n_tabla != NULL ) tabla = obtener_tabla( n_tabla );
+
+	if( tabla != NULL ){
+		log_info(logger, "Tabla encontrada: %s", tabla->nombre_tabla );
+		memoria = obtener_memoria_criterio( tabla, linea);
 
 		if( memoria != NULL ){
 
 			log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
-			ejecutar_linea_memoria( memoria , linea );
+			res = ejecutar_linea_memoria( memoria , linea );
 		}
 		else{
 			//TODO: si memoria es null definir que hacer. Supongo que no va a realizar nada .
 			log_info(logger, "Memoria para ejecutar no encontrada" );
+			res=0;
+		}
+	}
+	//Tabla es null si es un select drop o insert rompo
+	else{
+		log_info(logger, "No se encuentra la tabla" );
+		if( string_equals_ignore_case( parametros[0], "SELECT") || string_equals_ignore_case( parametros[0], "INSERT") || string_equals_ignore_case( parametros[0], "DROP") ){
+			log_info(logger, "Se cancela ejecucion de operacion: %s", parametros[0] );
+			res= -1;
+		}
+		//es un describe general o de una tabla que no esta en sistema. TODO:decidir que hacer. podriamos ejecutar el random de la lista de EC y enviarlo a ejecutar a una memoria de esas.
+		else
+		{
+			log_info(logger, "es un DESCRIBE se ejecuta memoria random" );
+			memoria = obtener_memoria_EC();
+			if( memoria != NULL ){
+
+				log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
+				res = ejecutar_linea_memoria( memoria , linea );
+			}
+			else{
+				//TODO: si memoria es null definir que hacer. Supongo que no va a realizar nada .
+				log_info(logger, "Memoria para ejecutar no encontrada" );
+				res=0;
+			}
 		}
 	}
 
+	split_liberar(parametros);
 	free(n_tabla);
 
+	return res;
 }
 
 
-char* obtener_nombre_tabla( char* linea ){
+char* obtener_nombre_tabla( char** parametros){
 
 	char* n_tabla=NULL;
-	char** parametros = string_split(linea, " ");
 
-	log_info(logger, "Elementos %d" , split_cant_elem(parametros) );
 	if( string_equals_ignore_case(parametros[0], "DESCRIBE") && split_cant_elem(parametros) < 2  ){
 		log_info(logger, "DESCRIBE general sin nombre de tabla" );
-		split_liberar(parametros);
 		return n_tabla;
 	}
+
 	n_tabla= strdup(parametros[1]);
 	log_info(logger, "tabla de request:%s", n_tabla );
-	split_liberar(parametros);
 
 	return n_tabla;
 }
 
 t_tabla_consistencia *obtener_tabla( char* n_tabla ){
 
-	return NULL;
+	t_tabla_consistencia *tabla=NULL;
+
+	bool buscar_tabla( t_tabla_consistencia* tabla_it ){
+
+		if( string_equals_ignore_case( n_tabla , tabla_it->nombre_tabla )  ) return true;
+		return false;
+	}
+
+	if(!list_is_empty(l_tablas))
+	{
+		tabla = list_find(l_tablas , (void*)buscar_tabla);
+	}
+
+	return tabla;
 }
 
 t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla, char* linea){
@@ -152,17 +198,17 @@ t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla, char*
 
 	if( string_equals_ignore_case( tabla->criterio_consistencia ,"SC" ) ){
 
-		memoria = obtener_memoria_SC( tabla );
+		memoria = obtener_memoria_SC();
 	}
 
 	else if(string_equals_ignore_case( tabla->criterio_consistencia ,"EC") ){
 
-		memoria = obtener_memoria_EC( tabla );
+		memoria = obtener_memoria_EC();
 	}
 
 	else if( string_equals_ignore_case( tabla->criterio_consistencia ,"SHC") ){
 
-		memoria = obtener_memoria_SHC( tabla, linea);
+		memoria = obtener_memoria_SHC(linea);
 	}
 
 	return memoria;
@@ -176,7 +222,7 @@ t_memoria_del_pool *obtener_memoria_SC( t_tabla_consistencia* tabla ){
 	return NULL;
 }
 
-t_memoria_del_pool *obtener_memoria_EC( t_tabla_consistencia* tabla ){
+t_memoria_del_pool *obtener_memoria_EC(){
 
 	t_memoria_del_pool* mem = NULL;
 	if( !list_is_empty( l_criterio_EC)){
@@ -186,9 +232,9 @@ t_memoria_del_pool *obtener_memoria_EC( t_tabla_consistencia* tabla ){
 	return mem;
 }
 
-t_memoria_del_pool *obtener_memoria_SHC( t_tabla_consistencia* tabla, char* linea){
-		t_memoria_del_pool* mem = NULL;
-		int index;
+t_memoria_del_pool *obtener_memoria_SHC(char* linea){
+	t_memoria_del_pool* mem = NULL;
+	int index;
 	char** split = string_split( linea, " ");
 
 	if( !list_is_empty( l_criterio_SC )){
@@ -201,11 +247,13 @@ t_memoria_del_pool *obtener_memoria_SHC( t_tabla_consistencia* tabla, char* line
 		}
 	}
 
-	free(split);
+	//free(split);
+	split_liberar(split);
 	return mem;
 }
-void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
+int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
+	return 0;
 }
 
 
