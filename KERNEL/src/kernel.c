@@ -105,7 +105,7 @@ void ejecutar_linea( char *linea ){
 
 	if( tabla != NULL )
 	{
-		t_memoria_del_pool *memoria = obtener_memoria_criterio( tabla );
+		t_memoria_del_pool *memoria = obtener_memoria_criterio( tabla, linea);
 
 		if( memoria != NULL ){
 
@@ -146,7 +146,7 @@ t_tabla_consistencia *obtener_tabla( char* n_tabla ){
 	return NULL;
 }
 
-t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla ){
+t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla, char* linea){
 
 	t_memoria_del_pool *memoria=NULL;
 
@@ -162,7 +162,7 @@ t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla ){
 
 	else if( string_equals_ignore_case( tabla->criterio_consistencia ,"SHC") ){
 
-		memoria = obtener_memoria_SHC( tabla );
+		memoria = obtener_memoria_SHC( tabla, linea);
 	}
 
 	return memoria;
@@ -178,14 +178,32 @@ t_memoria_del_pool *obtener_memoria_SC( t_tabla_consistencia* tabla ){
 
 t_memoria_del_pool *obtener_memoria_EC( t_tabla_consistencia* tabla ){
 
-	return NULL;
+	t_memoria_del_pool* mem = NULL;
+	if( !list_is_empty( l_criterio_EC)){
+		int index = rand_num(list_size( l_criterio_EC));
+		mem = list_get( l_criterio_EC, index);
+	}
+	return mem;
 }
 
-t_memoria_del_pool *obtener_memoria_SHC( t_tabla_consistencia* tabla ){
+t_memoria_del_pool *obtener_memoria_SHC( t_tabla_consistencia* tabla, char* linea){
+		t_memoria_del_pool* mem = NULL;
+		int index;
+	char** split = string_split( linea, " ");
 
-	return NULL;
+	if( !list_is_empty( l_criterio_SC )){
+		if( string_equals_ignore_case(split[0], "INSERT") || string_equals_ignore_case(split[0], "SELECT") ){
+			index = atoi(split[2]) % list_size( l_criterio_SHC);
+			mem = list_get( l_criterio_SHC, index);
+		} else{
+			index = rand_num(list_size( l_criterio_SHC));
+			mem = list_get( l_criterio_SHC, index);
+		}
+	}
+
+	free(split);
+	return mem;
 }
-
 void ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 }
@@ -303,4 +321,11 @@ void apuntar_archivo(FILE* archivo, int pc){
 	while (!feof(archivo) && fread(&leido, sizeof(char),1,archivo) && leido != '\n'){}
 	}
 
+}
+
+int rand_num(int max){
+	int numero;
+	numero = rand() % max;
+
+	return numero;
 }
