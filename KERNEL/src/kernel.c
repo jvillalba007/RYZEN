@@ -10,13 +10,19 @@ int main() {
 	t_memoria_del_pool* memoria_sc = malloc( sizeof( t_memoria_del_pool ) );
 	memoria_sc->activa=true;
 	memoria_sc->numero_memoria=0;
-	memoria_sc->criterio = strdup("SC");
+	memoria_sc->criterio = strdup("EC");
 	list_add(l_memorias , memoria_sc );
 
 	t_tabla_consistencia* tabla = malloc( sizeof( t_tabla_consistencia ) );
-	tabla->criterio_consistencia= strdup("EC");
+	tabla->criterio_consistencia= strdup("SHC");
 	tabla->nombre_tabla= strdup( "test" );
 	list_add( l_tablas , tabla );
+
+	t_memoria_del_pool* memoria_sc2 = malloc( sizeof( t_memoria_del_pool ) );
+	memoria_sc2->activa=true;
+	memoria_sc2->numero_memoria=1;
+	memoria_sc2->criterio = strdup("EC");
+	list_add(l_memorias , memoria_sc2 );
 
 
 	//INICIA CLIENTE MEMORIA
@@ -43,7 +49,7 @@ int main() {
 
 void ejecutar_procesador(){
 
-	t_PCB* pcb =NULL;
+	t_PCB* pcb = NULL;
 	char* linea = NULL;
 
 	while(1){
@@ -245,8 +251,8 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 	t_memoria_del_pool* mem = NULL;
 	int index;
 	char** split = string_split( linea, " ");
-
-	if( !list_is_empty( l_criterio_SC )){
+	log_info(logger, "%d", list_size(l_criterio_SHC));
+	if( !list_is_empty( l_criterio_SHC )){
 		if( string_equals_ignore_case(split[0], "INSERT") || string_equals_ignore_case(split[0], "SELECT") ){
 			index = atoi(split[2]) % list_size( l_criterio_SHC);
 			mem = list_get( l_criterio_SHC, index);
