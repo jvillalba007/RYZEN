@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 	typedef struct {
 		char* tabla;
@@ -25,7 +26,7 @@
 
 	typedef struct {
 		char* value;
-		int32_t timestamp;
+		uint64_t timestamp;
 	} linea_response_select;
 
 	typedef struct {
