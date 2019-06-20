@@ -256,6 +256,8 @@ char* procesar_select(char** parametros){
 	if (select_mem == NULL && select_fs == NULL){ // ninguna tiene datos
 
 		log_info(g_logger, "No existe la clave %s en la tabla %s", key, table_name);
+		free(table_path);
+		free(partition_path);
 		return NULL;
 
 	} else if (select_mem == NULL){ // solo hay datos en bloques

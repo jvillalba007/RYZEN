@@ -290,6 +290,13 @@ void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 
 	int bytes = config_get_int_value(config_archivo, "TAMANIO");
 
+	if (bytes == 0)
+	{
+		log_error(g_logger, "NO HAY DATOS");
+		config_destroy(config_archivo);
+		return;
+	}
+
 	int offset = 0;
 	*ret_buffer = calloc(bytes+1,sizeof(char));
 	*ret_buffer_size = 0;
@@ -341,7 +348,7 @@ void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 	// Agrego el resto de bloques a abrir
 	while(bytes > 0 && !eof){
 		int indice = indice_bloque_inicial + ++i;
-		log_debug(g_logger, "AGREGO BLOQUE INDICE: %d, NRO: %s | BYTES_RESTANTES: %d", indice, bloques_strings[indice], bytes);
+		log_info(g_logger, "AGREGO BLOQUE INDICE: %d, NRO: %s | BYTES_RESTANTES: %d", indice, bloques_strings[indice], bytes);
 		eof = _agregar_bloque_a_buffer(bloques_strings[indice], 0, indice);
 		bytes -= atoi(BLOCK_SIZE);
 	}
