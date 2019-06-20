@@ -5,6 +5,7 @@
 	#include <stdlib.h>
 	#include <string.h>
 	#include <ctype.h>
+	#include <sys/time.h>
 
 	// Libera memoria de un array de chars recorriendo 1 por 1
 	void split_liberar(char **);
@@ -48,6 +49,6 @@
 	/* Si el string es un número devuelve 1, sino 0.*/
 	int isNumeric (const char*);
 
-	int32_t getCurrentTime();
+	double getCurrentTime();
 
 #endif /* SHARED_SOCKET_H_ */
