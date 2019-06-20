@@ -86,7 +86,7 @@ void iniciar_tabla_segmentos(){
 
 int tamanio_fila_Frames(){
 
-	return ( sizeof( int32_t ) + sizeof(u_int16_t) + maximo_value + 1 ) ;
+	return ( sizeof( uint64_t ) + sizeof(u_int16_t) + maximo_value ) ;
 }
 
 
@@ -527,7 +527,7 @@ char* ejecutar_lru(){
 	fila_TPaginas* pagina = NULL;
 	char* frame = NULL;
 
-	int32_t minimun;
+	uint64_t minimun;
 	int posicion;
 	int pos;
 

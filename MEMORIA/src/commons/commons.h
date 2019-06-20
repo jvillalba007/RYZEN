@@ -16,6 +16,7 @@
 	#include <string.h>
 	#include <shared/utils.h>
 	#include <commons/bitarray.h>
+	#include <inttypes.h>
 
 	#define pathCFG "MEMORIA.CFG"
 	#define pathLOG "MEMORIA.LOG"
@@ -35,7 +36,7 @@
 	} mem_cfg;
 
 	typedef struct {
-		int32_t timestamp;
+		uint64_t timestamp;
 		u_int16_t key;
 		char* value;
 	} fila_Frames;
@@ -44,7 +45,7 @@
 		int32_t numero_pagina; //TODO: verificar si esto sirve
 		char* frame_registro;
 		int8_t modificado;
-		int32_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
+		uint64_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
 		//TODO verificar si hay que agregar el puntero al segmento
 	} fila_TPaginas;
 

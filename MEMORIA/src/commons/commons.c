@@ -94,8 +94,8 @@ int escribir_en_frame(char* frame, fila_Frames registro)
 		return -1;
 	}
 
-	memcpy(frame, (void*) &(registro.timestamp), sizeof(int32_t));
-	pos+=sizeof(int32_t);
+	memcpy(frame, (void*) &(registro.timestamp), sizeof(uint64_t));
+	pos+=sizeof(uint64_t);
 	memcpy(frame+pos, (void*) &(registro.key), sizeof(u_int16_t));
 	pos+=sizeof(u_int16_t);
 	memcpy(frame+pos, (void*) registro.value, len_value);
@@ -109,8 +109,8 @@ int escribir_en_frame(char* frame, fila_Frames registro)
 void leer_de_frame(char* frame, fila_Frames* registro)
 {
 	int pos = 0;
-	memcpy((void*) &(registro->timestamp), (void*) frame, sizeof(int32_t));
-	pos+=sizeof(int32_t);
+	memcpy((void*) &(registro->timestamp), (void*) frame, sizeof(uint64_t));
+	pos+=sizeof(uint64_t);
 	memcpy((void*) &(registro->key), (void*) frame+pos, sizeof(u_int16_t));
 	pos+=sizeof(u_int16_t);
 
