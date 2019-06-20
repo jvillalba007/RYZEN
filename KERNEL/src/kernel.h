@@ -29,6 +29,7 @@ void apuntar_archivo(FILE* archivo, int pc);
 
 
 void finalizar_pcb(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a finalizados
+void parar_por_quantum(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a listos
 int rand_num(int max);
 
 

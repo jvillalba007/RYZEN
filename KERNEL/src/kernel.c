@@ -66,33 +66,42 @@ void ejecutar_procesador(){
 		else
 		{
 			int k= 0;
-			log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
 
-			FILE* archivo = fopen( pcb->request_comando , "r");
+			char** split = string_split(pcb->request_comando, " ");
+			log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
+			FILE* archivo = fopen( split[1] , "r");
 			apuntar_archivo(archivo, pcb->pc);
+			split_liberar(split);
+
 			while( (k < kernel_config.QUANTUM) && (!feof(archivo)) ){
 
 				linea = obtener_linea(archivo);
 
 				if(linea != NULL){
 
-				//TODO: verificar lo que devuelve ejecutar_linea. si devuelve 0 esta ok, si devuelve -1 finalizar la ejecucion del script (usar finalizar_pcb)
-				ejecutar_linea( linea );
 				log_info(logger, "la linea a ejecutar es: %s" , linea  );
+				int res = ejecutar_linea( linea );
 				k++;
 				pcb->pc++;
 				free(linea);
+
+				if(res == 0){
+					log_info(logger, "la linea se ejecuto correctamente");
+				}else {
+					finalizar_pcb(pcb);
+					k = kernel_config.QUANTUM;
+				}
 				}
 			}
-			if(feof(archivo)){
-			//TODO: verificar si es la ultima linea de archivo. si es asi quitarlo de listos y enviarlos a fin con finalizar_pcb sino devolverlo a listos
-			} else{
 
+			if(feof(archivo)){
+				finalizar_pcb(pcb);
+			} else{
+				parar_por_quantum(pcb);
 			}
 			fclose(archivo);
-
-
 		}
+		free(pcb->request_comando);
 		free(pcb);
 	}
 	log_info(logger,"cerrando hilo");
@@ -376,4 +385,17 @@ int rand_num(int max){
 	numero = rand() % max;
 
 	return numero;
+}
+
+void parar_por_quantum(t_PCB* pcb){
+
+bool buscar_pcb( t_PCB* pcb_it ){
+
+		if(  pcb_it->id == pcb->id  ) return true;
+		return false;
+	}
+	list_remove_by_condition(l_pcb_ejecutando,(void*)buscar_pcb);
+	log_info(logger, "nuevo tamanio de lista ejecutando: %d", list_size( l_pcb_ejecutando ));
+	list_add( l_pcb_listos , pcb );
+	log_info(logger, "tamanio lista de listos: %d", list_size( l_pcb_listos ));
 }
