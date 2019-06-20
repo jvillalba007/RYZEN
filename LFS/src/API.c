@@ -54,7 +54,7 @@ void procesar_insert(int cant_parametros, char** parametros_no_value, char* valu
 
 	if (cant_parametros == 3){
 		// Timestamp no proporcionado
-		registro->timestamp = time(NULL);
+		registro->timestamp = getCurrentTime();
 		registro->key = atoi(key);
 		registro->value = strdup(value);
 		insert_memtable(table_name,registro);

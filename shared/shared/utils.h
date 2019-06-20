@@ -48,4 +48,6 @@
 	/* Si el string es un número devuelve 1, sino 0.*/
 	int isNumeric (const char*);
 
+	int32_t getCurrentTime();
+
 #endif /* SHARED_SOCKET_H_ */
