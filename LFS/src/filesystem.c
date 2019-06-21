@@ -63,10 +63,11 @@ t_list* buffer_to_list_registros(char* buffer){
 	while(line) {
 		fila_registros* registro = malloc(sizeof(fila_registros));
 		char** partes = string_split(line, ";");
+		int cant = split_cant_elem(partes);
 
-		registro->timestamp = atoi(partes[0]);
-		registro->key = atoi(partes[1]);
-		registro->value = strdup(partes[2]);
+		registro->timestamp = cant == 3 ? atoi(partes[0]) : 0;
+		registro->key = cant == 3 ? atoi(partes[1]) : -1;
+		registro->value = cant == 3 ? strdup(partes[2]) : strdup("");
 
 
 		list_add(registros, registro);
