@@ -236,9 +236,11 @@ char* procesar_select(char** parametros){
 		return NULL;
 	}
 
+	// get registros memtable
 	t_list* select_mem;
 	select_mem = select_memtable(table_name, (u_int16_t) atoi(key));
 
+	// get registros particiones
 	char* partition_path;
 	partition_path = get_partition_for_key(table_name, key);
 
@@ -247,32 +249,64 @@ char* procesar_select(char** parametros){
 
 	obtenerDatos(partition_path, &registros_buffer, &buffer_size);
 
+	t_list* select_temp = list_create();
+
+	DIR *d;
+    struct dirent *dir;
+    d = opendir(table_path);
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            if(string_ends_with(dir->d_name,".tmp") || string_ends_with(dir->d_name,".tmpc")){
+
+            	char * resolved_path;
+            	char * filename = string_new();
+            	string_append(&filename, "/");
+            	string_append(&filename, dir->d_name);
+            	resolved_path = generate_path(filename, table_path, "");
+
+            	char* temps_buffer;
+            	int temp_buffer_size = 0;
+
+            	obtenerDatos(resolved_path, &temps_buffer, &temp_buffer_size);
+
+            	t_list* tmp_list;
+            	tmp_list = temp_buffer_size ? buffer_to_list_registros(temps_buffer) : NULL;
+
+            	list_add_all(select_temp, tmp_list);
+
+            	tmp_list ? list_destroy(tmp_list) : 0;
+            	free(resolved_path);
+            	free(filename);
+            	temp_buffer_size ? free(temps_buffer) : 0;
+            }
+        }
+        closedir(d);
+    }
+
 	t_list* select_fs;
 	select_fs = buffer_size ? buffer_to_list_registros(registros_buffer) : NULL;
 
+	t_list* all_list = list_create();
 	t_list* filtered_list;
 
 
-	if (select_mem == NULL && select_fs == NULL){ // ninguna tiene datos
+	if (select_mem == NULL && select_fs == NULL && select_temp == NULL){ // ninguna tiene datos
 
 		log_info(g_logger, "No existe la clave %s en la tabla %s", key, table_name);
 		free(table_path);
 		free(partition_path);
 		return NULL;
 
-	} else if (select_mem == NULL){ // solo hay datos en bloques
+	} else {
 
-		filtered_list = filter_registro_list_by_key(select_fs, key);
 
-	} else if (select_fs == NULL){ 	// solo hay datos en memtable
+		select_mem? list_add_all(all_list, select_mem) : 0;
+		select_fs? list_add_all(all_list, select_fs) : 0;
+		select_temp? list_add_all(all_list, select_temp) : 0;
 
-		filtered_list = list_duplicate(select_mem);
-
-	} else { // los 2 tienen datos
-
-		filtered_list = filter_registro_list_by_key(select_fs, key);
-
-		list_add_all(filtered_list, select_mem);
+		filtered_list = filter_registro_list_by_key(all_list, key);
 
 	}
 
@@ -285,12 +319,14 @@ char* procesar_select(char** parametros){
 	char* last_value;
 	last_value = get_last_value(filtered_list);
 
-	select_mem ?  list_destroy(select_mem) : 0;
-	select_fs ? list_destroy_and_destroy_elements(select_fs, (void*) liberar_registros) : 0;
-	filtered_list ? list_destroy_and_destroy_elements(filtered_list, (void*) liberar_registros) : 0;
+	select_mem ? list_destroy(select_mem) : 0;
+	select_fs ? list_destroy(select_fs) : 0;
+	select_temp ? list_destroy(select_temp) : 0;
+	filtered_list ? list_destroy(filtered_list) : 0;
+	all_list ? list_destroy_and_destroy_elements(all_list, (void*) liberar_registros) : 0;
 
 
-	free(registros_buffer);
+	buffer_size ? free(registros_buffer) : 0;
  	free(table_path);
  	free(partition_path);
 
