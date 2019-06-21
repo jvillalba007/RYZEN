@@ -5,7 +5,7 @@
  *      Author: utnso
  */
 
-#include "config.h"
+#include "commons.h"
 
 int mem_initialize() {
 
@@ -55,7 +55,7 @@ void imprimir_config() {
 }
 
 void crear_log() {
-	mem_log = log_create(pathLOG, "LISSANDRA-MEMORIA", true, LOG_LEVEL_TRACE);
+	mem_log = log_create(pathLOG, "LISSANDRA-MEMORIA", false, LOG_LEVEL_TRACE);
 	if (mem_log == NULL) {
 		printf("No se pudo crear el log. Abortando ejecución\n");
 		exit(EXIT_FAILURE);
@@ -71,6 +71,57 @@ void imprimir_arrays(char** split,char* nombre)
 	}
 }
 
+void list_iterate_pos(t_list* self, void(*closure)(void*,int*),int* pos) {
+	t_link_element *element = self->head;
+	t_link_element *aux = NULL;
+	*(pos) = 0;
+	while (element != NULL) {
+		aux = element->next;
+		closure(element->data,pos);
+		element = aux;
+		*(pos) = *(pos)+1;
+	}
+}
+
+int escribir_en_frame(char* frame, fila_Frames registro)
+{
+	int pos = 0;
+	int len_value = strlen(registro.value);
+
+	if(len_value > maximo_value)
+	{
+		log_info(mem_log, "Segmentation Paginated Fault");
+		return -1;
+	}
+
+	memcpy(frame, (void*) &(registro.timestamp), sizeof(int32_t));
+	pos+=sizeof(int32_t);
+	memcpy(frame+pos, (void*) &(registro.key), sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+	memcpy(frame+pos, (void*) registro.value, len_value);
+	frame[pos+len_value] = '\0';
+
+	log_info(mem_log, "SE ESCRIBIO CORRECTAMENTE UN REGISTRO EN EL FRAME");
+
+	return pos;
+}
+
+void leer_de_frame(char* frame, fila_Frames* registro)
+{
+	int pos = 0;
+	memcpy((void*) &(registro->timestamp), (void*) frame, sizeof(int32_t));
+	pos+=sizeof(int32_t);
+	memcpy((void*) &(registro->key), (void*) frame+pos, sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+
+	registro->value = frame+pos;
+
+}
+
+void liberar_tablas() {
+	liberar_tabla_segmentos(tabla_segmentos);
+}
+
 void liberar_mem_config(mem_cfg mem_config)
 {
 	free(mem_config.puerto_mem);
@@ -80,7 +131,43 @@ void liberar_mem_config(mem_cfg mem_config)
 	split_liberar(mem_config.puerto_SEEDS);
 }
 
-void mem_exit() {
+void liberar_memoria_contigua(){
+	free(memoria);
+	log_info(mem_log, "LIBERADO MEMORIA CONTIGUA");
+
+}
+
+void liberar_fila_paginas(fila_TPaginas* fila_pagina)
+{
+	free(fila_pagina);
+}
+
+void liberar_tabla_paginas(fila_TSegmentos *segmento){
+	list_iterate(segmento->paginas,(void*)liberar_fila_paginas);
+	list_destroy(segmento->paginas);
+	log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+
+	free( segmento->nombre_tabla );//SE AGREGO AHORA
+	free(segmento);
+	log_info(mem_log, "LIBERADO SEGMENTO");
+
+}
+
+void liberar_tabla_segmentos(t_list* tabla_segmentos) {
+	list_iterate(tabla_segmentos,(void*)liberar_tabla_paginas);
+	list_destroy(tabla_segmentos);
+	log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
+}
+
+void mem_exit_global() {
+	liberar_tablas();
+	liberar_memoria_contigua();
+	mem_exit_simple();
+}
+
+void mem_exit_simple() {
+	liberar_mem_config(mem_config);
+	log_info(mem_log, "[MEMORIA] LIBERO MEMORIA CONFIG");
 	log_destroy(mem_log);
 }
 

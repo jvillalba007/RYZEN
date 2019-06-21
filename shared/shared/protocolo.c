@@ -162,7 +162,7 @@ char* serializar_response_select(linea_response_select linea, int* longitud)
 	pos+=sizeof(u_int16_t);
 	memcpy(buffer+pos, (void*) linea.value, len_value);
 	pos+=len_value;
-	memcpy(buffer+pos, (void*) &(linea.timestamp), sizeof(int32_t));
+	memcpy(buffer+pos, (void*) &(linea.timestamp), sizeof(uint64_t));
 	*(longitud) = buffer_size;
 
 	return buffer;
@@ -179,5 +179,5 @@ void deserializar_response_select(char* buffer, linea_response_select* linea)
 	memcpy((void*) linea->value, (void*) buffer+pos,len_value);
 	linea->value[len_value] = '\0';
 	pos+=len_value;
-	memcpy((void*) &(linea->timestamp), (void*) buffer+pos, sizeof(int32_t));
+	memcpy((void*) &(linea->timestamp), (void*) buffer+pos, sizeof(uint64_t));
 }
