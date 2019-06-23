@@ -1,75 +1,67 @@
 #include "API.h"
 
-int file_write_key_value (char* full_path, char* key, char* value, char* timestamp){
 
-	FILE * fPtr;
-	fPtr = fopen(full_path, "a");
-
-	if(fPtr == NULL)
-	{
-		printf("Unable to create file: %s \n %s \n", full_path, (char *) strerror(errno));
-		return 1;
-	}
-
-	char* key_value = (char*) calloc(strlen(timestamp) + 1 + strlen(value) + 1 + strlen(key) + 1, sizeof(char));
-
-	// Concatener linea a colocar
-	strcat(key_value, timestamp);
-	strcat(key_value, ";");
-	strcat(key_value, key);
-	strcat(key_value, ";");
-	strcat(key_value, value);
-
-	fputs(key_value, fPtr);
-	fputs("\n", fPtr);
-
-	fclose(fPtr);
-
-
-	log_info(g_logger, "Insertado %s en %s", key_value, full_path);
-    free(key_value);
-
-    return 0;
-}
-
-void procesar_insert(int cant_parametros, char** parametros_no_value, char* value){
-
-	char* table_name = parametros_no_value[1];
-	string_to_upper(table_name);
-	char* key = parametros_no_value[2];
-	char* timestamp;
+int insert_record(linea_insert* datos, char* fixed_timestamp){
+	string_to_upper(datos->tabla);
 
 	char* full_path;
-	full_path = generate_path(table_name, TABLES_FOLDER, "");
+	full_path = generate_path(datos->tabla, TABLES_FOLDER, "");
 
 	if( access( full_path, F_OK ) == -1 ) {
 	    // file doesn't exist
 		free(full_path);
-		log_error(g_logger, "La tabla %s no existe", table_name);
-		printf("No existe la tabla especificada. \n");
-		return;
+		log_error(g_logger, "La tabla %s no existe", datos->tabla);
+		return 1;
 	}
 
 	fila_registros* registro = malloc(sizeof(fila_registros));
 
-	if (cant_parametros == 3){
+	if (fixed_timestamp == NULL){
 		// Timestamp no proporcionado
 		registro->timestamp = getCurrentTime();
-		registro->key = atoi(key);
-		registro->value = strdup(value);
-		insert_memtable(table_name,registro);
+		registro->key = datos->key;
+		registro->value = strdup(datos->value);
+		insert_memtable(datos->tabla,registro);
 
-	} else if (cant_parametros == 4) {
+	} else {
 		//Timestamp proporcionado
-		timestamp = parametros_no_value[3];
-		registro->timestamp = atoi(timestamp);
-		registro->key = atoi(key);
-		registro->value = strdup(value);
-		insert_memtable(table_name,registro);
+		registro->timestamp = atoi(fixed_timestamp);
+		registro->key = datos->key;
+		registro->value = strdup(datos->value);
+		insert_memtable(datos->tabla, registro);
 
 	}
 
 	free(full_path);
+
+	return 0;
+}
+
+void procesar_insert(int cant_parametros, char** parametros){
+
+	char* table_name = parametros[1];
+	char* key = parametros[2];
+	char* value = parametros[3];
+	value = string_substring_from(value, 1); // remove first "
+	value = string_substring_until(value, strlen(value) - 1); //remove last "
+
+	linea_insert* datos = malloc(sizeof(linea_insert));
+	datos->key = atoi(key);
+	datos->tabla = strdup(table_name);
+	datos->value = strdup(value);
+
+	int response;
+	if (cant_parametros == 4){
+		response = insert_record(datos, NULL);
+	}else{
+		response = insert_record(datos, parametros[4]);
+	}
+
+	liberar_linea_insert(datos);
+
+	if (response==1)
+		printf("No existe la tabla especificada. \n");
+
 }
 
 void drop_table(char* table_name, char* table_path){
@@ -416,9 +408,15 @@ void* procesar_describe(int cant_parametros, char** parametros){
     return list_metadata;
 }
 
-void liberar_metadata_struct (linea_create* metadata){
+void liberar_linea_create (linea_create* metadata){
 	free(metadata->tabla);
 	free(metadata->tipo_consistencia);
+	free(metadata);
+}
+
+void liberar_linea_insert(linea_insert* metadata){
+	free(metadata->tabla);
+	free(metadata->value);
 	free(metadata);
 }
 
@@ -430,27 +428,9 @@ void consola_procesar_comando(char* linea)
 
 	if(string_equals_ignore_case(parametros[0],"INSERT")){
 
-		char* value;
-		value = string_extract_substring(linea, "\"", "\"");
+		if (cant_parametros >= 4 && cant_parametros < 6) {
 
-		if (value == NULL) {
-			puts("API Error: Valor no proporcionado\n");
-			free(value);
-			split_liberar(parametros);
-			return ;
-		}
-
-		remove_value (linea, value); // Queda la linea sin value, solo comillas
-
-		char** parametros_no_value = string_split(linea, " ");
-
-		int cant_sin_value = split_cant_elem(parametros_no_value);
-
-		if (cant_sin_value >= 3 && cant_sin_value < 5) {
-
-			procesar_insert(cant_sin_value, parametros_no_value, value);
-			free(value);
-			split_liberar(parametros_no_value);
+			procesar_insert(cant_parametros, parametros);
 
 		}else{
 			printf("API Error: 3 o 4 argumentos son requeridos\n");
@@ -492,9 +472,9 @@ void consola_procesar_comando(char* linea)
 			response = procesar_describe(cant_parametros, parametros);
 
 			if (cant_parametros == 1){
-				list_destroy_and_destroy_elements(response, (void*) liberar_metadata_struct);
+				list_destroy_and_destroy_elements(response, (void*) liberar_linea_create);
 			}else{
-				liberar_metadata_struct(response);
+				liberar_linea_create(response);
 			}
 
 

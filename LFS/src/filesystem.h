@@ -18,6 +18,7 @@
 	#include <commons/string.h>
 	#include <errno.h>
 	#include <time.h>
+	#include <inttypes.h>
 
 	#include <shared/utils.h>
 	#include "shared/protocolo.h"

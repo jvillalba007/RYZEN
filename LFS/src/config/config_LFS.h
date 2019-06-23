@@ -26,6 +26,7 @@
 	#include <shared/utils.h>
 	#include <commons/bitarray.h>
 	#include <errno.h>
+	#include <inttypes.h>
 
 	#include "shared/protocolo.h"
 

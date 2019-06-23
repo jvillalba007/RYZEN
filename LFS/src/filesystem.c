@@ -10,7 +10,7 @@
 char* get_last_value(t_list* registros){
 
 	char* last_value = 0;
-	int32_t max_timestamp = 0;
+	uint64_t max_timestamp = 0;
 
 
 	void _update_max_timestamp(fila_registros* registro){

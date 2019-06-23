@@ -9,6 +9,7 @@
 	#define MEMTABLE_H_
 
 	#include "config/config_LFS.h"
+	#include <inttypes.h>
 
 		typedef struct{
 			char* tabla;
@@ -16,7 +17,7 @@
 		} fila_memtable;
 
 		typedef struct {
-			int32_t timestamp;
+			uint64_t timestamp;
 			u_int16_t key;
 			char* value;
 		} fila_registros;

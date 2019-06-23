@@ -13,7 +13,7 @@ char* _tmp;
 void dump_registros(fila_registros* registro)
 {
 	int ok;
-	char *data = string_from_format("%d;%d;%s\n",registro->timestamp,registro->key,registro->value);
+	char *data = string_from_format("%" PRIu64 ";%d;%s\n",registro->timestamp,registro->key,registro->value);
 	guardarDatos(pathTemporal,strlen(data),data,&ok);
 
 	free(data);
