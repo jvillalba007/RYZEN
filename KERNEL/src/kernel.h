@@ -33,6 +33,9 @@ void parar_por_quantum(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a listos
 int rand_num(int max);
 
 char *convertir_insert(char** split);
+char *convertir_select(char** spit);
+char *convertir_create(char** split);
+
 
 
 #endif
