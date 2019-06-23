@@ -57,7 +57,31 @@ void procesar_comando (char* linea) {
                 if (es_string(parametros[0],"JOURNAL")) {
 
                 	log_info(logger, "Ejecuto journal");
-                	//TODO: ejecutar el journal
+                	
+                    //agregar un par de memorias a l_memorias
+                    log_info(logger, "Memorias: %d.", list_size(l_memorias));
+                    printf("Memorias: %d.\n", list_size(l_memorias));
+
+                    //t_list* l_memorias_activas = list_create();
+                    //l_memorias_activas = filtrar_memorias_activas();
+                    t_list* l_memorias_activas = filtrar_memorias_activas();
+                    
+                    if (l_memorias_activas != NULL) {
+                        //  Hay memorias activas
+                        log_info(logger, "Memorias activas: %d.", list_size(l_memorias_activas));
+                        printf("Memorias activas: %d.\n", list_size(l_memorias_activas));
+
+                        //TODO: a cada memoria de la lista l_memorias_activas hay que mandarle una función (a hacer) para que cada una haga el JOURNAL...
+                        //¿podría ser un list_iterate(l_memorias, dicha_funcion)?
+                    }
+                    else {
+                        //  No hay memorias activas
+                        log_info(logger, "No hay memorias activas para hacerles el journal.");
+                        puts("No hay memorias activas para hacerles el journal.");
+                    }
+
+                    list_destroy_and_destroy_elements(l_memorias_activas, (void*) free_memoria);
+                    
                 }
 				if (es_string(parametros[0], "ADD")) {
 	                    
@@ -70,8 +94,8 @@ void procesar_comando (char* linea) {
                             
                             if (es_string(parametros[4], "SC")) {
                                 
-                                if ( list_is_empty(l_criterio_SC) ) {
-                                	log_info(logger, "Se agrega a criterio SC memoria: %d", m->numero_memoria );
+                                if (list_is_empty(l_criterio_SC)) {
+                                	log_info(logger, "Se agrega a criterio SC memoria: %d", m->numero_memoria);
                                     list_add(l_criterio_SC, m );
                                 }
                                 else {
@@ -81,7 +105,7 @@ void procesar_comando (char* linea) {
                                 
                             }
                             else if (es_string(parametros[4], "SHC")) {
-                            	log_info(logger, "Se agrega a criterio SHC memoria: %d", m->numero_memoria );
+                            	log_info(logger, "Se agrega a criterio SHC memoria: %d", m->numero_memoria);
                                 list_add(l_criterio_SHC, m );
                             }
                             else {
@@ -139,6 +163,20 @@ void crear_pcb (char* string_codigo, t_tipo_request tipo) {
     log_info(logger, "Se crea el PCB de la request: %s con id: %d ", pcb->request_comando , pcb->id);
     log_info(logger, "Cantida de pcb listos: %d ", list_size( l_pcb_listos ));
     id_pcbs++;
+}
+
+t_list* filtrar_memorias_activas (void) {
+    t_list* m = NULL;
+    
+    bool _es_memoria_activa (t_memoria_del_pool *x) {
+        return x->activa;
+    }
+
+    if (!list_is_empty(l_memorias)) {
+        m = list_filter(l_memorias, (void*) _es_memoria_activa);
+    }
+
+    return m;
 }
 
 
