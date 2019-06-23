@@ -5,7 +5,7 @@ int main() {
 	inicializar_logs_y_configs();
 	
 	inicializar_kernel();
-
+/*
 	//inicializo memoria y tabla de pruebas
 	t_memoria_del_pool* memoria_sc = malloc( sizeof( t_memoria_del_pool ) );
 	memoria_sc->activa=true;
@@ -23,7 +23,7 @@ int main() {
 	memoria_sc2->numero_memoria=1;
 	memoria_sc2->criterio = strdup("EC");
 	list_add(l_memorias , memoria_sc2 );
-
+*/
 
 	//INICIA CLIENTE MEMORIA
 	/*conectar_memoria();*/
@@ -52,7 +52,7 @@ void ejecutar_procesador(){
 	t_PCB* pcb = NULL;
 	char* linea = NULL;
 
-	while(1){
+	while(!exit_global){ //AGREGO UNA SALIDA GLOBAL
 
 		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
@@ -60,6 +60,7 @@ void ejecutar_procesador(){
 
 		 	pcb = obtener_pcb_ejecutar();
 
+		 	if(pcb != NULL){ //AGREGO ESTO PORQUE PUSE UNA SALIDA GLOBAL Y ME PUEDE DEVOLVER UN PCB=null
 			log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 		pthread_mutex_unlock(&sem_ejecutar);
 
@@ -109,6 +110,7 @@ void ejecutar_procesador(){
 		}
 		free(pcb->request_comando);
 		free(pcb);
+	}
 	}
 	log_info(logger,"cerrando hilo");
 	pthread_exit(0);
@@ -362,16 +364,17 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 t_PCB* obtener_pcb_ejecutar(){
 
 	//si lista vacia se queda loopeando esperando que entre alguno
-	while( list_is_empty( l_pcb_listos ) ){ //TODO ver por que me tira un invalid read size 4
+	while( (list_is_empty( l_pcb_listos )) && (!exit_global) ){ //TODO ver por que me tira un invalid read size 4
 
 	}
+	t_PCB *pcb = NULL;
 	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
-
-	t_PCB *pcb = list_remove( l_pcb_listos , 0 );
+	if(!exit_global){
+	pcb = list_remove( l_pcb_listos , 0 );
 	list_add( l_pcb_ejecutando , pcb  );
 	log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
 	log_info(logger, "nuevo tamanio de la lista de listos %d", list_size( l_pcb_listos ));
-
+	}
 	return pcb;
 }
 
@@ -394,6 +397,7 @@ void finalizar_pcb(t_PCB* pcb){
 
 void inicializar_kernel(){
 
+	exit_global = 0;
 	id_pcbs = 0;
 	pthread_mutex_init(&sem_ejecutar, NULL);
 

@@ -89,6 +89,8 @@ t_list* l_procesadores;
 //LISTA DE TABLAS
 t_list* l_tablas;
 
+int exit_global;
+
 
 void inicializar_logs_y_configs(void);
 void abrir_log(void);
