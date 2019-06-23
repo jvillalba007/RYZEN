@@ -274,8 +274,12 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	if( socket == -1  ){
 
 		log_error(logger, "¡Error no se pudo conectar con MEMORIA");
+		memoria->activa = false;
+		close(socket);
+		return -1;
 
 	}
+	log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket_memoria);
 
 	char** split = string_split(linea, " ");
 
@@ -283,21 +287,52 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		int tamanio;
 		char* buffer = convertir_insert(split);
 		tamanio = sizeof(buffer);
-		t_header paquete;
-		paquete.emisor = KERNEL;
-		paquete.tipo_mensaje = INSERT;
-		paquete.payload_size = tamanio;
+
+		t_header *paquete = malloc(sizeof(t_header));
+		paquete->emisor = KERNEL;
+		paquete->tipo_mensaje = INSERT;
+		paquete->payload_size = tamanio;
 		send(socket, &paquete, sizeof(buffer), 0);
+		free(paquete);
 
 		send(socket, &buffer, tamanio, 0);
+		free(buffer);
 
 
 	}else{
 		if(es_string(split[0], "SELECT")){
+			int tamanio;
+			char* buffer = convertir_select(split);
+			tamanio = sizeof(buffer);
+
+			t_header *paquete = malloc(sizeof(t_header));
+			paquete->emisor = KERNEL;
+			paquete->tipo_mensaje = SELECT;
+			paquete->payload_size = tamanio;
+			send(socket, &paquete, sizeof(buffer), 0);
+			free(paquete);
+
+			send(socket, &buffer, tamanio, 0);
+			free(buffer);
 
 
 		}else{
 			if(es_string(split[0], "CREATE")){
+
+				int tamanio;
+				char* buffer = convertir_create(split);
+				tamanio = sizeof(buffer);
+
+				t_header *paquete = malloc(sizeof(t_header));
+				paquete->emisor = KERNEL;
+				paquete->tipo_mensaje = CREATE;
+				paquete->payload_size = tamanio;
+				send(socket, &paquete, sizeof(buffer), 0);
+				free(paquete);
+
+				send(socket, &buffer, tamanio, 0);
+				free(buffer);
+
 
 			}else{
 				if(es_string(split[0], "DESCRIBE")){
@@ -462,14 +497,42 @@ char *convertir_insert(char** split){
 
 	int tamanio;
 	linea_insert insert;
-	char* buffer;
 	insert.tabla = split[1];
 	insert.key = atoi(split[2]);
 	insert.value = split[3];
-	buffer = serializar_insert(insert,&tamanio);
+	char *buffer = serializar_insert(insert,&tamanio);
 
 	free(insert.tabla);
 	free(insert.value);
 	return buffer;
 }
+
+char *convertir_select(char** split){
+	int tamanio;
+	linea_select select;
+	select.tabla = split[1];
+	select.key = atoi(split[2]);
+	char* buffer = serializar_select(select, &tamanio);
+
+	free(select.tabla);
+	return buffer;
+
+}
+
+char *convertir_create(char** split){
+	int tamanio;
+	linea_create create;
+	create.tabla = split[1];
+	create.tipo_consistencia = split[2];
+	create.nro_particiones = atoi(split[3]);
+	create.tiempo_compactacion = *(u_int32_t*)split[4];
+	char* buffer = serializar_create(create, &tamanio);
+
+	free(create.tabla);
+	free(create.tipo_consistencia);
+	return buffer;
+
+}
+
+
 
