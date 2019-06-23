@@ -268,6 +268,58 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 }
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
+	int socket = socket_connect_to_server(memoria->ip, memoria->puerto);
+	log_info(logger, "El socket devuelto es: %d", socket_memoria);
+
+	if( socket == -1  ){
+
+		log_error(logger, "¡Error no se pudo conectar con MEMORIA");
+
+	}
+
+	char** split = string_split(linea, " ");
+
+	if(es_string(split[0], "INSERT")){
+		int tamanio;
+		char* buffer = convertir_insert(split);
+		tamanio = sizeof(buffer);
+		t_header paquete;
+		paquete.emisor = KERNEL;
+		paquete.tipo_mensaje = INSERT;
+		paquete.payload_size = tamanio;
+		send(socket, &paquete, sizeof(buffer), 0);
+
+		send(socket, &buffer, tamanio, 0);
+
+
+	}else{
+		if(es_string(split[0], "SELECT")){
+
+
+		}else{
+			if(es_string(split[0], "CREATE")){
+
+			}else{
+				if(es_string(split[0], "DESCRIBE")){
+
+				}else{
+					if(es_string(split[0], "DROP")){
+
+					}else{
+						if(es_string(split[0], "JOURNAL")){
+
+						}else{
+							if(es_string(split[0], "ADD")){
+
+							}else
+								log_error(logger,"comando no reconocido");
+						}
+					}
+				}
+			}
+	}
+	}
+	split_liberar(split);
 	return 0;
 }
 
@@ -405,3 +457,19 @@ bool buscar_pcb( t_PCB* pcb_it ){
 	list_add( l_pcb_listos , pcb );
 	log_info(logger, "tamanio lista de listos: %d", list_size( l_pcb_listos ));
 }
+
+char *convertir_insert(char** split){
+
+	int tamanio;
+	linea_insert insert;
+	char* buffer;
+	insert.tabla = split[1];
+	insert.key = atoi(split[2]);
+	insert.value = split[3];
+	buffer = serializar_insert(insert,&tamanio);
+
+	free(insert.tabla);
+	free(insert.value);
+	return buffer;
+}
+

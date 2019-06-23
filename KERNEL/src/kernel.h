@@ -6,6 +6,7 @@
 #include "consola.h"
 #include <shared/socket.h>
 #include <shared/console.h>
+#include <shared/protocolo.h>
 #include "shared/utils.h"
 
 void conectar_memoria();
@@ -27,12 +28,11 @@ void ejecutar_describe();
 char* obtener_linea(FILE* archivo);
 void apuntar_archivo(FILE* archivo, int pc);
 
-
 void finalizar_pcb(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a finalizados
 void parar_por_quantum(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a listos
 int rand_num(int max);
 
-
+char *convertir_insert(char** split);
 
 
 #endif
