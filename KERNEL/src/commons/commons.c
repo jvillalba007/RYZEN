@@ -56,7 +56,7 @@ void liberar_config() {
 
 
 void liberar_kernel(){
-
+	exit_global = 1;
 	log_info(logger, "libero semaforo");
 	pthread_mutex_destroy(&sem_ejecutar);
 
