@@ -67,10 +67,23 @@ void procesar_insert(int cant_parametros, char** parametros){
 
 }
 
-void drop_table(char* table_name, char* table_path){
+int drop_table(char* table_name){
+
+	string_to_upper(table_name);
+
+	struct stat st = {0};
+	char* table_path;
+	table_path = generate_path(table_name, TABLES_FOLDER, "");
+
+	if (stat(table_path, &st) == -1) { // table doesn't exist
+		log_error(g_logger, "La tabla %s no existe", table_name);
+		free(table_path);
+
+		return 1;
+	}
 
 	int ok;
-	// Already exists
+
 	drop_memtable(table_name);
 
     DIR *d;
@@ -102,28 +115,20 @@ void drop_table(char* table_name, char* table_path){
 
 	rmdir(table_path);
 
+	free(table_path);
+	return 0;
+
 }
 
-int procesar_drop(char** parametros){
+void procesar_drop(char** parametros){
 	char* table_name;
 	table_name = parametros[1];
-	string_to_upper(table_name);
 
-	struct stat st = {0};
-	char* table_path;
-	table_path = generate_path(table_name, TABLES_FOLDER, "");
+	int response;
+	response = drop_table(table_name);
 
-	if (stat(table_path, &st) == -1) {
+	if (response == 1)
 		printf("La tabla especificada no existe. \n");
-		log_error(g_logger, "La tabla %s no existe", table_name);
-		free(table_path);
-
-		return 1;
-	}else{
-		drop_table(table_name, table_path);
-	    free(table_path);
-		return 0;
-	}
 
 }
 
@@ -201,7 +206,7 @@ void procesar_create(char** parametros){
 	if (ok == -1){
 		log_error(g_logger, "Espacio Insuficiente");
 		printf("Espacio Insuficiente\n");
-		drop_table(table_name, table_path);
+		drop_table(table_name);
 	}
 	log_info(g_logger, "Resultado del Create %d", ok);
 
@@ -489,10 +494,7 @@ void consola_procesar_comando(char* linea)
 
 	else if(string_equals_ignore_case(parametros[0],"DROP")){
 		if (cant_parametros == 2) {
-			int response;
-
-			response = procesar_drop(parametros);
-			log_info(g_logger,"Resultado DROP %d",response);
+			procesar_drop(parametros);
 
 		} else {
 			printf("API Error: 1 argumento es requerido.\n");

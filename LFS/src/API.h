@@ -26,11 +26,11 @@
 		void procesar_insert(int, char**);
 		char* extract_value_from_key(char*, char*);
 		char* procesar_select(char**);
-		int procesar_drop(char**);
+		void procesar_drop(char**);
 		void* procesar_describe(int, char**);
 		linea_create* read_table_metadata(char*);
 		void liberar_linea_create(linea_create*);
-		void drop_table(char*, char*);
+		int drop_table(char*);
 		int insert_record(linea_insert* datos, char* fixed_timestamp);
 		void liberar_linea_insert(linea_insert* metadata);
 
