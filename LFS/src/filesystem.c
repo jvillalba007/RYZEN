@@ -12,9 +12,7 @@ char* get_last_value(t_list* registros){
 	char* last_value = 0;
 	uint64_t max_timestamp = 0;
 
-
 	void _update_max_timestamp(fila_registros* registro){
-
 		if (registro->timestamp > max_timestamp){
 			max_timestamp = registro->timestamp;
 			if (last_value != 0){
@@ -56,6 +54,7 @@ t_list* filter_registro_list_by_key(t_list* list, char* key){
 
 t_list* buffer_to_list_registros(char* buffer){
 
+
 	t_list* registros = list_create();
 	char* strbuffer = strdup(buffer);
 	char * line = strtok(strbuffer, "\n");
@@ -65,7 +64,10 @@ t_list* buffer_to_list_registros(char* buffer){
 		char** partes = string_split(line, ";");
 		int cant = split_cant_elem(partes);
 
-		registro->timestamp = cant == 3 ? atoi(partes[0]) : 0;
+		uint64_t timestamp;
+		sscanf(partes[0], "%" PRIu64, &timestamp);
+
+		registro->timestamp = cant == 3 ? (uint64_t) timestamp : 0;
 		registro->key = cant == 3 ? atoi(partes[1]) : -1;
 		registro->value = cant == 3 ? strdup(partes[2]) : strdup("");
 
