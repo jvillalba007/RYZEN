@@ -38,18 +38,12 @@ void obtenerArchivoTemp(char* table_name)
     {
         while ((dir = readdir(d)) != NULL)
         {
-            // aca pones: si el nombre del directorio es tal, dejalo pasar
-            if(strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0 || strcmp(dir->d_name, "Metadata") == 0)
-                continue;
-
             if(string_ends_with(dir->d_name,".tmp"))
             {
             	char* valorTMP = string_substring(dir->d_name, 0 , strlen(dir->d_name) - 4);
-            	log_info(g_logger, "%s", valorTMP);
             	tmp = max(tmp,atoi(valorTMP));
             	free(valorTMP);
             }
-
          }
         closedir(d);
     }
