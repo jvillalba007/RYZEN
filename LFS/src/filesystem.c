@@ -27,11 +27,14 @@ char* get_last_value(t_list* registros){
 	return last_value;
 }
 
-t_list* filter_registro_list_by_key(t_list* list, char* key){
+t_list* filter_registro_list_by_key(t_list* list, u_int16_t key){
+
+	char* key_c;
+	key_c = string_itoa(key);
 
 	bool _filter_key(fila_registros* registro){
 		char* strkey = string_itoa(registro->key);
-		if ( strcmp(strkey, key) == 0 ){
+		if ( strcmp(strkey, key_c) == 0 ){
 			free(strkey);
 			return true;
 		}else{
@@ -40,15 +43,18 @@ t_list* filter_registro_list_by_key(t_list* list, char* key){
 		}
 	}
 
+
 	t_list* filtered_list;
 	filtered_list = list_filter(list, (void*)_filter_key);
 
 	if(list_is_empty(filtered_list))
 	{
+		free(key_c);
 		list_destroy(filtered_list);
 		return NULL;
 	}
 
+	free(key_c);
 	return filtered_list;
 }
 
@@ -112,7 +118,8 @@ void borrar_archivo(char* path, int* ok){
 }
 
 
-char* get_partition_for_key(char* table_name, char* key){
+char* get_partition_for_key(char* table_name, u_int16_t key){
+
 
 	string_to_upper(table_name);
 	char* table_path;
@@ -132,7 +139,7 @@ char* get_partition_for_key(char* table_name, char* key){
 	config_destroy(metadata);
 
 	int partition_assigned;
-	partition_assigned = atoi(key) % partitions;
+	partition_assigned = key % partitions;
 
 	char* partition_c;
 	partition_c = string_itoa(partition_assigned);

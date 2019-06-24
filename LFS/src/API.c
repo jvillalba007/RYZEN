@@ -45,8 +45,12 @@ void procesar_insert(int cant_parametros, char** parametros){
 	char* table_name = parametros[1];
 	char* key = parametros[2];
 	char* value = parametros[3];
-	value = string_substring_from(value, 1); // remove first "
-	value = string_substring_until(value, strlen(value) - 1); //remove last "
+	char* value1 = string_substring_from(value, 1); // remove first "
+	char* value2 = string_substring_until(value1, strlen(value1) - 1); //remove last "
+
+	value = strdup(value2);
+	free(value1);
+	free(value2);
 
 	linea_insert* datos = malloc(sizeof(linea_insert));
 	datos->key = atoi(key);
@@ -64,6 +68,8 @@ void procesar_insert(int cant_parametros, char** parametros){
 
 	if (response==1)
 		printf("No existe la tabla especificada. \n");
+
+	free(value);
 
 }
 
@@ -241,29 +247,28 @@ void procesar_create(char** parametros){
 
 }
 
-char* procesar_select(char** parametros){
+char* select_table_key(linea_select* datos){
+	string_to_upper(datos->tabla);
 
-	char* table_name = parametros[1];
-	string_to_upper(table_name);
-	char* key = parametros[2];
+
 	char* table_path;
-	table_path = generate_path(table_name, TABLES_FOLDER, "");
+	table_path = generate_path(datos->tabla, TABLES_FOLDER, "");
 
 	if( access( table_path, F_OK ) == -1 ) {
 	    // file doesn't exist
 		free(table_path);
-		log_error(g_logger, "La tabla %s no existe", table_name);
+		log_error(g_logger, "La tabla %s no existe", datos->tabla);
 		printf("No existe la tabla especificada. \n");
 		return NULL;
 	}
 
 	// get registros memtable
 	t_list* select_mem;
-	select_mem = select_memtable(table_name, (u_int16_t) atoi(key));
+	select_mem = select_memtable(datos->tabla, datos->key);
 
 	// get registros particiones
 	char* partition_path;
-	partition_path = get_partition_for_key(table_name, key);
+	partition_path = get_partition_for_key(datos->tabla, (u_int16_t) datos->key);
 
 	char* registros_buffer;
 	int buffer_size = 0;
@@ -315,7 +320,7 @@ char* procesar_select(char** parametros){
 
 	if (select_mem == NULL && select_fs == NULL && select_temp == NULL){ // ninguna tiene datos
 
-		log_info(g_logger, "No existe la clave %s en la tabla %s", key, table_name);
+		log_info(g_logger, "No existe la clave %d en la tabla %s", datos->key, datos->tabla);
 		free(table_path);
 		free(partition_path);
 		return NULL;
@@ -327,12 +332,12 @@ char* procesar_select(char** parametros){
 		select_fs? list_add_all(all_list, select_fs) : 0;
 		select_temp? list_add_all(all_list, select_temp) : 0;
 
-		filtered_list = filter_registro_list_by_key(all_list, key);
+		filtered_list = filter_registro_list_by_key(all_list, datos->key);
 
 	}
 
 	if (filtered_list == NULL){
-		log_info(g_logger, "No existe la clave %s en la tabla %s", key, table_name);
+		log_info(g_logger, "No existe la clave %d en la tabla %s", datos->key, datos->tabla);
 		return NULL;
 	}
 
@@ -352,6 +357,29 @@ char* procesar_select(char** parametros){
  	free(partition_path);
 
  	return last_value;
+
+}
+
+void procesar_select(char** parametros){
+
+	char* table_name = parametros[1];
+	char* key = parametros[2];
+
+	linea_select* datos = malloc(sizeof(linea_select));
+	datos->key = atoi(key);
+	datos->tabla = strdup(table_name);
+
+	char* response;
+	response = select_table_key(datos);
+
+	if (response != NULL){
+		printf("El valor de la última clave %s es %s \n", parametros[2], response);
+		free(response);
+	}else{
+		printf("No se encuentra la clave %s \n", parametros[2]);
+	}
+
+	liberar_linea_select(datos);
 
 }
 
@@ -449,6 +477,11 @@ void liberar_linea_insert(linea_insert* metadata){
 	free(metadata);
 }
 
+void liberar_linea_select(linea_select* metadata){
+	free(metadata->tabla);
+	free(metadata);
+}
+
 void consola_procesar_comando(char* linea)
 {
 
@@ -469,14 +502,7 @@ void consola_procesar_comando(char* linea)
 	else if(string_equals_ignore_case(parametros[0],"SELECT")){
 		if (cant_parametros == 3) {
 
-			char* response;
-			response = procesar_select(parametros);
-			if (response != NULL){
-				printf("El valor de la última clave %s es %s \n", parametros[2], response);
-				free(response);
-			}else{
-				printf("No se encuentra la clave %s \n", parametros[2]);
-			}
+			procesar_select(parametros);
 
 		} else {
 			printf("API Error: 2 argumentos son requeridos.\n");

@@ -32,10 +32,10 @@
 	void crearTemporal(char* table_name,char* temporal, int* ok);
 	void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size);
 	void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok);
-	char* get_partition_for_key(char* table_name, char* key);
+	char* get_partition_for_key(char* table_name, u_int16_t key);
 	void borrar_archivo(char* path, int* ok);
 	char* get_last_value(t_list* registros);
-	t_list* filter_registro_list_by_key(t_list* list, char* key);
+	t_list* filter_registro_list_by_key(t_list* list, u_int16_t key);
 	t_list* buffer_to_list_registros(char* buffer);
 
 #endif /* FILESYSTEM_H_ */

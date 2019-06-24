@@ -25,7 +25,7 @@
 		void consola_procesar_comando(char*);
 		void procesar_insert(int, char**);
 		char* extract_value_from_key(char*, char*);
-		char* procesar_select(char**);
+		void procesar_select(char**);
 		void procesar_drop(char**);
 		void* procesar_describe(int, char**);
 		linea_create* read_table_metadata(char*);
@@ -35,6 +35,7 @@
 		void liberar_linea_insert(linea_insert*);
 		void procesar_create(char**);
 		int create_table(char*, char*, char*, char*);
+		char* select_table_key(linea_select*);
 
 		const char* folder_path;
 
