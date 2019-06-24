@@ -25,7 +25,10 @@ int insert_record(linea_insert* datos, char* fixed_timestamp){
 
 	} else {
 		//Timestamp proporcionado
-		registro->timestamp = atoi(fixed_timestamp);
+		uint64_t timestamp;
+		sscanf(fixed_timestamp, "%" PRIu64, &timestamp);
+
+		registro->timestamp = timestamp;
 		registro->key = datos->key;
 		registro->value = strdup(datos->value);
 		insert_memtable(datos->tabla, registro);
