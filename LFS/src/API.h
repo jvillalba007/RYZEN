@@ -31,8 +31,10 @@
 		linea_create* read_table_metadata(char*);
 		void liberar_linea_create(linea_create*);
 		int drop_table(char*);
-		int insert_record(linea_insert* datos, char* fixed_timestamp);
-		void liberar_linea_insert(linea_insert* metadata);
+		int insert_record(linea_insert*, char*);
+		void liberar_linea_insert(linea_insert*);
+		void procesar_create(char**);
+		int create_table(char*, char*, char*, char*);
 
 		const char* folder_path;
 

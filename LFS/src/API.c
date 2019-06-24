@@ -132,25 +132,7 @@ void procesar_drop(char** parametros){
 
 }
 
-
-void procesar_create(char** parametros){
-
-	char* table_name = parametros[1];
-	string_to_upper(table_name);
-	char* consistency = parametros[2];
-	string_to_upper(consistency);
-	char* partitions = parametros[3];
-	char* compact_time = parametros[4];
-
-	if( !isNumeric(partitions) ){
-		printf("Parametro particiones no es numérico. \n");
-		return;
-	}
-
-	if( !isNumeric(compact_time) ){
-		printf("Parametro tiempo de compactación no es numérico. \n");
-		return;
-	}
+int create_table(char* table_name, char* consistency, char* partitions, char* compact_time){
 
 	// Does the table exist?
 	struct stat st = {0};
@@ -165,7 +147,7 @@ void procesar_create(char** parametros){
 		free(table_path);
 		printf("La tabla especificada ya existe. \n");
 		log_info(g_logger, "La tabla %s ya existe", table_name);
-		return;
+		return 1;
 	}
 
 	// Create Metadata file
@@ -178,7 +160,9 @@ void procesar_create(char** parametros){
 	if(fPtr == NULL)
 	{
 		printf("Unable to create file: %s \n %s \n", metadata_path, (char *) strerror(errno));
-		return;
+		free(table_path);
+		free(metadata_path);
+		return 1;
 	}
 
 	char* consist = (char*) calloc(strlen("CONSISTENCY=") + strlen(consistency) +1, sizeof(char));
@@ -207,6 +191,15 @@ void procesar_create(char** parametros){
 		log_error(g_logger, "Espacio Insuficiente");
 		printf("Espacio Insuficiente\n");
 		drop_table(table_name);
+
+		fclose(fPtr);
+		free(metadata_path);
+		free(table_path);
+		free(consist);
+		free(parts);
+		free(compact);
+
+		return 1;
 	}
 	log_info(g_logger, "Resultado del Create %d", ok);
 
@@ -217,6 +210,34 @@ void procesar_create(char** parametros){
 	free(consist);
 	free(parts);
 	free(compact);
+
+	return 0;
+}
+
+void procesar_create(char** parametros){
+
+	char* table_name = parametros[1];
+	string_to_upper(table_name);
+	char* consistency = parametros[2];
+	string_to_upper(consistency);
+	char* partitions = parametros[3];
+	char* compact_time = parametros[4];
+
+	if( !isNumeric(partitions) ){
+		printf("Parametro particiones no es numérico.\n");
+		return;
+	}
+
+	if( !isNumeric(compact_time) ){
+		printf("Parametro tiempo de compactación no es numérico.\n");
+		return;
+	}
+
+	int response;
+	response = create_table(table_name, consistency, partitions, compact_time);
+
+	if (response == 1)
+		printf("Operación create no pudo ser realizada. Revise logs.\n");
 
 }
 
