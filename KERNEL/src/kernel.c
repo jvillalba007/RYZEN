@@ -270,6 +270,7 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 }
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
+
 	int socket = memoria->socket;
 
 	char** split = string_split(linea, " ");
