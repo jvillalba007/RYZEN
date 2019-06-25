@@ -62,6 +62,7 @@ typedef struct{
     char* puerto;
     char* criterio;
     bool activa;
+    int socket;
 } t_memoria_del_pool;
 
 int id_pcbs; //para controlar los id de pcbs entrantes

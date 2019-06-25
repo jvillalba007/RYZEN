@@ -270,18 +270,7 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 }
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
-	int socket = socket_connect_to_server(memoria->ip, memoria->puerto);
-	log_info(logger, "El socket devuelto es: %d", socket_memoria);
-
-	if( socket == -1  ){
-
-		log_error(logger, "¡Error no se pudo conectar con MEMORIA");
-		memoria->activa = false;
-		close(socket);
-		return -1;
-
-	}
-	log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket_memoria);
+	int socket = memoria->socket;
 
 	char** split = string_split(linea, " ");
 
@@ -432,6 +421,13 @@ void conectar_memoria(){
 		exit(EXIT_FAILURE);
 	}
 	log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket_memoria);
+	t_memoria_del_pool* memoria_original = malloc( sizeof( t_memoria_del_pool ) );
+	memoria_original->ip = kernel_config.IP_MEMORIA;
+	memoria_original->puerto = kernel_config.PUERTO_MEMORIA;
+	memoria_original->activa=true;
+	memoria_original->numero_memoria=0;
+	memoria_original->socket = socket_memoria;
+	list_add(l_memorias , memoria_original );
 
 	t_header buffer;
 	buffer.emisor = KERNEL;
