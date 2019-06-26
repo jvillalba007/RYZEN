@@ -8,6 +8,9 @@
 
 #include "commons.h"
 
+
+
+
 void inicializar_logs_y_configs() {
     abrir_log();
     crear_config();
@@ -56,7 +59,13 @@ void liberar_config() {
 
 
 void liberar_kernel(){
+
 	exit_global = 1;
+
+	/*log_info(logger, "libera hilos procesadores");*/
+	terminar_hilos_procesadores();
+	list_destroy_and_destroy_elements(l_procesadores  , (void*)free );
+
 	log_info(logger, "libero semaforo");
 	pthread_mutex_destroy(&sem_ejecutar);
 
@@ -79,9 +88,9 @@ void liberar_kernel(){
 	list_destroy_and_destroy_elements(l_pcb_ejecutando, (void*)free_Pcb);
 	list_destroy_and_destroy_elements(l_pcb_finalizados, (void*)free_Pcb);
 
-	log_info(logger, "libera hilos procesadores");
+	/*log_info(logger, "libera hilos procesadores");
 	terminar_hilos_procesadores();
-	list_destroy(l_procesadores);
+	list_destroy_and_destroy_elements(l_procesadores  , (void*)free );*/
 
 	log_info(logger, "libera config");
 	liberar_config();
@@ -116,12 +125,23 @@ void terminar_hilos_procesadores(){
 	void terminar_hilo_procesador(pthread_t* id_hilo)
 	{
 		log_info(logger, "cierro hilo de ejecucion id :%d" , *(id_hilo));
-		/* TODO: solucionar esto. esta rompiendo */
-		/*pthread_cancel( *(id_hilo) );*/
+		/*TODO: solucionar esto. esta rompiendo*/
+		pthread_kill(*(id_hilo), SIGUSR1);
 	}
 
-	/*list_iterate(l_procesadores,(void*)terminar_hilo_procesador);*/
+	list_iterate(l_procesadores,(void*)terminar_hilo_procesador);
+}
 
+
+void handler(int id) {
+    VAR = 0;
+}
+
+void assignHandler() {
+	struct sigaction sa = {0};
+    sa.sa_handler = handler;
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGUSR1, &sa, NULL);
 }
 
 

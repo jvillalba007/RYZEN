@@ -5,6 +5,7 @@ int main() {
 	inicializar_logs_y_configs();
 	
 	inicializar_kernel();
+	VAR = 1;
 /*
 	//inicializo memoria y tabla de pruebas
 	t_memoria_del_pool* memoria_sc = malloc( sizeof( t_memoria_del_pool ) );
@@ -41,6 +42,7 @@ int main() {
 	log_info(logger, "FIN hilo consola");
 	//exit_global = 1;
 
+
 	liberar_kernel();
 
 	return EXIT_SUCCESS;
@@ -48,6 +50,9 @@ int main() {
 
 
 void ejecutar_procesador(){
+
+	//para liberar hilo al final
+	assignHandler();
 
 	t_PCB* pcb = NULL;
 	char* linea = NULL;
@@ -58,59 +63,58 @@ void ejecutar_procesador(){
 		pthread_mutex_lock(&sem_ejecutar);
 
 
-		 	pcb = obtener_pcb_ejecutar();
-
-		 	if(pcb != NULL){ //AGREGO ESTO PORQUE PUSE UNA SALIDA GLOBAL Y ME PUEDE DEVOLVER UN PCB=null
-			log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
+		pcb = obtener_pcb_ejecutar();
+		if(pcb != NULL){ //AGREGO ESTO PORQUE PUSE UNA SALIDA GLOBAL Y ME PUEDE DEVOLVER UN PCB=null
+		log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 		pthread_mutex_unlock(&sem_ejecutar);
 
-		if( pcb->tipo_request == SIMPLE ){
-			log_info(logger, "Se recibe a ejecucion request simple: %s" , pcb->request_comando  );
-			ejecutar_linea( pcb->request_comando );
+			if( pcb->tipo_request == SIMPLE ){
+				log_info(logger, "Se recibe a ejecucion request simple: %s" , pcb->request_comando  );
+				ejecutar_linea( pcb->request_comando );
 
-			finalizar_pcb(pcb);
-		}
-		else
-		{
-			int k= 0;
-
-			char** split = string_split(pcb->request_comando, " ");
-			log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
-			FILE* archivo = fopen( split[1] , "r");
-			apuntar_archivo(archivo, pcb->pc);
-			split_liberar(split);
-
-			while( (k < kernel_config.QUANTUM) && (!feof(archivo)) ){
-
-				linea = obtener_linea(archivo);
-
-				if(linea != NULL){
-
-				log_info(logger, "la linea a ejecutar es: %s" , linea  );
-				int res = ejecutar_linea( linea );
-				k++;
-				pcb->pc++;
-				free(linea);
-
-				if(res == 0){
-					log_info(logger, "la linea se ejecuto correctamente");
-				}else {
-					finalizar_pcb(pcb);
-					k = kernel_config.QUANTUM;
-				}
-				}
-			}
-
-			if(feof(archivo)){
 				finalizar_pcb(pcb);
-			} else{
-				parar_por_quantum(pcb);
 			}
-			fclose(archivo);
+			else
+			{
+				int k= 0;
+
+				char** split = string_split(pcb->request_comando, " ");
+				log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
+				FILE* archivo = fopen( split[1] , "r");
+				apuntar_archivo(archivo, pcb->pc);
+				split_liberar(split);
+
+				while( (k < kernel_config.QUANTUM) && (!feof(archivo)) ){
+
+					linea = obtener_linea(archivo);
+
+					if(linea != NULL){
+
+					log_info(logger, "la linea a ejecutar es: %s" , linea  );
+					int res = ejecutar_linea( linea );
+					k++;
+					pcb->pc++;
+					free(linea);
+
+					if(res == 0){
+						log_info(logger, "la linea se ejecuto correctamente");
+					}else {
+						finalizar_pcb(pcb);
+						k = kernel_config.QUANTUM;
+					}
+					}
+				}
+
+				if(feof(archivo)){
+					finalizar_pcb(pcb);
+				} else{
+					parar_por_quantum(pcb);
+				}
+				fclose(archivo);
+			}
+			free(pcb->request_comando);
+			free(pcb);
 		}
-		free(pcb->request_comando);
-		free(pcb);
-	}
 	}
 	log_info(logger,"cerrando hilo");
 	pthread_exit(0);
@@ -268,10 +272,18 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 	split_liberar(split);
 	return mem;
 }
+
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 
-	int socket = memoria->socket;
+	int socket;
+
+	if( memoria->socket != NULL ){
+		socket = memoria->socket;
+	}
+	else{
+		//TODO: crear la conexion y verificar si memoria esta conectada. guardar el socket en la memoria y seguir
+	}
 
 	char** split = string_split(linea, " ");
 
@@ -291,8 +303,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		free(buffer);
 
 
-	}else{
-		if(es_string(split[0], "SELECT")){
+	}
+	else if(es_string(split[0], "SELECT")){
 			int tamanio;
 			char* buffer = convertir_select(split);
 			tamanio = sizeof(buffer);
@@ -308,44 +320,34 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			free(buffer);
 
 
-		}else{
-			if(es_string(split[0], "CREATE")){
-
-				int tamanio;
-				char* buffer = convertir_create(split);
-				tamanio = sizeof(buffer);
-
-				t_header *paquete = malloc(sizeof(t_header));
-				paquete->emisor = KERNEL;
-				paquete->tipo_mensaje = CREATE;
-				paquete->payload_size = tamanio;
-				send(socket, &paquete, sizeof(buffer), 0);
-				free(paquete);
-
-				send(socket, &buffer, tamanio, 0);
-				free(buffer);
-
-
-			}else{
-				if(es_string(split[0], "DESCRIBE")){
-
-				}else{
-					if(es_string(split[0], "DROP")){
-
-					}else{
-						if(es_string(split[0], "JOURNAL")){
-
-						}else{
-							if(es_string(split[0], "ADD")){
-
-							}else
-								log_error(logger,"comando no reconocido");
-						}
-					}
-				}
-			}
 	}
+	else if(es_string(split[0], "CREATE")){
+
+		int tamanio;
+		char* buffer = convertir_create(split);
+		tamanio = sizeof(buffer);
+
+		t_header *paquete = malloc(sizeof(t_header));
+		paquete->emisor = KERNEL;
+		paquete->tipo_mensaje = CREATE;
+		paquete->payload_size = tamanio;
+		send(socket, &paquete, sizeof(buffer), 0);
+		free(paquete);
+
+		send(socket, &buffer, tamanio, 0);
+		free(buffer);
+
 	}
+	else if(es_string(split[0], "DROP")){
+
+	}
+	else if(es_string(split[0], "DESCRIBE")){
+
+	}
+	else{
+		log_error(logger,"comando no reconocido");
+	}
+
 	split_liberar(split);
 	return 0;
 }
@@ -357,14 +359,15 @@ t_PCB* obtener_pcb_ejecutar(){
 	while( (list_is_empty( l_pcb_listos )) && (!exit_global) ){ //TODO ver por que me tira un invalid read size 4
 
 	}
+
+	if(exit_global) return NULL;
+
 	t_PCB *pcb = NULL;
 	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
-	if(!exit_global){
 	pcb = list_remove( l_pcb_listos , 0 );
 	list_add( l_pcb_ejecutando , pcb  );
 	log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
 	log_info(logger, "nuevo tamanio de la lista de listos %d", list_size( l_pcb_listos ));
-	}
 	return pcb;
 }
 
@@ -387,8 +390,10 @@ void finalizar_pcb(t_PCB* pcb){
 
 void inicializar_kernel(){
 
-	exit_global = 0;
 	id_pcbs = 0;
+	operaciones_totales=0;
+	exit_global = 0;
+
 	pthread_mutex_init(&sem_ejecutar, NULL);
 
 	//INIT lista criterios
@@ -441,10 +446,16 @@ void conectar_memoria(){
 
 void crear_procesadores(){
 	for(int i=0; i<kernel_config.MULTIPROCESAMIENTO; i++){
+
 		pthread_t hilo_ejecucion;
+
 		pthread_create(&hilo_ejecucion, NULL , (void*) ejecutar_procesador, NULL);
 		log_info(logger, "Hilo de ejecucion creado id: %d" , hilo_ejecucion);
-		list_add(l_procesadores, &hilo_ejecucion);
+
+		pthread_t* valor = malloc(sizeof(pthread_t));
+		*valor = hilo_ejecucion;
+
+		list_add(l_procesadores, valor);
 		pthread_detach(hilo_ejecucion);
 	}
 }

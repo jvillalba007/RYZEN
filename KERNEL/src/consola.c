@@ -105,6 +105,8 @@ void procesar_comando (char* linea) {
                                 
                             }
                             else if (es_string(parametros[4], "SHC")) {
+
+                            	//TODO: verificar si hay elementos en la lista, si ya hay elementos ejecutar journal en cada memoria de esta lista. luego agregar la nueva memoria
                             	log_info(logger, "Se agrega a criterio SHC memoria: %d", m->numero_memoria);
                                 list_add(l_criterio_SHC, m );
                             }

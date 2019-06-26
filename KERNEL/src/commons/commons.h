@@ -9,6 +9,9 @@
 #include <string.h>
 #include <pthread.h>
 #include "shared/utils.h"
+#include <signal.h>
+
+int VAR;
 
 t_log* logger;
 t_config* config;
@@ -31,10 +34,10 @@ typedef enum {
 } t_tipo_request;
 
 /*
-    Tipo de dato: t_PCB
-        - request/comando = lo ingresado por consola.
-        - tipo de request = al ejecutar no es lo mismo ejecutar un request/comando simple o un request/comando compuesto
-        - PC = próximo número de línea a ejecutar.
+    representaicon de los pedidos al kernel
+	- request/comando = lo ingresado por consola.
+	- tipo de request = al ejecutar no es lo mismo ejecutar un request/comando simple o un request/comando compuesto
+	- PC = próximo número de línea a ejecutar.
 */
 typedef struct{
 	int id;
@@ -45,7 +48,7 @@ typedef struct{
 
 
 /*
-    serán parte de la lista de tablas-consistencias tendrá estos nodos
+   Representacion de tabla en sistema
 */
 typedef struct{
     char* nombre_tabla;
@@ -54,7 +57,7 @@ typedef struct{
 
 
 /*
-    serán parte de la lista de memorias del pool de memorias. TODO:confirmar definicion de estos atributos
+ Representacion de memoria en sistema
 */
 typedef struct{
     int numero_memoria;
@@ -63,8 +66,14 @@ typedef struct{
     char* criterio;
     bool activa;
     int socket;
+    float tiempo_select; //tiempo promedio que tarda un SELECT en ejecutarse en los últimos 30 segundos.
+    float tiempo_insert; //tiempo promedio que tarda un INSERT en ejecutarse en los últimos 30 segundos.
+    int cantidad_select; //Cantidad de SELECT ejecutados en los últimos 30 segundos.
+    int cantidad_insert; // Cantidad de INSERT ejecutados en los últimos 30 segundos.
+    int cantidad_carga; //Cantidad de INSERT / SELECT que se ejecutaron en esa memoria respecto de las operaciones totales.
 } t_memoria_del_pool;
 
+int operaciones_totales; //sumatoria de todas las operaciones que se ejecutaron en las memorias.
 int id_pcbs; //para controlar los id de pcbs entrantes
 int socket_memoria;
 pthread_mutex_t sem_ejecutar; //mutex para obtener los pcb de los hilos de ejecucion
@@ -106,5 +115,8 @@ void free_Pcb(t_PCB* pcb_borrar);
 void free_memoria(t_memoria_del_pool* memoria_borrar);
 void free_tabla(t_tabla_consistencia* tabla_borrar);
 void terminar_hilos_procesadores();
+
+void assignHandler();
+void handler(int id);
 
 #endif
