@@ -5,7 +5,7 @@ int main() {
 	inicializar_logs_y_configs();
 	
 	inicializar_kernel();
-
+/*
 	//inicializo memoria y tabla de pruebas
 	t_memoria_del_pool* memoria_sc = malloc( sizeof( t_memoria_del_pool ) );
 	memoria_sc->activa=true;
@@ -23,7 +23,7 @@ int main() {
 	memoria_sc2->numero_memoria=1;
 	memoria_sc2->criterio = strdup("EC");
 	list_add(l_memorias , memoria_sc2 );
-
+*/
 
 	//INICIA CLIENTE MEMORIA
 	/*conectar_memoria();*/
@@ -52,7 +52,7 @@ void ejecutar_procesador(){
 	t_PCB* pcb = NULL;
 	char* linea = NULL;
 
-	while(1){
+	while(!exit_global){ //AGREGO UNA SALIDA GLOBAL
 
 		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
@@ -60,6 +60,7 @@ void ejecutar_procesador(){
 
 		 	pcb = obtener_pcb_ejecutar();
 
+		 	if(pcb != NULL){ //AGREGO ESTO PORQUE PUSE UNA SALIDA GLOBAL Y ME PUEDE DEVOLVER UN PCB=null
 			log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 		pthread_mutex_unlock(&sem_ejecutar);
 
@@ -109,6 +110,7 @@ void ejecutar_procesador(){
 		}
 		free(pcb->request_comando);
 		free(pcb);
+	}
 	}
 	log_info(logger,"cerrando hilo");
 	pthread_exit(0);
@@ -268,6 +270,83 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 }
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
+
+	int socket = memoria->socket;
+
+	char** split = string_split(linea, " ");
+
+	if(es_string(split[0], "INSERT")){
+		int tamanio;
+		char* buffer = convertir_insert(split);
+		tamanio = sizeof(buffer);
+
+		t_header *paquete = malloc(sizeof(t_header));
+		paquete->emisor = KERNEL;
+		paquete->tipo_mensaje = INSERT;
+		paquete->payload_size = tamanio;
+		send(socket, &paquete, sizeof(buffer), 0);
+		free(paquete);
+
+		send(socket, &buffer, tamanio, 0);
+		free(buffer);
+
+
+	}else{
+		if(es_string(split[0], "SELECT")){
+			int tamanio;
+			char* buffer = convertir_select(split);
+			tamanio = sizeof(buffer);
+
+			t_header *paquete = malloc(sizeof(t_header));
+			paquete->emisor = KERNEL;
+			paquete->tipo_mensaje = SELECT;
+			paquete->payload_size = tamanio;
+			send(socket, &paquete, sizeof(buffer), 0);
+			free(paquete);
+
+			send(socket, &buffer, tamanio, 0);
+			free(buffer);
+
+
+		}else{
+			if(es_string(split[0], "CREATE")){
+
+				int tamanio;
+				char* buffer = convertir_create(split);
+				tamanio = sizeof(buffer);
+
+				t_header *paquete = malloc(sizeof(t_header));
+				paquete->emisor = KERNEL;
+				paquete->tipo_mensaje = CREATE;
+				paquete->payload_size = tamanio;
+				send(socket, &paquete, sizeof(buffer), 0);
+				free(paquete);
+
+				send(socket, &buffer, tamanio, 0);
+				free(buffer);
+
+
+			}else{
+				if(es_string(split[0], "DESCRIBE")){
+
+				}else{
+					if(es_string(split[0], "DROP")){
+
+					}else{
+						if(es_string(split[0], "JOURNAL")){
+
+						}else{
+							if(es_string(split[0], "ADD")){
+
+							}else
+								log_error(logger,"comando no reconocido");
+						}
+					}
+				}
+			}
+	}
+	}
+	split_liberar(split);
 	return 0;
 }
 
@@ -275,16 +354,17 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 t_PCB* obtener_pcb_ejecutar(){
 
 	//si lista vacia se queda loopeando esperando que entre alguno
-	while( list_is_empty( l_pcb_listos ) ){ //TODO ver por que me tira un invalid read size 4
+	while( (list_is_empty( l_pcb_listos )) && (!exit_global) ){ //TODO ver por que me tira un invalid read size 4
 
 	}
+	t_PCB *pcb = NULL;
 	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
-
-	t_PCB *pcb = list_remove( l_pcb_listos , 0 );
+	if(!exit_global){
+	pcb = list_remove( l_pcb_listos , 0 );
 	list_add( l_pcb_ejecutando , pcb  );
 	log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
 	log_info(logger, "nuevo tamanio de la lista de listos %d", list_size( l_pcb_listos ));
-
+	}
 	return pcb;
 }
 
@@ -307,6 +387,7 @@ void finalizar_pcb(t_PCB* pcb){
 
 void inicializar_kernel(){
 
+	exit_global = 0;
 	id_pcbs = 0;
 	pthread_mutex_init(&sem_ejecutar, NULL);
 
@@ -341,6 +422,13 @@ void conectar_memoria(){
 		exit(EXIT_FAILURE);
 	}
 	log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket_memoria);
+	t_memoria_del_pool* memoria_original = malloc( sizeof( t_memoria_del_pool ) );
+	memoria_original->ip = kernel_config.IP_MEMORIA;
+	memoria_original->puerto = kernel_config.PUERTO_MEMORIA;
+	memoria_original->activa=true;
+	memoria_original->numero_memoria=0;
+	memoria_original->socket = socket_memoria;
+	list_add(l_memorias , memoria_original );
 
 	t_header buffer;
 	buffer.emisor = KERNEL;
@@ -405,3 +493,47 @@ bool buscar_pcb( t_PCB* pcb_it ){
 	list_add( l_pcb_listos , pcb );
 	log_info(logger, "tamanio lista de listos: %d", list_size( l_pcb_listos ));
 }
+
+char *convertir_insert(char** split){
+
+	int tamanio;
+	linea_insert insert;
+	insert.tabla = split[1];
+	insert.key = atoi(split[2]);
+	insert.value = split[3];
+	char *buffer = serializar_insert(insert,&tamanio);
+
+	free(insert.tabla);
+	free(insert.value);
+	return buffer;
+}
+
+char *convertir_select(char** split){
+	int tamanio;
+	linea_select select;
+	select.tabla = split[1];
+	select.key = atoi(split[2]);
+	char* buffer = serializar_select(select, &tamanio);
+
+	free(select.tabla);
+	return buffer;
+
+}
+
+char *convertir_create(char** split){
+	int tamanio;
+	linea_create create;
+	create.tabla = split[1];
+	create.tipo_consistencia = split[2];
+	create.nro_particiones = atoi(split[3]);
+	create.tiempo_compactacion = *(u_int32_t*)split[4];
+	char* buffer = serializar_create(create, &tamanio);
+
+	free(create.tabla);
+	free(create.tipo_consistencia);
+	return buffer;
+
+}
+
+
+

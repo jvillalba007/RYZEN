@@ -62,6 +62,7 @@ typedef struct{
     char* puerto;
     char* criterio;
     bool activa;
+    int socket;
 } t_memoria_del_pool;
 
 int id_pcbs; //para controlar los id de pcbs entrantes
@@ -88,6 +89,8 @@ t_list* l_procesadores;
 
 //LISTA DE TABLAS
 t_list* l_tablas;
+
+int exit_global;
 
 
 void inicializar_logs_y_configs(void);
