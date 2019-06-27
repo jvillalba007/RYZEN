@@ -37,7 +37,7 @@
 	char* get_last_value(t_list* registros);
 	t_list* filter_registro_list_by_key(t_list* list, u_int16_t key);
 	t_list* buffer_to_list_registros(char* buffer);
-	bool does_table_exist(char* table);
+	bool table_exist(char* table);
 	t_list* get_last_value_for_each_key(t_list* registros);
 
 #endif /* FILESYSTEM_H_ */

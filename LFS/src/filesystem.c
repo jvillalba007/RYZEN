@@ -7,7 +7,7 @@
 
 #include "filesystem.h"
 
-bool does_table_exist(char* table){ //TODO: aplicar a todas las funciones que usen esto
+bool table_exist(char* table){ //TODO: aplicar a todas las funciones que usen esto
 	bool exists = true;
 
 	char* table_path;
@@ -16,7 +16,7 @@ bool does_table_exist(char* table){ //TODO: aplicar a todas las funciones que us
 	if( access( table_path, F_OK ) == -1 ) {
 	    // file doesn't exist
 		free(table_path);
-		log_error(g_logger, "Does table %s exist? %s", table, exists ? "true" : "false");
+		log_info(g_logger, "Does table %s exist? %s", table, exists ? "true" : "false");
 		exists = false;
 	}
 

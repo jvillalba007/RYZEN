@@ -11,7 +11,7 @@
 
 int compactate(char* table){
 	bool exist;
-	exist = does_table_exist(table);
+	exist = table_exist(table);
 	if (!exist){
 		// tabla ya no existe
 		kill_compactator_thread(table);
