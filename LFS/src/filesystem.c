@@ -7,7 +7,76 @@
 
 #include "filesystem.h"
 
-char* get_last_value(t_list* registros){
+bool does_table_exist(char* table){ //TODO: aplicar a todas las funciones que usen esto
+	bool exists = true;
+
+	char* table_path;
+	table_path = generate_path(table, TABLES_FOLDER, "");
+
+	if( access( table_path, F_OK ) == -1 ) {
+	    // file doesn't exist
+		free(table_path);
+		log_error(g_logger, "Does table %s exist? %s", table, exists ? "true" : "false");
+		exists = false;
+	}
+
+	return exists;
+}
+
+
+void get_last_value_for_each_key(t_list* registros){
+	t_list* filtered_list = list_create();
+	fila_registros* last_registro;
+
+	bool _matches_key_and_is_not_registro(fila_registros* registro){
+		if(registro->key == last_registro->key && registro != last_registro){ // si el regisro tiene la misma key pero NO ES EL ULTIMO -> BORRALO
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	int l_size = list_size(registros);
+
+	// Recorrer toda la lista: por cada elemento, crear otra lista con los registros filtrada por key del elemento.
+	// De esa lista, get el registro con el último timestamp.
+	// Ahora remove de la lista principal todos los elementos que no sean ese registro pero compartan la key, es decir: si tiene la misma key pero NO ES EL ULTIMO.
+	unsigned int i = 0;
+	for(; i < l_size; i++){
+		fila_registros* tmp_registro;
+		tmp_registro = list_get(registros, i);
+		u_int16_t key;
+		key = tmp_registro->key;
+
+		t_list* one_key_list;
+		one_key_list = filter_registro_list_by_key(registros, key);
+		fila_registros* last_registro;
+		last_registro = get_last_registro(one_key_list);
+
+		list_remove_and_destroy_by_condition(registros, _matches_key_and_is_not_registro, liberar_registros);
+
+		list_destroy(one_key_list);
+	}
+
+}
+
+fila_registros* get_last_registro(t_list* registros){
+	fila_registros* last_registro;
+	uint64_t max_timestamp = 0;
+
+	void _update_max_timestamp(fila_registros* registro){
+		if (registro->timestamp > max_timestamp){
+			max_timestamp = registro->timestamp;
+			last_registro = registro;
+		}
+	}
+
+	list_iterate(registros, (void*) _update_max_timestamp);
+
+	return last_registro;
+}
+
+char* get_last_value(t_list* registros){ //TODO: modificar para que use la función get_last_registro
 
 	char* last_value = 0;
 	uint64_t max_timestamp = 0;
@@ -27,7 +96,7 @@ char* get_last_value(t_list* registros){
 	return last_value;
 }
 
-t_list* filter_registro_list_by_key(t_list* list, u_int16_t key){
+t_list* filter_registro_list_by_key(t_list* list, u_int16_t key){ //TODO: cambiar a int equals en vez de string compare
 
 	char* key_c;
 	key_c = string_itoa(key);
