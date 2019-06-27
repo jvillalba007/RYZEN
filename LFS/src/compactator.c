@@ -49,6 +49,17 @@ int compactate(char* table){
 	return 0;
 }
 
+void block_table(char* table){
+	// usar un diccionario GLOBAL de las commons, la key es el nombre de la tabla y el value es 1 si está bloqueada, 0 si no esta bloqueada.
+	// el SELECT o cualquier otra operacion va a tener que consultar esto
+
+}
+
+void unblock_table(char* table){
+
+
+}
+
 void clean_blocks(char* table){
 	int ok;
 
