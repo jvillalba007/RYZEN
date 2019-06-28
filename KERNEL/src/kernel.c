@@ -279,7 +279,17 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		socket = memoria->socket;
 	}
 	else{
-		//TODO: crear la conexion y verificar si memoria esta conectada. guardar el socket en la memoria y seguir
+		socket = socket_connect_to_server(memoria->ip, memoria->puerto);
+		log_info(logger, "El socket devuelto es: %d", socket);
+		if( socket == -1  ){
+
+			log_error(logger, "¡Error no se pudo conectar con MEMORIA");
+			//TODO: habria que verificar si aca se cierra todo para no tener leaks
+			exit(EXIT_FAILURE);
+		}
+		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket);
+
+		memoria->socket = socket_memoria;
 	}
 
 	char** split = string_split(linea, " ");
