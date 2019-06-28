@@ -12,6 +12,7 @@
 	#include <shared/protocolo.h>
 	#include <pthread.h>
 	#include <time.h>
+	#include <inttypes.h>
 
 #define ceiling(x,y) (((x) + (y) - 1) / (y))
 
@@ -50,5 +51,6 @@ linea_response_select* enviar_select_lfs( linea_select *linea ); //request de se
 void enviar_drop_lfs( char *tabla );
 void enviar_insert_lfs( linea_insert linea ); //seguramente la utilice el journal
 
+void journal();
 
 #endif /* MEMORIA_H_ */

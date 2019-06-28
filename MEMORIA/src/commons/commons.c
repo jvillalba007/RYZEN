@@ -88,9 +88,9 @@ int escribir_en_frame(char* frame, fila_Frames registro)
 	int pos = 0;
 	int len_value = strlen(registro.value);
 
-	if(len_value > maximo_value)
+	if(len_value >= maximo_value)
 	{
-		log_info(mem_log, "Segmentation Paginated Fault");
+		log_info(mem_log, "SEGMENTATION FAULT");
 		return -1;
 	}
 
@@ -174,6 +174,20 @@ void drop_tabla_paginas(fila_TSegmentos *segmento){
 	list_iterate(segmento->paginas,(void*)drop_fila_paginas);
 	list_destroy(segmento->paginas);
 	log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+}
+
+void enviar_insert_LFS(linea_insert* linea) {
+	int size;
+	char* buffer = serializar_insert(*linea, &size);
+	t_header paquete;
+	paquete.emisor = MEMORIA;
+	paquete.tipo_mensaje = INSERT;
+	paquete.payload_size = size;
+	send(socketClienteLfs, &paquete, sizeof(paquete), 0);
+	send(socketClienteLfs, buffer, size, 0);
+
+	free(linea->value);
+	free(buffer);
 }
 
 void mem_exit_global() {

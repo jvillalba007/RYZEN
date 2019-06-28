@@ -15,6 +15,8 @@
 	#include <commons/collections/list.h>
 	#include <string.h>
 	#include <shared/utils.h>
+	#include <shared/socket.h>
+	#include <shared/protocolo.h>
 	#include <commons/bitarray.h>
 	#include <inttypes.h>
 
@@ -83,6 +85,7 @@
 	void liberar_tabla_segmentos(t_list* tabla_segmentos);
 	void drop_tabla_paginas(fila_TSegmentos *segmento);
 	void drop_fila_paginas(fila_TPaginas* fila_pagina);
+	void enviar_insert_LFS(linea_insert* linea);
 	void mem_exit_global();
 	void mem_exit_simple();
 	void imprimir_arrays(char** split,char* nombre);

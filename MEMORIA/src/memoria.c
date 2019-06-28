@@ -39,11 +39,19 @@ int main(void) {
 	//pthread_t tid_gossiping;
 	//pthread_create(&tid_gossiping, NULL, (void*)ejecutar_gossiping, NULL);
 
+	// INICIAR JOURNAL
+	log_info(mem_log, "[MEMORIA] Abro hilo JOURNAL");
+	pthread_t tid_journal;
+	pthread_create(&tid_journal, NULL, (void*)hilo_journal, NULL);
+
+
 
 
 	pthread_join(tid_consola, NULL);
+	pthread_join(tid_journal, NULL);
 	pthread_join(tid_server, NULL);
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO CONSOLA");
+	log_info(mem_log, "[MEMORIA] FINALIZO HILO JOURNAL");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO SERVIDOR");
 
 	mem_exit_global();
@@ -225,6 +233,14 @@ void atender_kernel(int* cliente)
 		}
 		break;
 
+		case JOURNAL:{
+			log_info(mem_log, "COMENZANDO JOURNAL..." );
+			journal();
+			log_info(mem_log, "TERMINO JOURNAL..." );
+
+		}
+		break;
+
 		}
 
 	}
@@ -307,20 +323,30 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 			fila_Frames linea_frame = inicializar_fila_frame( linea_ins ) ;
 			//TODO; decidir si agregar parametro a esta funcion o usar una nueva funcion o actualizar el timestamp luego de inicializar el frame
 			linea_frame.timestamp=linea_response->timestamp;
-			free(linea_response);
 
 			log_info(mem_log, "Se iniciliza frame con key: %d" , linea_frame.key  ) ;
 
 			escribir_en_frame( frame , linea_frame );
+
+			//TODO: no deberia crear pagina si escrbir frame -1
 			pagina = crear_pagina( segmento , frame , 0 );
 			log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
 			log_info(mem_log, "PAGINA N°: %d" , pagina->numero_pagina) ;
 			log_info(mem_log, "ULTIMO USO: %d" , pagina->ultimo_uso  ) ;
 
+			free(linea_response->value);
+			free(linea_response);
+
 		}
 		else{
 
-			log_info(mem_log, "****NO HAY FRAMES DISPONIBLES SE RECHAZA REQUEST***") ;
+			log_info(mem_log, "****NO HAY FRAMES DISPONIBLES SE RECHAZA REQUEST***");
+			log_info(mem_log, "---FALLO ALGORITMO DE REEMPLAZO. HAY QUE HACER JOURNAL---");
+			log_info(mem_log, "COMENZANDO JOURNAL..." );
+			journal();
+			log_info(mem_log, "TERMINO JOURNAL..." );
+
+			//pagina = ejecutar_select(linea );
 		}
 
 	}
@@ -366,12 +392,17 @@ void ejecutar_insert(linea_insert* linea){
 
 		fila_Frames registro;
 		leer_de_frame( pagina->frame_registro , &registro );
-		log_info(mem_log, "LA INFORMACION DEL FRAME INSERTADO ES key: %d , value: %s  , timestamp: %d" , registro.key , registro.value , registro.timestamp ) ;
+		log_info(mem_log, "LA INFORMACION DEL FRAME INSERTADO ES key: %d , value: %s  , timestamp: %" PRIu64 , registro.key , registro.value , registro.timestamp ) ;
 		log_info(mem_log, "LA CANTIDAD DE PAGINAS DEL SEGMENTO ES: %d" , list_size(segmento->paginas )  ) ;
 		log_info(mem_log, "***************FIN INSERT**********************" ) ;
 	}
 	else{
 		log_info(mem_log, "---FALLO ALGORITMO DE REEMPLAZO. HAY QUE HACER JOURNAL---");
+		log_info(mem_log, "COMENZANDO JOURNAL..." );
+		journal();
+		log_info(mem_log, "TERMINO JOURNAL..." );
+
+		//ejecutar_insert(linea);
 		}
 	}
 }
@@ -584,7 +615,7 @@ linea_response_select* enviar_select_lfs( linea_select *linea ){
 
 	linea_response_select* linea_response = malloc(sizeof(linea_response_select));
 	linea_response->timestamp = 10;
-    linea_response->value = strdup( "test" );
+    linea_response->value = strdup( "AAA" );
 
     return linea_response;
 }
@@ -600,4 +631,69 @@ void enviar_create_lfs( linea_create linea_c ){
 
 void ejecutar_gossiping(){
 
+}
+
+void journal()
+{
+
+	void journal_tabla_paginas(fila_TSegmentos *segmento){
+
+		void journal_fila_paginas(fila_TPaginas* fila_pagina)
+		{
+			if(fila_pagina->modificado == 1){
+			fila_Frames registro;
+			leer_de_frame(fila_pagina->frame_registro,&registro);
+
+			linea_insert linea;
+
+			linea.tabla = segmento->nombre_tabla;
+			linea.key = registro.key;
+			linea.value = strdup(registro.value);
+
+			//enviar_insert_LFS(&linea);
+			}
+		}
+
+		list_iterate(segmento->paginas,(void*)journal_fila_paginas);
+		list_destroy(segmento->paginas);
+		log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+
+		free( segmento->nombre_tabla );//SE AGREGO AHORA
+		free(segmento);
+		log_info(mem_log, "LIBERADO SEGMENTO");
+
+	}
+
+	void journal_tabla_segmentos(t_list* tabla_segmentos) {
+		list_iterate(tabla_segmentos,(void*)journal_tabla_paginas);
+		list_destroy(tabla_segmentos);
+		log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
+	}
+
+	journal_tabla_segmentos(tabla_segmentos);
+
+	free(bitMapStr);
+	bitarray_destroy(bitmap_frames);
+	log_info(mem_log, "SE RESETEA DEL BITMAP");
+
+	bitMapStr = calloc(ceiling(cantidad_frames, 8), 1);
+	bitmap_frames = bitarray_create_with_mode(bitMapStr, ceiling(cantidad_frames, 8), MSB_FIRST);
+
+	frames_ocupados = 0;
+}
+
+void hilo_journal()
+{
+    struct timespec ts;
+    ts.tv_sec = mem_config.retardo_journal / 1000;
+    ts.tv_nsec = (mem_config.retardo_journal  % 1000) * 1000000;
+
+	while ( !EXIT_PROGRAM ) {
+
+	    nanosleep(&ts, NULL);
+	    journal();
+
+	}
+
+	pthread_exit(0);
 }

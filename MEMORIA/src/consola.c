@@ -124,7 +124,9 @@ void consola_procesar_comando(char* linea)
 	}
 
 	else if(cantParametros == 1 && string_equals_ignore_case(parametros[0],"JOURNAL")){
-		string_iterate_lines(parametros,puts);
+		log_info(mem_log, "COMENZANDO JOURNAL..." );
+		journal();
+		log_info(mem_log, "TERMINO JOURNAL..." );
 	}
 
 	/* Comando clear (limpiar pantalla consola) */
