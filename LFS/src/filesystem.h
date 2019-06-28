@@ -38,6 +38,7 @@
 	t_list* filter_registro_list_by_key(t_list* list, u_int16_t key);
 	t_list* buffer_to_list_registros(char* buffer);
 	bool table_exist(char* table);
-	t_list* get_last_value_for_each_key(t_list* registros);
+	void get_last_value_for_each_key(t_list* registros);
+	fila_registros* get_last_registro(t_list* registros);
 
 #endif /* FILESYSTEM_H_ */
