@@ -290,6 +290,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket);
 
 		memoria->socket = socket_memoria;
+		memoria->activa = true;
 	}
 
 	char** split = string_split(linea, " ");
@@ -363,7 +364,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 t_PCB* obtener_pcb_ejecutar(){
 
 	//si lista vacia se queda loopeando esperando que entre alguno
-	while( (list_is_empty( l_pcb_listos )) && (!exit_global) ){ //TODO ver por que me tira un invalid read size 4
+	while( (list_is_empty( l_pcb_listos )) && (!exit_global) ){
 
 	}
 
