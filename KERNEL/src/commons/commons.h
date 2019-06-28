@@ -11,8 +11,6 @@
 #include "shared/utils.h"
 #include <signal.h>
 
-int VAR;
-
 t_log* logger;
 t_config* config;
 
@@ -116,7 +114,5 @@ void free_memoria(t_memoria_del_pool* memoria_borrar);
 void free_tabla(t_tabla_consistencia* tabla_borrar);
 void terminar_hilos_procesadores();
 
-void assignHandler();
-void handler(int id);
 
 #endif

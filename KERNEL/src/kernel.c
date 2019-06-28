@@ -3,9 +3,7 @@
 int main() {
 
 	inicializar_logs_y_configs();
-	
 	inicializar_kernel();
-	VAR = 1;
 /*
 	//inicializo memoria y tabla de pruebas
 	t_memoria_del_pool* memoria_sc = malloc( sizeof( t_memoria_del_pool ) );
@@ -40,8 +38,6 @@ int main() {
 
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
-	//exit_global = 1;
-
 
 	liberar_kernel();
 
@@ -51,9 +47,6 @@ int main() {
 
 void ejecutar_procesador(){
 
-	//para liberar hilo al final
-	assignHandler();
-
 	t_PCB* pcb = NULL;
 	char* linea = NULL;
 
@@ -62,11 +55,14 @@ void ejecutar_procesador(){
 		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
 
-
 		pcb = obtener_pcb_ejecutar();
-		if(pcb != NULL){ //AGREGO ESTO PORQUE PUSE UNA SALIDA GLOBAL Y ME PUEDE DEVOLVER UN PCB=null
-		log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
+
 		pthread_mutex_unlock(&sem_ejecutar);
+
+		if(pcb != NULL)
+		{ //AGREGO ESTO PORQUE PUSE UNA SALIDA GLOBAL Y ME PUEDE DEVOLVER UN PCB=null
+		log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
+
 
 			if( pcb->tipo_request == SIMPLE ){
 				log_info(logger, "Se recibe a ejecucion request simple: %s" , pcb->request_comando  );
@@ -115,6 +111,7 @@ void ejecutar_procesador(){
 			free(pcb->request_comando);
 			free(pcb);
 		}
+
 	}
 	log_info(logger,"cerrando hilo");
 	pthread_exit(0);
@@ -445,9 +442,10 @@ void conectar_memoria(){
 }
 
 void crear_procesadores(){
-	for(int i=0; i<kernel_config.MULTIPROCESAMIENTO; i++){
 
-		pthread_t hilo_ejecucion;
+	pthread_t hilo_ejecucion;
+
+	for(int i=0; i<kernel_config.MULTIPROCESAMIENTO; i++){
 
 		pthread_create(&hilo_ejecucion, NULL , (void*) ejecutar_procesador, NULL);
 		log_info(logger, "Hilo de ejecucion creado id: %d" , hilo_ejecucion);

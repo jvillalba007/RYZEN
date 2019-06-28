@@ -60,10 +60,8 @@ void liberar_config() {
 
 void liberar_kernel(){
 
-	exit_global = 1;
-
 	/*log_info(logger, "libera hilos procesadores");*/
-	terminar_hilos_procesadores();
+	//terminar_hilos_procesadores();
 	list_destroy_and_destroy_elements(l_procesadores  , (void*)free );
 
 	log_info(logger, "libero semaforo");
@@ -124,7 +122,7 @@ void terminar_hilos_procesadores(){
 
 	void terminar_hilo_procesador(pthread_t* id_hilo)
 	{
-		log_info(logger, "cierro hilo de ejecucion id :%d" , *(id_hilo));
+		log_info(logger, "cierro hilo de ejecucion id :%lu" , *(id_hilo));
 		/*TODO: solucionar esto. esta rompiendo*/
 		pthread_kill(*(id_hilo), SIGUSR1);
 	}
@@ -132,17 +130,6 @@ void terminar_hilos_procesadores(){
 	list_iterate(l_procesadores,(void*)terminar_hilo_procesador);
 }
 
-
-void handler(int id) {
-    VAR = 0;
-}
-
-void assignHandler() {
-	struct sigaction sa = {0};
-    sa.sa_handler = handler;
-    sigfillset(&sa.sa_mask);
-    sigaction(SIGUSR1, &sa, NULL);
-}
 
 
 

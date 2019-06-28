@@ -6,10 +6,12 @@
 
 void consola() {
     
-    for(ever) {
+    while(!exit_global) {
         char* linea = console();
 
         if(es_string(linea, "EXIT")) {
+
+        	exit_global=1;
             free(linea);
             break;
         }
