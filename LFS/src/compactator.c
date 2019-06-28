@@ -44,6 +44,8 @@ int compactate(char* table){
 	uint64_t block_finish = getCurrentTime();
 	blocked_time = block_finish - block_start;
 
+	list_destroy_and_destroy_elements(new_rows, (void*) liberar_registros);
+
 	log_info(g_logger, "Compactación para la tabla %s tardó %" PRIu64 " milisegundos", table, blocked_time);
 
 	return 0;
@@ -86,7 +88,14 @@ void clean_blocks(char* table){
 			string_append(&file_path, "/");
 			string_append(&file_path, dir->d_name);
 			log_info(g_logger, "Liberando bloques para %s ", file_path);
-			borrar_archivo(file_path, &ok);
+
+			if (string_ends_with(dir->d_name, ".tmpc")){
+				borrar_archivo(file_path, &ok);
+			}else{
+				liberar_bloques(file_path, &ok);
+				free(file_path);
+			}
+
 
 		 }
 		closedir(d);
@@ -109,8 +118,6 @@ void recreate_partitions(char* table, t_list* registros){
 		guardarDatos(partition_path, strlen(data), data, &ok);
 
 		free(data);
-		free(registro->value);
-		free(registro);
 		free(partition_path);
 
 	}
@@ -145,15 +152,19 @@ t_list* get_last_rows(char* table){
 
             	obtenerDatos(resolved_path, &temps_buffer, &temp_buffer_size);
 
-            	t_list* tmp_list;
-            	tmp_list = temp_buffer_size ? buffer_to_list_registros(temps_buffer) : NULL;
+            	if (temp_buffer_size > 0){
+            		t_list* tmp_list;
+					tmp_list = temp_buffer_size ? buffer_to_list_registros(temps_buffer) : NULL;
 
-            	list_add_all(rows, tmp_list);
+					list_add_all(rows, tmp_list);
 
-            	tmp_list ? list_destroy(tmp_list) : 0;
-            	free(resolved_path);
+					tmp_list ? list_destroy(tmp_list) : 0;
+
+					free(temps_buffer);
+            	}
+				free(resolved_path);
             	free(filename);
-            	temp_buffer_size ? free(temps_buffer) : 0;
+
 
 			}
 		}

@@ -40,5 +40,6 @@
 	bool table_exist(char* table);
 	void get_last_value_for_each_key(t_list* registros);
 	fila_registros* get_last_registro(t_list* registros);
+	void liberar_bloques(char* path, int* ok);
 
 #endif /* FILESYSTEM_H_ */

@@ -553,7 +553,10 @@ void consola_procesar_comando(char* linea)
 	else if(cant_parametros == 1 && string_equals_ignore_case(parametros[0],"CLEAR")){
 		system("clear");
 	}
-
+	/* Comando clear (limpiar pantalla consola) */
+	else if(cant_parametros == 2 && string_equals_ignore_case(parametros[0],"COMPACTATE")){
+		compactate(parametros[1]);
+	}
 	/* Error al ingresar comando */
 	else{
 		printf("No se pudo reconocer el comando\n");

@@ -9,6 +9,7 @@
 
 bool table_exist(char* table){ //TODO: aplicar a todas las funciones que usen esto
 	bool exists = true;
+	string_to_upper(table);
 
 	char* table_path;
 	table_path = generate_path(table, TABLES_FOLDER, "");
@@ -16,16 +17,17 @@ bool table_exist(char* table){ //TODO: aplicar a todas las funciones que usen es
 	if( access( table_path, F_OK ) == -1 ) {
 	    // file doesn't exist
 		free(table_path);
-		log_info(g_logger, "Does table %s exist? %s", table, exists ? "true" : "false");
 		exists = false;
 	}
 
+	log_info(g_logger, "Does table %s exist? %s", table, exists ? "true" : "false");
+
+	free(table_path);
 	return exists;
 }
 
 
 void get_last_value_for_each_key(t_list* registros){
-	t_list* filtered_list = list_create();
 	fila_registros* last_registro;
 
 	bool _matches_key_and_is_not_registro(fila_registros* registro){
@@ -37,6 +39,7 @@ void get_last_value_for_each_key(t_list* registros){
 	}
 
 	int l_size = list_size(registros);
+	log_info(g_logger, "El tamaño de la lista de registros a compactar es %d", l_size);
 
 	// Recorrer toda la lista: por cada elemento, crear otra lista con los registros filtrada por key del elemento.
 	// De esa lista, get el registro con el último timestamp.
@@ -45,15 +48,20 @@ void get_last_value_for_each_key(t_list* registros){
 	for(; i < l_size; i++){
 		fila_registros* tmp_registro;
 		tmp_registro = list_get(registros, i);
+
+		log_info(g_logger, "El registro que está siendo analizado es key: %d timestamp: %" PRIu64, tmp_registro->key, tmp_registro->timestamp);
+
 		u_int16_t key;
 		key = tmp_registro->key;
 
 		t_list* one_key_list;
 		one_key_list = filter_registro_list_by_key(registros, key);
-		fila_registros* last_registro;
 		last_registro = get_last_registro(one_key_list);
 
-		list_remove_and_destroy_by_condition(registros, _matches_key_and_is_not_registro, liberar_registros);
+		log_info(g_logger, "El registro que está ganó la disputa por el último valor para la key %d es timestamp: %" PRIu64 " valor: %s" PRIu64, tmp_registro->key, tmp_registro->timestamp, tmp_registro->value);
+
+
+		list_remove_and_destroy_by_condition(registros, (void*)_matches_key_and_is_not_registro, (void*) liberar_registros);
 
 		list_destroy(one_key_list);
 	}
@@ -162,6 +170,25 @@ t_list* buffer_to_list_registros(char* buffer){
 	free(strbuffer);
 
 	return registros;
+}
+
+void liberar_bloques(char* path, int* ok){
+
+	void _borrar_bloque(char* nro_bloque){
+		bitarray_clean_bit(bitmap, atoi(nro_bloque));
+	}
+
+	*ok = 1;
+
+	t_config* config_archivo = config_create(path);
+
+
+	char** bloques_strings = config_get_array_value(config_archivo, "BLOQUES");
+	string_iterate_lines(bloques_strings, _borrar_bloque);
+
+
+	config_destroy(config_archivo);
+	split_liberar(bloques_strings);
 }
 
 
