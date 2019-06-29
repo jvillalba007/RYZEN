@@ -48,6 +48,8 @@
 	t_list* memtable;
 	t_bitarray* bitmap;
 
+	t_dictionary* table_status; // FALSE means CAN USE - TRUE means CAN'T USE (BLOCKED)
+
 	char* BLOCK_SIZE;
 	char* BLOCKS;
 	char* MAGIC_NUMBER;
@@ -66,6 +68,7 @@
 	void crear_metadata(void);
 	void leer_metadata(void);
 	void loggear_metadata(void);
+	void iniciar_dict_table_status(void);
 	//void crear_carpeta(char* carpeta);
 
 #endif

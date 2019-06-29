@@ -226,6 +226,8 @@ int create_table(char* table_name, char* consistency, char* partitions, char* co
 	free(parts);
 	free(compact);
 
+	dictionary_put(table_status, table_name, false); // table can be used
+
 	return 0;
 }
 
@@ -258,6 +260,11 @@ void procesar_create(char** parametros){
 
 char* select_table_key(linea_select* datos){
 	string_to_upper(datos->tabla);
+
+	if (dictionary_get(table_status, datos->tabla)){
+		log_error(g_logger, "La tabla esta bloqueada por compactación");
+		return NULL;
+	}
 
 
 	char* table_path;

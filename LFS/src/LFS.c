@@ -65,6 +65,8 @@ void console_process() {
 void liberar_general(){
 	liberar_config(lfs_config);
 	liberar_logger(g_logger);
+
+	dictionary_destroy(table_status);
 }
 
 int main(void) {

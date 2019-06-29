@@ -57,13 +57,14 @@ int kill_compactator_thread(char* table){
 }
 
 void block_table(char* table){
-	// usar un diccionario GLOBAL de las commons, la key es el nombre de la tabla y el value es 1 si está bloqueada, 0 si no esta bloqueada.
-	// el SELECT o cualquier otra operacion va a tener que consultar esto
+
+	dictionary_put(table_status, table, true);
 
 }
 
 void unblock_table(char* table){
 
+	dictionary_put(table_status, table, false);
 
 }
 

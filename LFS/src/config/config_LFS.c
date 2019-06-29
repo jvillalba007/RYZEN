@@ -76,6 +76,10 @@ void iniciar_memtable() {
 	memtable = list_create();
 }
 
+void iniciar_dict_table_status(){
+	table_status = dictionary_create();
+}
+
 void iniciar_config(){
 	iniciar_logger();
 	crear_config();
@@ -89,6 +93,8 @@ void iniciar_config(){
 	iniciar_bitmap();
 
 	iniciar_memtable();
+
+	iniciar_dict_table_status();
 }
 
 void iniciar_bitmap(){
