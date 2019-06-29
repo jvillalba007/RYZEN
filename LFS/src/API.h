@@ -37,6 +37,7 @@
 		int create_table(char*, char*, char*, char*);
 		char* select_table_key(linea_select*);
 		void liberar_linea_select(linea_select*);
+		void retardo(void);
 
 		const char* folder_path;
 

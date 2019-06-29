@@ -1,6 +1,12 @@
 #include "API.h"
 
 
+void retardo(){
+	log_info(g_logger, "Durmiendo por %d milisegundos" , lfs_config.retardo_lfs);
+	usleep(lfs_config.retardo_lfs * 1000);
+}
+
+
 int insert_record(linea_insert* datos, char* fixed_timestamp){
 
 	if (strlen(datos->value) > (lfs_config.value_size -1 )){ // cuenta caracter nulo
@@ -44,6 +50,8 @@ int insert_record(linea_insert* datos, char* fixed_timestamp){
 
 	free(full_path);
 
+
+	retardo();
 	return 0;
 }
 
@@ -131,6 +139,8 @@ int drop_table(char* table_name){
 	rmdir(table_path);
 
 	free(table_path);
+
+	retardo();
 	return 0;
 
 }
@@ -228,6 +238,8 @@ int create_table(char* table_name, char* consistency, char* partitions, char* co
 
 	dictionary_put(table_status, table_name, false); // table can be used
 
+
+	retardo();
 	return 0;
 }
 
@@ -372,6 +384,8 @@ char* select_table_key(linea_select* datos){
  	free(table_path);
  	free(partition_path);
 
+
+ 	retardo();
  	return last_value;
 
 }
@@ -478,6 +492,7 @@ void* procesar_describe(int cant_parametros, char** parametros){
         closedir(d);
     }
 
+    retardo();
     return list_metadata;
 }
 
