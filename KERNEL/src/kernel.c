@@ -27,6 +27,11 @@ int main() {
 	//INICIA CLIENTE MEMORIA
 	/*conectar_memoria();*/
 
+	//HILO REINICIO_ESTADISTICAS
+	pthread_t hilo_reinicio_estadisticas;
+	pthread_create(&hilo_reinicio_estadisticas, NULL, (void*) reinicio_estadisticas, NULL);
+	log_info(logger,"iniciando hilo estadisticas %d", hilo_reinicio_estadisticas);
+
 	//INICIA CONSOLA
 	pthread_t hilo_consola;
 	pthread_create(&hilo_consola, NULL , (void*) consola, NULL);
@@ -38,6 +43,9 @@ int main() {
 
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
+
+	pthread_join(hilo_reinicio_estadisticas, NULL);
+	log_info(logger, "fin hilo reinicio estadisticas");
 
 	liberar_kernel();
 
@@ -275,7 +283,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 	int socket;
 
-	if( memoria->socket != NULL ){
+	if(memoria->socket != -1){
 		socket = memoria->socket;
 	}
 	else{
@@ -296,6 +304,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	char** split = string_split(linea, " ");
 
 	if(es_string(split[0], "INSERT")){
+		int tiempo_ejecucion = clock();
 		int tamanio;
 		char* buffer = convertir_insert(split);
 		tamanio = sizeof(buffer);
@@ -308,11 +317,16 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		free(paquete);
 
 		send(socket, &buffer, tamanio, 0);
+		operaciones_totales++;
+		memoria->cantidad_carga++;
 		free(buffer);
+		memoria->cantidad_insert++;
+		memoria->tiempo_insert = (clock() - tiempo_ejecucion);
 
 
 	}
 	else if(es_string(split[0], "SELECT")){
+			int tiempo_ejecucion = clock();
 			int tamanio;
 			char* buffer = convertir_select(split);
 			tamanio = sizeof(buffer);
@@ -325,7 +339,12 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			free(paquete);
 
 			send(socket, &buffer, tamanio, 0);
+			operaciones_totales++;
+			memoria->cantidad_carga++;
 			free(buffer);
+			memoria->cantidad_select++;
+			memoria->tiempo_select = (clock() - tiempo_ejecucion);
+
 
 
 	}
@@ -343,14 +362,17 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		free(paquete);
 
 		send(socket, &buffer, tamanio, 0);
+		operaciones_totales++;
 		free(buffer);
 
 	}
 	else if(es_string(split[0], "DROP")){
 
+		operaciones_totales++;
 	}
 	else if(es_string(split[0], "DESCRIBE")){
 
+		operaciones_totales++;
 	}
 	else{
 		log_error(logger,"comando no reconocido");
@@ -441,6 +463,7 @@ void conectar_memoria(){
 	memoria_original->activa=true;
 	memoria_original->numero_memoria=0;
 	memoria_original->socket = socket_memoria;
+	memoria_original->cantidad_carga = 0;
 	list_add(l_memorias , memoria_original );
 
 	t_header buffer;
@@ -555,5 +578,29 @@ char *convertir_create(char** split){
 
 }
 
+void reinicio_estadisticas(){
+
+	struct timespec time;
+	time.tv_sec = 30;
+	time.tv_nsec = 0;
+	while(!exit_global){
+
+		nanosleep(&time, NULL);
+		log_info(logger, "iniciando reincio estadisticas");
+
+		void reiniciar_memorias(t_memoria_del_pool* memoria)
+		{
+			log_info(logger,"reiniciando memoria: %d",memoria->numero_memoria);
+			memoria->cantidad_insert = 0;
+			memoria->cantidad_select = 0;
+			memoria->tiempo_insert = 0;
+			memoria->tiempo_select = 0;
+		}
+
+		list_iterate(l_memorias,(void*)reiniciar_memorias);
+		}
+
+	pthread_exit(0);
+}
 
 
