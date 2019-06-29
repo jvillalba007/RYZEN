@@ -2,6 +2,13 @@
 
 
 int insert_record(linea_insert* datos, char* fixed_timestamp){
+
+	if (strlen(datos->value) > (lfs_config.value_size -1 )){ // cuenta caracter nulo
+		log_error(g_logger, "El value %s excede el máximo de caracteres %d", datos->value, lfs_config.value_size - 1);
+		return 2;
+	}
+
+
 	string_to_upper(datos->tabla);
 
 	char* full_path;
@@ -68,6 +75,8 @@ void procesar_insert(int cant_parametros, char** parametros){
 
 	if (response==1)
 		printf("No existe la tabla especificada. \n");
+	else if (response==2)
+		printf("El value es demasiado grande. \n");
 
 	free(value);
 
