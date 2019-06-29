@@ -27,6 +27,11 @@ int main() {
 	//INICIA CLIENTE MEMORIA
 	/*conectar_memoria();*/
 
+	//HILO REINICIO_ESTADISTICAS
+	pthread_t hilo_reinicio_estadisticas;
+	pthread_create(&hilo_reinicio_estadisticas, NULL, (void*) reinicio_estadisticas, NULL);
+	log_info(logger,"iniciando hilo estadisticas %d", hilo_reinicio_estadisticas);
+
 	//INICIA CONSOLA
 	pthread_t hilo_consola;
 	pthread_create(&hilo_consola, NULL , (void*) consola, NULL);
@@ -38,6 +43,9 @@ int main() {
 
 	pthread_join(hilo_consola, NULL);
 	log_info(logger, "FIN hilo consola");
+
+	pthread_join(hilo_reinicio_estadisticas, NULL);
+	log_info(logger, "fin hilo reinicio estadisticas");
 
 	liberar_kernel();
 
@@ -275,16 +283,28 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 	int socket;
 
-	if( memoria->socket != NULL ){
+	if(memoria->socket != -1){
 		socket = memoria->socket;
 	}
 	else{
-		//TODO: crear la conexion y verificar si memoria esta conectada. guardar el socket en la memoria y seguir
+		socket = socket_connect_to_server(memoria->ip, memoria->puerto);
+		log_info(logger, "El socket devuelto es: %d", socket);
+		if( socket == -1  ){
+
+			log_error(logger, "¡Error no se pudo conectar con MEMORIA");
+			//TODO: habria que verificar si aca se cierra todo para no tener leaks
+			exit(EXIT_FAILURE);
+		}
+		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket);
+
+		memoria->socket = socket_memoria;
+		memoria->activa = true;
 	}
 
 	char** split = string_split(linea, " ");
 
 	if(es_string(split[0], "INSERT")){
+		int tiempo_ejecucion = clock();
 		int tamanio;
 		char* buffer = convertir_insert(split);
 		tamanio = sizeof(buffer);
@@ -297,11 +317,16 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		free(paquete);
 
 		send(socket, &buffer, tamanio, 0);
+		operaciones_totales++;
+		memoria->cantidad_carga++;
 		free(buffer);
+		memoria->cantidad_insert++;
+		memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
 
 
 	}
 	else if(es_string(split[0], "SELECT")){
+			int tiempo_ejecucion = clock();
 			int tamanio;
 			char* buffer = convertir_select(split);
 			tamanio = sizeof(buffer);
@@ -314,7 +339,12 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			free(paquete);
 
 			send(socket, &buffer, tamanio, 0);
+			operaciones_totales++;
+			memoria->cantidad_carga++;
 			free(buffer);
+			memoria->cantidad_select++;
+			memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
+
 
 
 	}
@@ -332,14 +362,17 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		free(paquete);
 
 		send(socket, &buffer, tamanio, 0);
+		operaciones_totales++;
 		free(buffer);
 
 	}
 	else if(es_string(split[0], "DROP")){
 
+		operaciones_totales++;
 	}
 	else if(es_string(split[0], "DESCRIBE")){
 
+		operaciones_totales++;
 	}
 	else{
 		log_error(logger,"comando no reconocido");
@@ -353,7 +386,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 t_PCB* obtener_pcb_ejecutar(){
 
 	//si lista vacia se queda loopeando esperando que entre alguno
-	while( (list_is_empty( l_pcb_listos )) && (!exit_global) ){ //TODO ver por que me tira un invalid read size 4
+	while( (list_is_empty( l_pcb_listos )) && (!exit_global) ){
 
 	}
 
@@ -430,6 +463,7 @@ void conectar_memoria(){
 	memoria_original->activa=true;
 	memoria_original->numero_memoria=0;
 	memoria_original->socket = socket_memoria;
+	memoria_original->cantidad_carga = 0;
 	list_add(l_memorias , memoria_original );
 
 	t_header buffer;
@@ -544,5 +578,29 @@ char *convertir_create(char** split){
 
 }
 
+void reinicio_estadisticas(){
+
+	struct timespec time;
+	time.tv_sec = 30;
+	time.tv_nsec = 0;
+	while(!exit_global){
+
+		nanosleep(&time, NULL);
+		log_info(logger, "iniciando reincio estadisticas");
+
+		void reiniciar_memorias(t_memoria_del_pool* memoria)
+		{
+			log_info(logger,"reiniciando memoria: %d",memoria->numero_memoria);
+			memoria->cantidad_insert = 0;
+			memoria->cantidad_select = 0;
+			memoria->tiempo_insert = 0;
+			memoria->tiempo_select = 0;
+		}
+
+		list_iterate(l_memorias,(void*)reiniciar_memorias);
+		}
+
+	pthread_exit(0);
+}
 
 

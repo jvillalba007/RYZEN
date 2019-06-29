@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include "shared/utils.h"
 #include <signal.h>
+#include <time.h>
 
 t_log* logger;
 t_config* config;
