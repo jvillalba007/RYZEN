@@ -197,12 +197,17 @@ t_memoria_del_pool* obtener_memoria(int numero_de_memoria) {
     return mem;
 }
 
-void enviar_journal_lista_memorias (t_list* l) {
-    //  TODO: para cada elemento m de l, se hace: enviar_journal_memoria(m)
-}
+void enviar_journal_lista_memorias (t_list* lista) {
+    
+    void _enviar_journal_a_cada_memoria(t_memoria_del_pool* m) {
+        //  Esperar a que Javi resuelva lo de serializar
+        //  A cada memoria hay que mandarle la orden del journal
 
-void enviar_journal_memoria(t_memoria_del_pool* m) {
-    //  TODO: acá va la lógica de enviarle a cada memoria la orden para que haga journal
+       log_info(logger, "Se envió el journal a la memoria %d sin problemas.", m->numero_memoria);
+       printf("Se envió el journal a la memoria %d sin problemas.\n", m->numero_memoria);
+   }
+
+   list_iterate(lista, (void*) _enviar_journal_a_cada_memoria);
 }
 
 bool es_comando_conocido (char** parametros) {
