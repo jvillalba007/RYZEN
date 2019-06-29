@@ -238,6 +238,15 @@ int create_table(char* table_name, char* consistency, char* partitions, char* co
 
 	dictionary_put(table_status, table_name, false); // table can be used
 
+	// INICIAR HILO COMPACTACION
+	linea_create tabla;
+	tabla.tabla = table_name;
+	tabla.tiempo_compactacion = atoi(compact_time);
+
+	pthread_t thread_compactacion;
+	pthread_create(&thread_compactacion, NULL, (void*)hilo_compactacion, (void*) &tabla);
+	log_info(g_logger, "[THREAD] Creo el hilo de compactacion para %s",tabla.tabla);
+	pthread_detach(thread_compactacion);
 
 	retardo();
 	return 0;

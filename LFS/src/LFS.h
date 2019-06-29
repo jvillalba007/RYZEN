@@ -15,13 +15,14 @@
 	#include "API.h"
 	#include "memtable.h"
 	#include "dump.h"
+	#include "compactator.h"
 
 	bool EXIT_PROGRAM;
 	int socketServidor;
 
 	void crear_servidor(void);
 	void console_process(void);
-	void liberar_memoria(void);
+	void hilo_compactacion(void*);
 	void consola_procesar_comando(char*);
 
 #endif /* LFS_H */

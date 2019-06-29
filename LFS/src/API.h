@@ -12,12 +12,14 @@
 		#include <errno.h>
 		#include <time.h>
 		#include <inttypes.h>
+		#include <pthread.h>
 
 		#include <shared/utils.h>
 		#include "shared/protocolo.h"
 		#include "config/config_LFS.h"
 		#include "filesystem.h"
 		#include "memtable.h"
+		#include "LFS.h"
 
 
 		#define TABLES_FOLDER "tables/"
