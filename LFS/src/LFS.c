@@ -61,6 +61,52 @@ void console_process() {
 
 }
 
+void hilo_compactacion(void* tabla)
+{
+	linea_create* metadata = (linea_create *) tabla;
+    struct timespec ts;
+    char* ctabla = strdup(metadata->tabla);
+    u_int32_t compactacion_time = metadata->tiempo_compactacion;
+
+    ts.tv_sec = compactacion_time / 1000;
+    ts.tv_nsec = (compactacion_time  % 1000) * 1000000;
+
+	while ( !EXIT_PROGRAM ) {
+
+	    nanosleep(&ts, NULL);
+	    compactate(ctabla);
+
+	}
+
+	free(ctabla);
+	pthread_exit(0);
+}
+
+void iniciar_hilos_compactacion()
+{
+	void hilos(linea_create* tabla)
+	{
+		// INICIAR DETACHABLE
+		pthread_t thread_compactacion;
+		pthread_create(&thread_compactacion, NULL, (void*)hilo_compactacion, (void*)tabla);
+		log_info(g_logger, "[THREAD] Creo el hilo de compactacion para %s",tabla->tabla);
+		pthread_detach(thread_compactacion);
+	}
+
+	t_list* tablas_metadata = procesar_describe(1, NULL);
+
+	if(!list_is_empty(tablas_metadata))
+	{
+		list_iterate(tablas_metadata, (void*) hilos);
+		list_destroy_and_destroy_elements(tablas_metadata, (void*) liberar_linea_create);
+	}
+	else
+	{
+		list_destroy(tablas_metadata);
+	}
+
+}
+
 
 void liberar_general(){
 	liberar_config(lfs_config);
@@ -75,6 +121,7 @@ int main(void) {
 
 	iniciar_config();
 	iniciar_montaje();
+	iniciar_hilos_compactacion();
 
 	// INICIAR SOCKET SERVIDOR
 	pthread_attr_t attr_server;
