@@ -10,8 +10,8 @@
 
 	int compactate(char*);
 	int rename_temporal_files(char*);
-	void clean_blocks(char*);
-	void recreate_partitions(char*, t_list*);
+	int clean_blocks(char*);
+	void recreate_partitions(char*, int, t_list*);
 	t_list* get_last_rows(char*);
 
 	// TODO:

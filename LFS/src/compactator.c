@@ -35,9 +35,10 @@ int compactate(char* table){
 	uint64_t block_start = getCurrentTime();
 	block_table(table);
 	//----------------------------------------------------BLOCKED TABLE----------------------------------------------------
-	clean_blocks(table);
+	int partitions;
+	partitions = clean_blocks(table);
 
-	recreate_partitions(table, new_rows);
+	recreate_partitions(table, partitions, new_rows);
 
 	unblock_table(table);
 	//----------------------------------------------------UNBLOCKED TABLE----------------------------------------------------
@@ -66,7 +67,7 @@ void unblock_table(char* table){
 
 }
 
-void clean_blocks(char* table){
+int clean_blocks(char* table){
 	int ok;
 
 	char* table_path;
@@ -75,6 +76,8 @@ void clean_blocks(char* table){
 	DIR *d;
 	struct dirent *dir;
 	char* file_path;
+
+	int partitions = 0;
 
 	d = opendir(table_path);
 	if (d)
@@ -89,12 +92,17 @@ void clean_blocks(char* table){
 			string_append(&file_path, dir->d_name);
 			log_info(g_logger, "Liberando bloques para %s ", file_path);
 
-			if (string_ends_with(dir->d_name, ".tmpc")){
-				borrar_archivo(file_path, &ok);
-			}else{
-				liberar_bloques(file_path, &ok);
-				free(file_path);
-			}
+			borrar_archivo(file_path, &ok); // detona la tabla excepto Metadata y .tmp
+
+			if (string_ends_with(dir->d_name, ".bin"))
+				partitions = partitions + 1;
+//
+//			if (string_ends_with(dir->d_name, ".tmpc")){
+//				borrar_archivo(file_path, &ok);
+//			}else{
+//				liberar_bloques(file_path, &ok);
+//				free(file_path);
+//			}
 
 
 		 }
@@ -103,10 +111,15 @@ void clean_blocks(char* table){
 
 	free(table_path);
 
+	return partitions;
+
 }
 
 
-void recreate_partitions(char* table, t_list* registros){
+void recreate_partitions(char* table, int partitions, t_list* registros){
+
+	int ok;
+	crearParticiones(table, partitions, &ok);
 
 	void _compact_registro_particion(fila_registros* registro){
 
