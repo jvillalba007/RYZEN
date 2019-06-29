@@ -321,7 +321,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		memoria->cantidad_carga++;
 		free(buffer);
 		memoria->cantidad_insert++;
-		memoria->tiempo_insert = (clock() - tiempo_ejecucion);
+		memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
 
 
 	}
@@ -343,7 +343,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			memoria->cantidad_carga++;
 			free(buffer);
 			memoria->cantidad_select++;
-			memoria->tiempo_select = (clock() - tiempo_ejecucion);
+			memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
 
 
 
