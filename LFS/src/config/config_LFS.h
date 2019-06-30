@@ -46,6 +46,7 @@
 	lfs_cfg lfs_config;
 
 	t_list* memtable;
+	t_list* threads;
 	t_bitarray* bitmap;
 
 	t_dictionary* table_status; // FALSE means CAN USE - TRUE means CAN'T USE (BLOCKED)

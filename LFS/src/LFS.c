@@ -36,6 +36,15 @@ void crear_servidor(){
 
 }
 
+void liberar_threads() {
+	void MatarHilos(pthread_t* id)
+	{
+		pthread_kill(*id, SIGUSR1);
+	}
+	list_iterate(threads, (void*) MatarHilos);
+	list_destroy_and_destroy_elements(threads,free);
+}
+
 void console_process() {
 
 
@@ -49,6 +58,7 @@ void console_process() {
 			{
 				EXIT_PROGRAM = true;
 				shutdown(socketServidor,SHUT_RDWR);
+				liberar_threads();
 			}
 		else {
 			consola_procesar_comando(buffer);
@@ -61,6 +71,17 @@ void console_process() {
 
 }
 
+void handler(int id) {
+
+}
+
+void assignHandler() {
+	struct sigaction sa = {0};
+    sa.sa_handler = handler;
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGUSR1, &sa, NULL);
+}
+
 void hilo_compactacion(void* tabla)
 {
 	linea_create* metadata = (linea_create *) tabla;
@@ -71,12 +92,18 @@ void hilo_compactacion(void* tabla)
     ts.tv_sec = compactacion_time / 1000;
     ts.tv_nsec = (compactacion_time  % 1000) * 1000000;
 
+    assignHandler();
+
 	while ( !EXIT_PROGRAM ) {
 
 	    nanosleep(&ts, NULL);
-	    compactate(ctabla);
+
+	    if(compactate(ctabla))
+	    break;
 
 	}
+
+	log_info(g_logger, "[THREAD] Se Cierra hilo de compactacion para %s",ctabla);
 
 	free(ctabla);
 	pthread_exit(0);
@@ -89,8 +116,11 @@ void iniciar_hilos_compactacion()
 		// INICIAR DETACHABLE
 		pthread_t thread_compactacion;
 		pthread_create(&thread_compactacion, NULL, (void*)hilo_compactacion, (void*)tabla);
+		pthread_t* idHilo = malloc(sizeof(pthread_t));
+		*idHilo = thread_compactacion;
 		log_info(g_logger, "[THREAD] Creo el hilo de compactacion para %s",tabla->tabla);
 		pthread_detach(thread_compactacion);
+		list_add(threads,idHilo);
 	}
 
 	t_list* tablas_metadata = procesar_describe(1, NULL);
@@ -144,6 +174,9 @@ int main(void) {
 
 	pthread_t tid_dump;
 	pthread_create(&tid_dump, &attr_dump, (void*)dump, NULL);
+	pthread_t* idHilo = malloc(sizeof(pthread_t));
+	*idHilo = tid_dump;
+	list_add(threads,idHilo);
 
 	//Esperar a que el hilo termine
 	pthread_join(tid_consola, NULL);

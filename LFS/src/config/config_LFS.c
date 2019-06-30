@@ -93,6 +93,7 @@ void iniciar_config(){
 	iniciar_bitmap();
 
 	iniciar_memtable();
+	threads = list_create();
 
 	iniciar_dict_table_status();
 }

@@ -109,6 +109,8 @@ void dump()
     ts.tv_sec = lfs_config.tiempo_dump / 1000;
     ts.tv_nsec = (lfs_config.tiempo_dump  % 1000) * 1000000;
 
+    assignHandler();
+
 	while ( !EXIT_PROGRAM ) {
 
 	    nanosleep(&ts, NULL);

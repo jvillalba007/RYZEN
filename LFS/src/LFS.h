@@ -9,7 +9,7 @@
 	#include <pthread.h>
 	#include <shared/socket.h>
 	#include <shared/console.h>
-
+	#include <signal.h>
 	#include <shared/utils.h>
 	#include "config/config_LFS.h"
 	#include "API.h"
@@ -22,6 +22,8 @@
 
 	void crear_servidor(void);
 	void console_process(void);
+	void handler(int);
+	void assignHandler();
 	void hilo_compactacion(void*);
 	void consola_procesar_comando(char*);
 

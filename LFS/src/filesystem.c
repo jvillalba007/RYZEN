@@ -16,7 +16,6 @@ bool table_exist(char* table){ //TODO: aplicar a todas las funciones que usen es
 
 	if( access( table_path, F_OK ) == -1 ) {
 	    // file doesn't exist
-		free(table_path);
 		exists = false;
 	}
 
