@@ -104,6 +104,63 @@ char* deserializar_string(char* buffer)
 	return string;
 }
 
+char* serializar_describe(t_list* describes,int* longitud)
+{
+	char* buffer = malloc(sizeof(int));
+	int pos = 0;
+	int buffer_size = 0;
+
+	int cant_elementos = list_size(describes);
+	memcpy(buffer, (void*) &(cant_elementos), sizeof(int));
+	pos += sizeof(int);
+	buffer_size += sizeof(int);
+
+	void serializar(linea_create* linea)
+	{
+		int longitud;
+
+		linea_create lineac;
+		lineac.tabla = linea->tabla;
+		lineac.nro_particiones = linea->nro_particiones;
+		lineac.tiempo_compactacion = linea->tiempo_compactacion;
+		lineac.tipo_consistencia = linea->tipo_consistencia;
+
+		char* serializado = serializar_create(lineac,&longitud);
+
+		buffer = realloc(buffer, buffer_size + longitud);
+		memcpy(buffer+pos, (void*) serializado, longitud);
+		pos += longitud;
+		buffer_size += longitud;
+
+		free(serializado);
+	}
+
+	list_iterate(describes,(void*) serializar);
+	*(longitud) = buffer_size;
+
+	return buffer;
+}
+
+t_list* deserializar_describe(char* buffer)
+{
+
+	t_list* describes = list_create();
+	int cant_elementos = 0;
+	int pos = 0;
+	memcpy((void*) &(cant_elementos), (void*) buffer, sizeof(int));
+	pos += sizeof(int);
+
+	for(int i=0;i<cant_elementos;i++)
+	{
+		linea_create* linea = malloc(sizeof(linea_create));
+		deserializar_create(buffer+pos, linea);
+		pos += sizeof(u_int16_t) + strlen(linea->tabla) + sizeof(u_int8_t) + strlen(linea->tipo_consistencia) + sizeof(u_int8_t) + sizeof(u_int32_t);
+		list_add(describes,linea);
+	}
+
+	return describes;
+}
+
 char* serializar_create(linea_create linea, int* longitud)
 {
 	int pos = 0;
