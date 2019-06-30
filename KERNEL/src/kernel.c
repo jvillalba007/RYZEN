@@ -58,7 +58,7 @@ void ejecutar_procesador(){
 	t_PCB* pcb = NULL;
 	char* linea = NULL;
 
-	while(!exit_global){ //AGREGO UNA SALIDA GLOBAL
+	while(!exit_global){
 
 		log_info(logger, "Esperando pcb...");
 		pthread_mutex_lock(&sem_ejecutar);
@@ -67,8 +67,7 @@ void ejecutar_procesador(){
 
 		pthread_mutex_unlock(&sem_ejecutar);
 
-		if(pcb != NULL)
-		{ //AGREGO ESTO PORQUE PUSE UNA SALIDA GLOBAL Y ME PUEDE DEVOLVER UN PCB=null
+		if(pcb != NULL) {
 		log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
 
 
@@ -160,7 +159,7 @@ int ejecutar_linea( char *linea ){
 			log_info(logger, "Se cancela ejecucion de operacion: %s", parametros[0] );
 			res= -1;
 		}
-		//es un describe general o de una tabla que no esta en sistema. TODO:decidir que hacer. podriamos ejecutar el random de la lista de EC y enviarlo a ejecutar a una memoria de esas.
+		//es un describe general o de una tabla que no esta en sistema.
 		else
 		{
 			log_info(logger, "es un DESCRIBE se ejecuta memoria random" );
@@ -273,7 +272,6 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 		}
 	}
 
-	//free(split);
 	split_liberar(split);
 	return mem;
 }
@@ -292,8 +290,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		if( socket == -1  ){
 
 			log_error(logger, "¡Error no se pudo conectar con MEMORIA");
-			//TODO: habria que verificar si aca se cierra todo para no tener leaks
+			//TODO: ojo aca no hay que hacer un exit hay que hacer un return -1 , hay que desactivar la memoria y quitarla del pool del criterio donde estas
 			exit(EXIT_FAILURE);
+
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket);
 
@@ -304,6 +303,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	char** split = string_split(linea, " ");
 
 	if(es_string(split[0], "INSERT")){
+
+
 		int tiempo_ejecucion = clock();
 		int tamanio;
 		char* buffer = convertir_insert(split);
@@ -326,26 +327,27 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 	}
 	else if(es_string(split[0], "SELECT")){
-			int tiempo_ejecucion = clock();
-			int tamanio;
-			char* buffer = convertir_select(split);
-			tamanio = sizeof(buffer);
 
-			t_header *paquete = malloc(sizeof(t_header));
-			paquete->emisor = KERNEL;
-			paquete->tipo_mensaje = SELECT;
-			paquete->payload_size = tamanio;
-			send(socket, &paquete, sizeof(buffer), 0);
-			free(paquete);
+		int tiempo_ejecucion = clock();
 
-			send(socket, &buffer, tamanio, 0);
-			operaciones_totales++;
-			memoria->cantidad_carga++;
-			free(buffer);
-			memoria->cantidad_select++;
-			memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
+		int tamanio;
+		char* buffer = convertir_select(split);
+		tamanio = sizeof(buffer);
 
+		t_header *paquete = malloc(sizeof(t_header));
+		paquete->emisor = KERNEL;
+		paquete->tipo_mensaje = SELECT;
+		paquete->payload_size = tamanio;
 
+		send(socket, &paquete, sizeof(buffer), 0);
+		free(paquete);
+
+		send(socket, &buffer, tamanio, 0);
+		free(buffer);
+		operaciones_totales++;
+		memoria->cantidad_carga++;
+		memoria->cantidad_select++;
+		memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
 
 	}
 	else if(es_string(split[0], "CREATE")){
@@ -367,6 +369,19 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 	}
 	else if(es_string(split[0], "DROP")){
+
+		char* tabla = split[1];
+		int size= sizeof( tabla );
+
+		t_header paquete;
+		paquete.emisor = KERNEL;
+		paquete.tipo_mensaje = DROP;
+		paquete.payload_size = size;
+
+		send(socket, &paquete, sizeof(paquete), 0);
+
+		//TODO: falta el segundo send
+		//TODO: en el primer send al menos habria que verificar si se pudo hacer ya que si algo falla hay que abortar el proceso...esto es importante. Esto es en todos los envios
 
 		operaciones_totales++;
 	}
@@ -598,7 +613,7 @@ void reinicio_estadisticas(){
 		}
 
 		list_iterate(l_memorias,(void*)reiniciar_memorias);
-		}
+	}
 
 	pthread_exit(0);
 }

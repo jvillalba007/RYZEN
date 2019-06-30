@@ -52,6 +52,8 @@ void loggear_configs() {
     log_info(logger, "QUANTUM: %d", kernel_config.QUANTUM);
 }
 
+
+
 void liberar_config() {
     free(kernel_config.IP_MEMORIA);
     free(kernel_config.PUERTO_MEMORIA);
