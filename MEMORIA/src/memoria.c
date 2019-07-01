@@ -10,6 +10,17 @@
 
 #include "memoria.h"
 
+void handler(int id) {
+
+}
+
+void assignHandler() {
+	struct sigaction sa = {0};
+    sa.sa_handler = handler;
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGUSR1, &sa, NULL);
+}
+
 int main(void) {
 
 
@@ -41,7 +52,6 @@ int main(void) {
 
 	// INICIAR JOURNAL
 	log_info(mem_log, "[MEMORIA] Abro hilo JOURNAL");
-	pthread_t tid_journal;
 	pthread_create(&tid_journal, NULL, (void*)hilo_journal, NULL);
 
 
@@ -194,7 +204,7 @@ void atender_kernel(int* cliente)
 			deserializar_insert(payload,&linea);
 			free(payload);
 
-			ejecutar_insert(&linea);
+			(strlen(linea.value) >= maximo_value) ? log_info(mem_log, "Tam Value no Permitido") : ejecutar_insert(&linea);
 
 			free(linea.tabla);
 			free(linea.value);
@@ -223,12 +233,13 @@ void atender_kernel(int* cliente)
 			log_info(mem_log, "ALGORITMIA DROP");
 
 			char* payload;
-			linea_create linea;
+			char* tabla;
 			payload = malloc(paquete->payload_size);
 			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
-			log_info(mem_log, "DROP tabla: %s" , payload );
-			ejecutar_drop(payload);
+			tabla = deserializar_string(payload);
+			ejecutar_drop(tabla);
 			free(payload);
+			free(tabla);
 
 		}
 		break;
@@ -294,8 +305,7 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 	{
 		log_info(mem_log, "PAGINA ENCONTRADA ACTUALIZAMOS ULTIMO USO" ) ;
 		//si encuentra pagina actualizo ultimo uso
-		time_t EPOCH = time(NULL);
-		pagina->ultimo_uso = EPOCH;
+		pagina->ultimo_uso = getCurrentTime();
 		log_info(mem_log, "SE ACTUALIZO ULTIMO USO DE LA PAGINA CON KEY: %d" , linea->key  ) ;
 	}
 	else
@@ -408,9 +418,7 @@ void ejecutar_insert(linea_insert* linea){
 }
 
 void actualizar_pagina( fila_TPaginas* pagina , linea_insert linea ){
-
-	time_t EPOCH = time(NULL);
-	pagina->ultimo_uso = EPOCH;
+	pagina->ultimo_uso = getCurrentTime();
 	pagina->modificado=1;
 	fila_Frames linea_frame = inicializar_fila_frame( linea ) ;
 	escribir_en_frame(  pagina->frame_registro , linea_frame );
@@ -424,9 +432,7 @@ fila_TPaginas* crear_pagina(  fila_TSegmentos* segmento , char* frame , int8_t m
 	pagina->frame_registro = frame;
 	pagina->modificado = modificado;
 	pagina->numero_pagina =list_size( segmento->paginas);
-
-	time_t EPOCH = time(NULL);
-	pagina->ultimo_uso = EPOCH;
+	pagina->ultimo_uso = getCurrentTime();
 	list_add( segmento->paginas , pagina );
 
 	return pagina;
@@ -518,10 +524,9 @@ fila_TPaginas *obtener_pagina_segmento( fila_TSegmentos *segmento , u_int16_t ke
 fila_Frames inicializar_fila_frame( linea_insert linea ){
 
 	fila_Frames fila_frame;
-	time_t EPOCH = time(NULL);
 
 	fila_frame.key= linea.key;
-	fila_frame.timestamp=EPOCH;
+	fila_frame.timestamp=getCurrentTime();
 	fila_frame.value= linea.value;
 
 	return fila_frame;
@@ -562,8 +567,7 @@ char* ejecutar_lru(){
 	int posicion;
 	int pos;
 
-	time_t EPOCH = time(NULL);
-	minimun = EPOCH;
+	minimun = getCurrentTime();
 
 	void algoritmo_reemplazo(fila_TSegmentos* un_segmento)
 	{
@@ -687,6 +691,8 @@ void hilo_journal()
     struct timespec ts;
     ts.tv_sec = mem_config.retardo_journal / 1000;
     ts.tv_nsec = (mem_config.retardo_journal  % 1000) * 1000000;
+
+    assignHandler();
 
 	while ( !EXIT_PROGRAM ) {
 

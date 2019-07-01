@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <commons/collections/list.h>
+#include <inttypes.h>
 
 	typedef struct {
 		char* tabla;
@@ -25,7 +27,7 @@
 
 	typedef struct {
 		char* value;
-		int32_t timestamp;
+		uint64_t timestamp;
 	} linea_response_select;
 
 	typedef struct {
@@ -43,6 +45,9 @@ void deserializar_select(char*,linea_select*);
 
 char* serializar_string(char*, int*);
 char* deserializar_string(char*);
+
+char* serializar_describe(t_list*,int*);
+t_list* deserializar_describe(char*);
 
 char* serializar_create(linea_create, int*);
 void deserializar_create(char*,linea_create*);

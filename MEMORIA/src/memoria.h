@@ -10,9 +10,13 @@
 	#include "consola.h"
 	#include <shared/socket.h>
 	#include <shared/protocolo.h>
+	#include <shared/utils.h>
 	#include <pthread.h>
 	#include <time.h>
+	#include <signal.h>
 	#include <inttypes.h>
+
+pthread_t tid_journal;
 
 #define ceiling(x,y) (((x) + (y) - 1) / (y))
 
@@ -50,7 +54,7 @@ void enviar_create_lfs( linea_create linea_c );
 linea_response_select* enviar_select_lfs( linea_select *linea ); //request de select a LFS devuelve puntero del struct o null si lfs no pudo resolverla
 void enviar_drop_lfs( char *tabla );
 void enviar_insert_lfs( linea_insert linea ); //seguramente la utilice el journal
-
+void hilo_journal();
 void journal();
 
 #endif /* MEMORIA_H_ */

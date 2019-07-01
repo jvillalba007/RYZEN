@@ -20,6 +20,7 @@ void consola(){
 		if(string_equals_ignore_case(linea,"exit")) {
 			EXIT_PROGRAM = true;
 			shutdown(socketServidor,SHUT_RDWR);
+			pthread_kill(tid_journal, SIGUSR1);
 			free(linea);
 			break;
 		}
@@ -66,7 +67,7 @@ void consola_procesar_comando(char* linea)
 			log_info(mem_log, "KEY es %d",linea_ins.key);
 			log_info(mem_log, "VALUE es %s",linea_ins.value);
 
-			ejecutar_insert(&linea_ins);
+			(strlen(linea_ins.value) >= maximo_value) ? log_info(mem_log, "Tam Value no Permitido") : ejecutar_insert(&linea_ins);
 
 			//procesar_insert(cant_sin_value, parametros_no_value, value);
 			free(value);
