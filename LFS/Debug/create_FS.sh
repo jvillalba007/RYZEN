@@ -3,6 +3,7 @@
 # positional arguments
 folder="$1"
 blocks="$2"
+block_size="$3"
 
 create_blocks(){
 	cd bloques
@@ -17,7 +18,7 @@ create_blocks(){
 
 create_metadata(){
 	cd Metadata
-	echo "BLOCK_SIZE=64
+	echo "BLOCK_SIZE=$block_size
 BLOCKS=$blocks
 MAGIC_NUMBER=LISSANDRA" > Metadata.bin
 	echo Metadata.bin created
@@ -32,7 +33,7 @@ create_bitmap(){
 
 # Main
 if [[ $# -eq 0 ]] ; then
-    echo 'Please pass arguments: first is folder where LFS should be, second is amount of blocks'
+    echo 'Please pass arguments: first is folder where LFS should be, second is amount of blocks, third is block size'
     exit 0
 fi
 
