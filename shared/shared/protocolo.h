@@ -37,6 +37,14 @@
 		u_int32_t tiempo_compactacion;
 	} linea_create;
 
+	typedef struct{
+	    int numero_memoria;
+	    char* ip;
+	    char* puerto;
+	    int socket;
+	    bool activa;
+	} pmemoria;
+
 char* serializar_insert(linea_insert, int*);
 void deserializar_insert(char*,linea_insert*);
 
@@ -45,6 +53,11 @@ void deserializar_select(char*,linea_select*);
 
 char* serializar_string(char*, int*);
 char* deserializar_string(char*);
+
+char* serializar_memorias(t_list*,int*);
+t_list* deserializar_memorias(char*);
+char* serializar_memoria(pmemoria, int*);
+void deserializar_memoria(char*, pmemoria*);
 
 char* serializar_describe(t_list*,int*);
 t_list* deserializar_describe(char*);
