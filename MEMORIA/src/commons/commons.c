@@ -20,6 +20,7 @@ int mem_initialize() {
 	log_info(mem_log, ".:: Cargando configuracion ::.");
 
 	mem_config.puerto_mem = strdup(config_get_string_value(config, "PUERTO"));
+	mem_config.ip_mem = strdup(config_get_string_value(config, "IP"));
 	mem_config.ip_LFS = strdup(config_get_string_value(config, "IP_FS"));
 	mem_config.puerto_LFS = strdup(config_get_string_value(config, "PUERTO_FS"));
 	mem_config.ip_SEEDS = config_get_array_value(config, "IP_SEEDS");
@@ -40,6 +41,7 @@ int mem_initialize() {
 void imprimir_config() {
 	log_info(mem_log, ".:: Imprimiendo configuracion ::.");
 	log_info(mem_log, "PUERTO MEMORIA: %s", mem_config.puerto_mem);
+	log_info(mem_log, "IP MEMORIA: %s", mem_config.ip_mem);
 	log_info(mem_log, "IP FLS: %s", mem_config.ip_LFS);
 	log_info(mem_log, "PUERTO FLS: %s", mem_config.puerto_LFS);
 
@@ -119,12 +121,14 @@ void leer_de_frame(char* frame, fila_Frames* registro)
 }
 
 void liberar_tablas() {
+	liberar_tabla_memorias( tabla_memorias );
 	liberar_tabla_segmentos(tabla_segmentos);
 }
 
 void liberar_mem_config(mem_cfg mem_config)
 {
 	free(mem_config.puerto_mem);
+	free(mem_config.ip_mem);
 	free(mem_config.ip_LFS);
 	free(mem_config.puerto_LFS);
 	split_liberar(mem_config.ip_SEEDS);
@@ -159,6 +163,17 @@ void liberar_tabla_segmentos(t_list* tabla_segmentos) {
 	list_iterate(tabla_segmentos,(void*)liberar_tabla_paginas);
 	list_destroy(tabla_segmentos);
 	log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
+}
+
+void liberar_tabla_memorias(t_list* tabla_memorias) {
+	list_destroy_and_destroy_elements(tabla_memorias,(void*)liberar_fila_memoria);
+	log_info(mem_log, "LIBERADO TABLA DE MEMORIAS");
+}
+
+void liberar_fila_memoria(t_memoria* memoria_seed){
+	free(memoria_seed->ip);
+	free(memoria_seed->puerto);
+	free(memoria_seed);
 }
 
 void drop_fila_paginas(fila_TPaginas* fila_pagina)

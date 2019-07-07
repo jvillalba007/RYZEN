@@ -21,6 +21,7 @@ void consola(){
 			EXIT_PROGRAM = true;
 			shutdown(socketServidor,SHUT_RDWR);
 			pthread_kill(tid_journal, SIGUSR1);
+			pthread_kill(tid_gossiping, SIGUSR1);
 			free(linea);
 			break;
 		}

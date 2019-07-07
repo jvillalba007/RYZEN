@@ -33,6 +33,7 @@ int main(void) {
 
 	//CLIENTE CON LFS
 	//crear_cliente_lfs();
+
 	//ESTRUCTURAR/INICIALIZACION DE MEMORIA
 	estructurar_memoria();
 
@@ -47,8 +48,8 @@ int main(void) {
 	pthread_create(&tid_consola, NULL, (void*)consola, NULL);
 
 	//GOSSIPING
-	//pthread_t tid_gossiping;
-	//pthread_create(&tid_gossiping, NULL, (void*)ejecutar_gossiping, NULL);
+	log_info(mem_log, "[MEMORIA] Abro hilo GOSSIPING");
+	pthread_create(&tid_gossiping, NULL, (void*)hilo_gossiping, NULL);
 
 	// INICIAR JOURNAL
 	log_info(mem_log, "[MEMORIA] Abro hilo JOURNAL");
@@ -59,9 +60,11 @@ int main(void) {
 
 	pthread_join(tid_consola, NULL);
 	pthread_join(tid_journal, NULL);
+	pthread_join(tid_gossiping, NULL);
 	pthread_join(tid_server, NULL);
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO CONSOLA");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO JOURNAL");
+	log_info(mem_log, "[MEMORIA] FINALIZO HILO GOSSIPING");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO SERVIDOR");
 
 	mem_exit_global();
@@ -74,6 +77,7 @@ void estructurar_memoria(){
 
 	frames_ocupados=0;
 
+	iniciar_tabla_memorias();
 	iniciar_memoria_contigua();
 	iniciar_tabla_segmentos();
 }
@@ -100,6 +104,41 @@ void iniciar_tabla_segmentos(){
 	tabla_segmentos = list_create();
 }
 
+
+void iniciar_tabla_memorias(){
+
+	tabla_memorias = list_create();
+
+	//Se agrega a si misma
+	t_memoria *memoria_seed = malloc( sizeof( t_memoria ) );
+	memoria_seed->ip = strdup(mem_config.ip_mem );
+	memoria_seed->puerto= strdup( mem_config.puerto_mem );
+	memoria_seed->activa=1;
+	memoria_seed->socket=-1;
+	memoria_seed->numero_memoria=mem_config.memory_number;
+
+	log_info(mem_log, "Se agrega memoria numero:%d en tabla de memorias con puerto: %s e ip: %s" ,memoria_seed->numero_memoria , memoria_seed->puerto , memoria_seed->ip);
+	list_add( tabla_memorias , memoria_seed );
+	memoria_seed = NULL;
+
+	//Agrego seeds por archivo de config
+	int i = 0;
+	for(; mem_config.ip_SEEDS[i] != NULL;i++){
+
+		memoria_seed = malloc( sizeof( t_memoria ) );
+		memoria_seed->ip= strdup(mem_config.ip_SEEDS[i]);
+		memoria_seed->puerto= strdup(mem_config.puerto_SEEDS[i]);
+		memoria_seed->activa=0;
+		memoria_seed->socket=-1;
+		memoria_seed->numero_memoria=-1;
+
+		log_info(mem_log, "Se agrega memoria en tabla de memorias con puerto: %s e ip: %s" , memoria_seed->puerto , memoria_seed->ip);
+		list_add( tabla_memorias , memoria_seed );
+
+		memoria_seed = NULL;
+	}
+
+}
 
 
 int tamanio_fila_Frames(){
@@ -633,10 +672,6 @@ void enviar_create_lfs( linea_create linea_c ){
 }
 
 
-void ejecutar_gossiping(){
-
-}
-
 void journal()
 {
 
@@ -658,9 +693,11 @@ void journal()
 			}
 		}
 
-		list_iterate(segmento->paginas,(void*)journal_fila_paginas);
-		list_destroy(segmento->paginas);
-		log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+		if( !list_is_empty( segmento->paginas ) ){
+			list_iterate(segmento->paginas,(void*)journal_fila_paginas);
+			list_destroy(segmento->paginas);
+			log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+		}
 
 		free( segmento->nombre_tabla );//SE AGREGO AHORA
 		free(segmento);
@@ -669,9 +706,12 @@ void journal()
 	}
 
 	void journal_tabla_segmentos(t_list* tabla_segmentos) {
-		list_iterate(tabla_segmentos,(void*)journal_tabla_paginas);
-		list_destroy(tabla_segmentos);
-		log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
+
+		if( !list_is_empty( tabla_segmentos ) ){
+			list_iterate(tabla_segmentos,(void*)journal_tabla_paginas);
+			list_destroy(tabla_segmentos);
+			log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
+		}
 	}
 
 	journal_tabla_segmentos(tabla_segmentos);
@@ -703,3 +743,87 @@ void hilo_journal()
 
 	pthread_exit(0);
 }
+
+
+
+void gossiping(){
+
+
+	void gossiping_seed( t_memoria *memoria ){
+
+		if( memoria->numero_memoria != mem_config.memory_number ){
+
+			//verifico si esta desactivada para tratarme de conectar
+			if( memoria->activa == 0 ){
+
+				int socketSeed = socket_connect_to_server(memoria->ip,  memoria->puerto );
+				log_info(mem_log, "%d" ,socketSeed);
+				if( socketSeed == -1  ){
+
+					memoria->socket=-1;
+					log_error(mem_log, "¡Error no se pudo conectar con MEMORIA");
+					return;
+				}
+				else{
+
+					memoria->socket=socketSeed;
+					memoria->activa=1;
+					log_info(mem_log, "Se creo el socket cliente con MEMROIA de numero: %d", socketSeed);
+				}
+			}
+
+
+			//intercambiar tablas de gossip
+			t_header buffer;
+			buffer.emisor=MEMORIA;
+			buffer.tipo_mensaje =  GOSSIPING;
+			buffer.payload_size = 32;
+			send(memoria->socket, &buffer, sizeof( buffer ) , 0);
+
+
+			/*ENVIO MEMORIAS ACTIVAS*/
+			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
+
+		}
+
+	}
+
+	if( !list_is_empty( tabla_memorias )  ){
+
+		list_iterate( tabla_memorias  , (void*) gossiping_seed  );
+	}
+
+}
+
+
+t_list* get_memorias_activas( t_list* tabla_memorias ){
+
+	bool is_memoria_activa( t_memoria* memoria ){
+
+		return memoria->activa;
+	}
+
+	return list_filter( tabla_memorias , (void*) is_memoria_activa  );
+}
+
+
+void hilo_gossiping(){
+
+	struct timespec ts;
+	ts.tv_sec = mem_config.retardo_gossiping / 1000;
+	ts.tv_nsec = (mem_config.retardo_gossiping  % 1000) * 1000000;
+
+	assignHandler();
+
+	while ( !EXIT_PROGRAM ) {
+
+		nanosleep(&ts, NULL);
+		gossiping();
+
+	}
+
+	pthread_exit(0);
+
+}
+
+

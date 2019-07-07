@@ -25,6 +25,7 @@
 
 	typedef struct {
 		char* puerto_mem;
+		char* ip_mem;
 		char* ip_LFS;
 		char* puerto_LFS;
 		char** ip_SEEDS;
@@ -56,6 +57,16 @@
 		t_list* paginas;
 	} fila_TSegmentos;
 
+
+	typedef struct{
+	    int numero_memoria;
+	    char* ip;
+	    char* puerto;
+	    int socket;
+	    bool activa;
+	} t_memoria;
+
+
 	/* Variables Globales*/
 	int socketServidor;
 	int socketClienteLfs;
@@ -74,6 +85,8 @@
 	char* bitMapStr;
 	t_bitarray* bitmap_frames;
 
+	t_list* tabla_memorias;
+
 	int mem_initialize();
 	void crear_log();
 	void imprimir_config();
@@ -83,6 +96,8 @@
 	void liberar_memoria_contigua();
 	void liberar_tabla_paginas(fila_TSegmentos *segmento);
 	void liberar_tabla_segmentos(t_list* tabla_segmentos);
+	void liberar_tabla_memorias(t_list* tabla_memorias );
+	void liberar_fila_memoria(t_memoria* memoria_seed);
 	void drop_tabla_paginas(fila_TSegmentos *segmento);
 	void drop_fila_paginas(fila_TPaginas* fila_pagina);
 	void enviar_insert_LFS(linea_insert* linea);

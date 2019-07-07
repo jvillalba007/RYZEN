@@ -17,19 +17,20 @@
 	#include <inttypes.h>
 
 pthread_t tid_journal;
+pthread_t tid_gossiping;
 
 #define ceiling(x,y) (((x) + (y) - 1) / (y))
 
 void estructurar_memoria();/* inicializa todas las estructuras funcionales para la memoria */
 void iniciar_memoria_contigua();
 void iniciar_tabla_segmentos();
+void iniciar_tabla_memorias(); //crea tabla de memorias e inicializa con los datos de archivo la tabla para el gossiping
 
 void atender_request(void* cliente_socket); //hilo/funcion de atender request
 void atender_kernel(int* cliente); //gestiona cosas de kernel
 
 void crear_servidor(); /* crea servidor de la memoria donde recibira las request de kernel y de otras meomrias */
 void crear_cliente_lfs(); /* crea cliente para poder enviar las request hacia el LFS */
-void ejecutar_gossiping(); /* ejecuta proceso de gossiping cada x tiempo */
 
 int tamanio_fila_Frames();
 
@@ -54,7 +55,11 @@ void enviar_create_lfs( linea_create linea_c );
 linea_response_select* enviar_select_lfs( linea_select *linea ); //request de select a LFS devuelve puntero del struct o null si lfs no pudo resolverla
 void enviar_drop_lfs( char *tabla );
 void enviar_insert_lfs( linea_insert linea ); //seguramente la utilice el journal
-void hilo_journal();
+
+void hilo_journal();//corre cada x tiempo proceso journal
 void journal();
+void hilo_gossiping();//corre cada x tiempo proceso gossiping
+void gossiping();
+t_list* get_memorias_activas( t_list* tabla_memorias );
 
 #endif /* MEMORIA_H_ */
