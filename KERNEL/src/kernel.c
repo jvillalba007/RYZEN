@@ -278,7 +278,6 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
-
 	int socket;
 
 	if(memoria->socket != -1){
@@ -306,21 +305,18 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 
 		int tiempo_ejecucion = clock();
-		int tamanio;
-		char* buffer = convertir_insert(split);
-		tamanio = sizeof(buffer);
 
-		t_header *paquete = malloc(sizeof(t_header));
-		paquete->emisor = KERNEL;
-		paquete->tipo_mensaje = INSERT;
-		paquete->payload_size = tamanio;
-		send(socket, &paquete, sizeof(buffer), 0);
-		free(paquete);
+		linea_insert insert;
+		insert.tabla = split[1];
+		insert.key = atoi(split[2]);
+		insert.value = split[3];
 
-		send(socket, &buffer, tamanio, 0);
+		enviar_insert(insert, socket);
+		free(insert.tabla);
+		free(insert.value);
+
 		operaciones_totales++;
 		memoria->cantidad_carga++;
-		free(buffer);
 		memoria->cantidad_insert++;
 		memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
 
@@ -330,20 +326,26 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		int tiempo_ejecucion = clock();
 
+		linea_select select;
+		select.tabla = split[1];
+		select.key = atoi(split[2]);
+
+		enviar_select(select, socket);
+
+		free(select.tabla);
+
 		int tamanio;
-		char* buffer = convertir_select(split);
-		tamanio = sizeof(buffer);
+		recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
+		char* buffer = malloc(tamanio+1);
+		recv(socket, buffer, tamanio, MSG_WAITALL);
 
-		t_header *paquete = malloc(sizeof(t_header));
-		paquete->emisor = KERNEL;
-		paquete->tipo_mensaje = SELECT;
-		paquete->payload_size = tamanio;
+		linea_response_select *response_select = malloc(sizeof(linea_response_select));
+		deserializar_response_select(buffer, response_select);
+		log_info(logger, "tabla %s con value %s", split[1], response_select->value);
 
-		send(socket, &paquete, sizeof(buffer), 0);
-		free(paquete);
-
-		send(socket, &buffer, tamanio, 0);
 		free(buffer);
+		free(response_select->value);
+
 		operaciones_totales++;
 		memoria->cantidad_carga++;
 		memoria->cantidad_select++;
@@ -352,41 +354,96 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	}
 	else if(es_string(split[0], "CREATE")){
 
-		int tamanio;
-		char* buffer = convertir_create(split);
-		tamanio = sizeof(buffer);
 
-		t_header *paquete = malloc(sizeof(t_header));
-		paquete->emisor = KERNEL;
-		paquete->tipo_mensaje = CREATE;
-		paquete->payload_size = tamanio;
-		send(socket, &paquete, sizeof(buffer), 0);
-		free(paquete);
 
-		send(socket, &buffer, tamanio, 0);
+		linea_create create;
+		create.tabla = split[1];
+		create.tipo_consistencia = split[2];
+		create.nro_particiones = atoi(split[3]);
+		create.tiempo_compactacion = *(u_int32_t*)split[4];
+
+		enviar_create(create, socket);
+
+		int respuesta;
+		recv(socket, &respuesta, sizeof(int), MSG_WAITALL);
+		if (respuesta>0){
+			t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
+			tabla->criterio_consistencia = split[2];
+			tabla->nombre_tabla = split[1];
+			list_add(l_tablas, tabla);
+			log_info(logger,"tabla %s creada", split[1]);
+		}
+		else{
+			log_error(logger,"no se pudo crear la tabla %s", split[1]);
+		}
+		free(create.tabla);
+		free(create.tipo_consistencia);
+
 		operaciones_totales++;
-		free(buffer);
+
 
 	}
 	else if(es_string(split[0], "DROP")){
 
 		char* tabla = split[1];
-		int size= sizeof( tabla );
 
-		t_header paquete;
-		paquete.emisor = KERNEL;
-		paquete.tipo_mensaje = DROP;
-		paquete.payload_size = size;
+		enviar_drop(socket, tabla);
 
-		send(socket, &paquete, sizeof(paquete), 0);
+		int respuesta;
+		recv(socket, &respuesta, sizeof(int), MSG_WAITALL);
+		if(respuesta>0){
+			log_info(logger,"se hizo drop de la tabla %s",split[1]);
+		}else{
+			log_error(logger,"no se realizo correctamente el drop de la tabla %s",split[1]);
+		}
 
-		//TODO: falta el segundo send
 		//TODO: en el primer send al menos habria que verificar si se pudo hacer ya que si algo falla hay que abortar el proceso...esto es importante. Esto es en todos los envios
-
 		operaciones_totales++;
 	}
 	else if(es_string(split[0], "DESCRIBE")){
 
+		if(split[1] == NULL){
+			enviar_describe_general(socket);
+
+			int tamanio;
+			recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
+			char *buffer = malloc(tamanio+1);
+			recv(socket, buffer, tamanio, MSG_WAITALL);
+
+			t_list *lista = deserializar_describe(buffer);
+			int tamanio_lista = list_size(lista);
+
+			for(int i=0; tamanio_lista; i++){
+
+				t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
+				linea_create *tabla_lista = list_remove(lista, 0);
+				tabla->criterio_consistencia = tabla_lista->tipo_consistencia;
+				tabla->nombre_tabla = tabla_lista->tabla;
+				list_add(l_tablas, tabla);
+				log_info(logger,"tabla %s agregada", tabla->nombre_tabla);
+				}
+
+			list_destroy(lista);
+
+		}else{
+			enviar_describe_especial(socket, split[1]);
+
+			int tamanio;
+			recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
+			char *buffer = malloc(tamanio+1);
+			recv(socket, buffer, tamanio, MSG_WAITALL);
+			t_list *lista = deserializar_describe(buffer);
+
+			t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
+			linea_create *tabla_lista = list_remove(lista, 0);
+			tabla->criterio_consistencia = tabla_lista->tipo_consistencia;
+			tabla->nombre_tabla = tabla_lista->tabla;
+			list_add(l_tablas, tabla);
+
+			log_info(logger,"tabla %s agregada", tabla->nombre_tabla);
+
+			list_destroy(lista);
+		}
 		operaciones_totales++;
 	}
 	else{
@@ -552,45 +609,88 @@ bool buscar_pcb( t_PCB* pcb_it ){
 	log_info(logger, "tamanio lista de listos: %d", list_size( l_pcb_listos ));
 }
 
-char *convertir_insert(char** split){
+void enviar_insert(linea_insert linea, int socket){
 
 	int tamanio;
-	linea_insert insert;
-	insert.tabla = split[1];
-	insert.key = atoi(split[2]);
-	insert.value = split[3];
-	char *buffer = serializar_insert(insert,&tamanio);
+	char* buffer = serializar_insert( linea, &tamanio);
 
-	free(insert.tabla);
-	free(insert.value);
-	return buffer;
+	t_header *paquete = malloc(sizeof(t_header));
+	paquete->emisor = KERNEL;
+	paquete->tipo_mensaje = INSERT;
+	paquete->payload_size = tamanio;
+	send(socket, &paquete, sizeof(t_header), 0);
+	free(paquete);
+
+	send(socket, &buffer, tamanio, 0);
+
+	free(buffer);
 }
 
-char *convertir_select(char** split){
-	int tamanio;
-	linea_select select;
-	select.tabla = split[1];
-	select.key = atoi(split[2]);
-	char* buffer = serializar_select(select, &tamanio);
+void enviar_select(linea_select linea, int socket){
 
-	free(select.tabla);
-	return buffer;
+	int tamanio;
+
+	char* buffer = serializar_select(linea, &tamanio);
+
+	t_header *paquete = malloc(sizeof(t_header));
+	paquete->emisor = KERNEL;
+	paquete->tipo_mensaje = SELECT;
+	paquete->payload_size = tamanio;
+
+	send(socket, &paquete, sizeof(t_header), 0);
+	free(paquete);
+
+	send(socket, &buffer, tamanio, 0);
+	free(buffer);
+}
+
+void enviar_create(linea_create linea, int socket){
+
+	int tamanio;
+
+	char* buffer = serializar_create(linea, &tamanio);
+
+	t_header *paquete = malloc(sizeof(t_header));
+	paquete->emisor = KERNEL;
+	paquete->tipo_mensaje = CREATE;
+	paquete->payload_size = tamanio;
+
+	send(socket, &paquete, sizeof(t_header), 0);
+	free(paquete);
+
+	send(socket, &buffer, tamanio, 0);
+
+	free(buffer);
+
 
 }
 
-char *convertir_create(char** split){
+void enviar_describe_general(int socket){
+
+	t_header *paquete = malloc(sizeof(t_header));
+	paquete->emisor = KERNEL;
+	paquete->tipo_mensaje = DESCRIBE;
+	paquete->payload_size = 0;
+
+	send(socket, &paquete, sizeof(t_header), 0);
+	free(paquete);
+
+}
+
+void enviar_describe_especial(int socket, char* tabla){
 	int tamanio;
-	linea_create create;
-	create.tabla = split[1];
-	create.tipo_consistencia = split[2];
-	create.nro_particiones = atoi(split[3]);
-	create.tiempo_compactacion = *(u_int32_t*)split[4];
-	char* buffer = serializar_create(create, &tamanio);
+	char* buffer = serializar_string(tabla, &tamanio);
 
-	free(create.tabla);
-	free(create.tipo_consistencia);
-	return buffer;
+	t_header *paquete = malloc(sizeof(t_header));
+	paquete->emisor = KERNEL;
+	paquete->tipo_mensaje = DESCRIBE;
+	paquete->payload_size = tamanio;
 
+	send(socket, &paquete, sizeof(t_header), 0);
+	free(paquete);
+
+	send(socket, &buffer, tamanio, 0);
+	free(buffer);
 }
 
 void reinicio_estadisticas(){
@@ -617,5 +717,19 @@ void reinicio_estadisticas(){
 
 	pthread_exit(0);
 }
+void enviar_drop(int socket,char* tabla){
+	int tamanio;
+	char* buffer = serializar_string(tabla, &tamanio);
 
+	t_header *paquete = malloc(sizeof(t_header));
+	paquete->emisor = KERNEL;
+	paquete->tipo_mensaje = DROP;
+	paquete->payload_size = tamanio;
+
+	send(socket, &paquete, sizeof(t_header), 0);
+	free(paquete);
+
+	send(socket, &buffer, tamanio, 0);
+	free(buffer);
+}
 
