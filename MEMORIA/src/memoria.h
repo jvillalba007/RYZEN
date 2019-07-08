@@ -16,6 +16,7 @@
 	#include <signal.h>
 	#include <inttypes.h>
 
+pthread_t tid_server;
 pthread_t tid_journal;
 pthread_t tid_gossiping;
 
@@ -26,8 +27,8 @@ void iniciar_memoria_contigua();
 void iniciar_tabla_segmentos();
 void iniciar_tabla_memorias(); //crea tabla de memorias e inicializa con los datos de archivo la tabla para el gossiping
 
-void atender_request(void* cliente_socket); //hilo/funcion de atender request
-void atender_kernel(int* cliente); //gestiona cosas de kernel
+int atender_request(int cliente, t_msg* msg); //funcion de atender request
+int atender_kernel(int cliente, t_msg* msg); //gestiona cosas de kernel
 
 void crear_servidor(); /* crea servidor de la memoria donde recibira las request de kernel y de otras meomrias */
 void crear_cliente_lfs(); /* crea cliente para poder enviar las request hacia el LFS */

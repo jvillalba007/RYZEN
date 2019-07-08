@@ -39,7 +39,6 @@ int main(void) {
 
 	//INICIAR SERVER
 	log_info(mem_log, "[MEMORIA] Abro hilo servidor");
-	pthread_t tid_server;
 	pthread_create(&tid_server, NULL, (void*)crear_servidor, NULL);
 
 	// INICIAR CONSOLA
@@ -149,82 +148,58 @@ int tamanio_fila_Frames(){
 
 void crear_servidor(){
 
-	int cliente;
-	t_header *buffer = malloc( sizeof( t_header ) );
-
-	socketServidor = socket_create_listener( NULL , mem_config.puerto_mem );
-
-	if( socketServidor < 0  ){
-
+	if((socketServidor = socket_create_listener(mem_config.ip_mem,mem_config.puerto_mem)) == -1){
 		log_error(mem_log, "¡Error no se pudo abrir el servidor!");
-		free( buffer );
-		close(socketServidor);
 		pthread_exit(0);
 	}
+
 	log_info(mem_log, "Se abre servidor de MEMORIA");
-
-	/* NUEVO CLIENTE */
-	while( (cliente = socket_aceptar_conexion(socketServidor))  && (!EXIT_PROGRAM )  ){
-
-			atender_request(&cliente);
-
-	}
-
+	log_info(mem_log, "[MEMORIA] Escucho en el socket %d. Mi IP es: %s",socketServidor, mem_config.ip_mem);
+	socket_start_listening_select(socketServidor, atender_request, 0);
 	log_info(mem_log, "FIN SERVIDOR");
-	free( buffer );
+
 	close(socketServidor);
 	pthread_exit(0);
 }
 
-void atender_request(void* cliente_socket)
+int atender_request(int cliente, t_msg* msg)
 {
-	int cliente = *(int *) cliente_socket;
-	t_header* paquete = malloc(sizeof(t_header));
 
-	log_info(mem_log, "Se agrego una nueva conexión, socket: %d",cliente);
-
-	/************ LEER EL HANDSHAKE ************/
-	recv(cliente, paquete, sizeof(t_header) ,MSG_WAITALL);
-	log_info(mem_log, "TIPO EMISOR: %d",paquete->emisor);
+	if(msg->header->emisor == DESCONOCIDO){
+			log_info(mem_log, "[MEMORIA] Se Agrego Nueva Conexion");
+			return 1;
+	}
 
 	/*************************** SI EL HANDSHAKE LO HIZO UNA MEMORIA *********************************/
-	if (paquete->emisor == MEMORIA) {
+	if (msg->header->emisor == MEMORIA) {
 		log_info(mem_log, "************* NUEVA CONEXION DE MEMORIA **************");
 
 
 	}
 
 	/************************** SI EL HANDSHAKE LO HIZO KERNEL ***************************************/
-	if( paquete->emisor == KERNEL ){
+	if( msg->header->emisor == KERNEL ){
 		log_info(mem_log, "************* NUEVA CONEXION DE KERNEL **************");
-
-		atender_kernel(&cliente);
+		log_info(mem_log, "[Memoria] EVENTO: Emisor: %d, Tipo: %d, Tamanio: %d",msg->header->emisor,msg->header->tipo_mensaje,msg->header->payload_size);
+		return atender_kernel(cliente,msg);
 
 	}
-	free(paquete);
 
+	return 1;
 }
 
-void atender_kernel(int* cliente)
+int atender_kernel(int cliente, t_msg* msg)
 {
-	int res ;
-	t_header* paquete = malloc(sizeof(t_header));
-
-	while ( ( res = recv(*cliente, (void*) paquete, sizeof( t_header ) ,MSG_WAITALL) )  > 0) {
-
-		log_info(mem_log, "Se recibio request del KERNEL: %d",paquete->tipo_mensaje);
-
-		switch (paquete->tipo_mensaje) {
+		char* data;
+		switch (msg->header->tipo_mensaje) {
 
 		case SELECT:{
 			log_info(mem_log, "ALGORITMIA SELECT");
-
-			char* payload;
 			linea_select linea;
-			payload = malloc(paquete->payload_size);
-			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
-			deserializar_select(payload,&linea);
-			free(payload);
+			data = malloc(msg->header->payload_size);
+			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES...
+			deserializar_select(data,&linea);
+			free(data);
 
 			ejecutar_select(&linea);
 
@@ -235,13 +210,11 @@ void atender_kernel(int* cliente)
 
 		case INSERT:{
 			log_info(mem_log, "ALGORITMIA INSERT");
-
-			char* payload;
 			linea_insert linea;
-			payload = malloc(paquete->payload_size);
-			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
-			deserializar_insert(payload,&linea);
-			free(payload);
+			data = malloc(msg->header->payload_size);
+			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES..
+			deserializar_insert(data,&linea);
+			free(data);
 
 			(strlen(linea.value) >= maximo_value) ? log_info(mem_log, "Tam Value no Permitido") : ejecutar_insert(&linea);
 
@@ -252,13 +225,11 @@ void atender_kernel(int* cliente)
 
 		case CREATE:{
 			log_info(mem_log, "ALGORITMIA CREATE");
-
-			char* payload;
 			linea_create linea;
-			payload = malloc(paquete->payload_size);
-			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
-			deserializar_create(payload,&linea);
-			free(payload);
+			data = malloc(msg->header->payload_size);
+			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES..
+			deserializar_create(data,&linea);
+			free(data);
 
 			log_info(mem_log, "CREATE tabla: %s , consistencia: %s , particiones: %d , tiempo_compactacion: %d",linea.tabla ,linea.tipo_consistencia , linea.nro_particiones , linea.tiempo_compactacion );
 			enviar_create_lfs( linea );
@@ -270,14 +241,12 @@ void atender_kernel(int* cliente)
 
 		case DROP:{
 			log_info(mem_log, "ALGORITMIA DROP");
-
-			char* payload;
 			char* tabla;
-			payload = malloc(paquete->payload_size);
-			recv(*cliente,(void*)payload,paquete->payload_size,MSG_WAITALL);//TENER EN CUENTA SI HAY ERRORES...
-			tabla = deserializar_string(payload);
+			data = malloc(msg->header->payload_size);
+			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES..
+			tabla = deserializar_string(data);
 			ejecutar_drop(tabla);
-			free(payload);
+			free(data);
 			free(tabla);
 
 		}
@@ -291,11 +260,14 @@ void atender_kernel(int* cliente)
 		}
 		break;
 
+		case DESCONEXION:{
+			log_error(mem_log, "[Memoria] Se desconecto KERNEL");
+			return -1;
 		}
+		break;
 
-	}
-	free(paquete);
-	close(*cliente);
+		}
+	return 1;
 }
 
 void ejecutar_drop( char* tabla ){
@@ -818,7 +790,7 @@ void hilo_gossiping(){
 	while ( !EXIT_PROGRAM ) {
 
 		nanosleep(&ts, NULL);
-		gossiping();
+		//gossiping();
 
 	}
 
