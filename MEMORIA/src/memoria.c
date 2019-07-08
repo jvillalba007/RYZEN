@@ -173,7 +173,23 @@ int atender_request(int cliente, t_msg* msg)
 	/*************************** SI EL HANDSHAKE LO HIZO UNA MEMORIA *********************************/
 	if (msg->header->emisor == MEMORIA) {
 		log_info(mem_log, "************* NUEVA CONEXION DE MEMORIA **************");
+		log_info(mem_log, "[Memoria] EVENTO: Emisor: %d, Tipo: %d, Tamanio: %d",msg->header->emisor,msg->header->tipo_mensaje,msg->header->payload_size);
 
+		if(msg->header->tipo_mensaje == GOSSIPING)
+		{
+			char* data;
+			data = malloc(msg->header->payload_size);
+			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES...
+			t_list* mems = deserializar_memorias(data);
+			free(data);
+
+			liberar_tabla_memorias(mems);
+		}
+		if(msg->header->tipo_mensaje == DESCONEXION)
+		{
+			log_error(mem_log, "[Memoria] Se desconecto una Memoria");
+			return -1;
+		}
 
 	}
 
@@ -749,12 +765,13 @@ void gossiping(){
 			t_header buffer;
 			buffer.emisor=MEMORIA;
 			buffer.tipo_mensaje =  GOSSIPING;
-			buffer.payload_size = 32;
-			send(memoria->socket, &buffer, sizeof( buffer ) , 0);
-
 
 			/*ENVIO MEMORIAS ACTIVAS*/
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
+
+			char* data = serializar_memorias(memorias_activas,&buffer.payload_size);
+			send(memoria->socket, &buffer, sizeof( buffer ) , 0);
+			send(memoria->socket, data, buffer.payload_size , 0);
 
 		}
 
@@ -772,7 +789,7 @@ t_list* get_memorias_activas( t_list* tabla_memorias ){
 
 	bool is_memoria_activa( t_memoria* memoria ){
 
-		return memoria->activa;
+		return memoria->activa ? true : false;
 	}
 
 	return list_filter( tabla_memorias , (void*) is_memoria_activa  );
@@ -790,7 +807,7 @@ void hilo_gossiping(){
 	while ( !EXIT_PROGRAM ) {
 
 		nanosleep(&ts, NULL);
-		//gossiping();
+		gossiping();
 
 	}
 
