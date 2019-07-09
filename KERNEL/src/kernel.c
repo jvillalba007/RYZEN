@@ -124,7 +124,6 @@ void ejecutar_procesador(){
 	pthread_exit(0);
 }
 
-
 int ejecutar_linea( char *linea ){
 
 	int res;
@@ -522,7 +521,7 @@ void inicializar_kernel(){
 
 void conectar_memoria(){
 	log_info(logger, "entro a socket");
-	socket_memoria = socket_connect_to_server(kernel_config.IP_MEMORIA, kernel_config.PUERTO_MEMORIA);
+	socket_memoria = socket_connect_to_server("127.0.0.1", "8005");
 	log_info(logger, "El socket devuelto es: %d", socket_memoria);
 	if( socket_memoria == -1  ){
 
@@ -536,7 +535,7 @@ void conectar_memoria(){
 	memoria_original->puerto = kernel_config.PUERTO_MEMORIA;
 	memoria_original->activa=true;
 	memoria_original->numero_memoria=0;
-	memoria_original->socket = &socket_memoria;
+	memoria_original->socket = socket_memoria;
 	memoria_original->cantidad_carga = 0;
 	list_add(l_memorias , memoria_original );
 
@@ -546,6 +545,8 @@ void conectar_memoria(){
 	buffer.payload_size = 32;
 	send(socket_memoria, &buffer, sizeof(buffer), 0);
 	//TODO habria que realizar aca el handshake con memoria.
+
+	recibir_pueba();
 
 }
 
@@ -759,4 +760,16 @@ t_memoria_del_pool *obtener_memoria_criterio_create(char* criterio, char* linea)
 	}
 
 	return memoria;
+}
+
+
+void recibir_pueba(){
+	t_memoria_del_pool *memoria = list_get(l_memorias, 0);
+	int socket =memoria->socket;
+	int tamanio;
+	recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
+	char* buffer = malloc(tamanio + 1);
+	recv(socket, buffer, tamanio, MSG_WAITALL);
+	char* palabra = deserializar_string(buffer);
+	log_info(logger, "%s", palabra);
 }

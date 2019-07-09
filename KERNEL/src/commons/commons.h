@@ -64,7 +64,7 @@ typedef struct{
     char* puerto;
     char* criterio;
     bool activa;
-    void* socket;
+    int socket;
     float tiempo_select; //tiempo promedio que tarda un SELECT en ejecutarse en los últimos 30 segundos.
     float tiempo_insert; //tiempo promedio que tarda un INSERT en ejecutarse en los últimos 30 segundos.
     int cantidad_select; //Cantidad de SELECT ejecutados en los últimos 30 segundos.
