@@ -25,7 +25,7 @@ int main() {
 */
 
 	//INICIA CLIENTE MEMORIA
-	/*conectar_memoria();*/
+	conectar_memoria();
 
 	//HILO REINICIO_ESTADISTICAS
 	pthread_t hilo_reinicio_estadisticas;
@@ -191,7 +191,6 @@ int ejecutar_linea( char *linea ){
 	return res;
 }
 
-
 char* obtener_nombre_tabla( char** parametros){
 
 	char* n_tabla=NULL;
@@ -286,12 +285,9 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
-	int socket;
+	int socket = *(int*)memoria->socket;
 
-	if(memoria->socket != -1){
-		socket = memoria->socket;
-	}
-	else{
+	if(socket == -1){
 		socket = socket_connect_to_server(memoria->ip, memoria->puerto);
 		log_info(logger, "El socket devuelto es: %d", socket);
 		if( socket == -1  ){
@@ -303,7 +299,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket);
 
-		memoria->socket = socket_memoria;
+		memoria->socket = &socket;
 		memoria->activa = true;
 	}
 
@@ -462,7 +458,6 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	return 0;
 }
 
-
 t_PCB* obtener_pcb_ejecutar(){
 
 	//si lista vacia se queda loopeando esperando que entre alguno
@@ -525,7 +520,6 @@ void inicializar_kernel(){
 
 }
 
-
 void conectar_memoria(){
 	log_info(logger, "entro a socket");
 	socket_memoria = socket_connect_to_server(kernel_config.IP_MEMORIA, kernel_config.PUERTO_MEMORIA);
@@ -542,7 +536,7 @@ void conectar_memoria(){
 	memoria_original->puerto = kernel_config.PUERTO_MEMORIA;
 	memoria_original->activa=true;
 	memoria_original->numero_memoria=0;
-	memoria_original->socket = socket_memoria;
+	memoria_original->socket = &socket_memoria;
 	memoria_original->cantidad_carga = 0;
 	list_add(l_memorias , memoria_original );
 
@@ -612,7 +606,7 @@ bool buscar_pcb( t_PCB* pcb_it ){
 	log_info(logger, "tamanio lista de listos: %d", list_size( l_pcb_listos ));
 }
 
-void enviar_insert(linea_insert linea, int* sock){
+void enviar_insert(linea_insert linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -630,7 +624,7 @@ void enviar_insert(linea_insert linea, int* sock){
 	free(buffer);
 }
 
-void enviar_select(linea_select linea, int* sock){
+void enviar_select(linea_select linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -649,7 +643,7 @@ void enviar_select(linea_select linea, int* sock){
 	free(buffer);
 }
 
-void enviar_create(linea_create linea, int* sock){
+void enviar_create(linea_create linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -671,7 +665,7 @@ void enviar_create(linea_create linea, int* sock){
 
 }
 
-void enviar_describe_general(int* sock){
+void enviar_describe_general(void* sock){
 
 	int socket = *(int*)sock;
 	t_header *paquete = malloc(sizeof(t_header));
@@ -684,7 +678,7 @@ void enviar_describe_general(int* sock){
 
 }
 
-void enviar_describe_especial(int* sock, char* tabla){
+void enviar_describe_especial(void* sock, char* tabla){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -726,7 +720,8 @@ void reinicio_estadisticas(){
 
 	pthread_exit(0);
 }
-void enviar_drop(int* sock,char* tabla){
+
+void enviar_drop(void* sock,char* tabla){
 
 	int socket = *(int*)sock;
 	int tamanio;

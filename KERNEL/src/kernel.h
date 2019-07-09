@@ -34,12 +34,12 @@ void parar_por_quantum(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a listos
 int rand_num(int max);
 void reinicio_estadisticas();
 
-void enviar_insert(linea_insert linea, int* socket);
-void enviar_select(linea_select linea, int* socket);
-void enviar_create(linea_create linea, int* socket);
-void enviar_describe_general(int* socket);
-void enviar_describe_especial(int* socket, char* tabla);
-void enviar_drop(int* socket, char* tabla);
+void enviar_insert(linea_insert linea, void* socket);
+void enviar_select(linea_select linea, void* socket);
+void enviar_create(linea_create linea, void* socket);
+void enviar_describe_general(void* socket);
+void enviar_describe_especial(void* socket, char* tabla);
+void enviar_drop(void* socket, char* tabla);
 
 
 #endif

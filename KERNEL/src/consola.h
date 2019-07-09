@@ -3,6 +3,7 @@
 
 #include <shared/console.h>
 #include "shared/utils.h"
+#include "shared/socket.h"
 #include <commons/string.h>
 #include <pthread.h>
 #include "commons/commons.h"
