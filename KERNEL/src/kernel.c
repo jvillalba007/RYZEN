@@ -284,9 +284,13 @@ t_memoria_del_pool *obtener_memoria_SHC(char* linea){
 
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
-	int socket = *(int*)memoria->socket;
 
-	if(socket == -1){
+	int socket;
+
+	if(memoria->socket != -1){
+		socket = memoria->socket;
+	}
+	else{
 		socket = socket_connect_to_server(memoria->ip, memoria->puerto);
 		log_info(logger, "El socket devuelto es: %d", socket);
 		if( socket == -1  ){
@@ -298,7 +302,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket);
 
-		memoria->socket = &socket;
+		memoria->socket = socket;
 		memoria->activa = true;
 	}
 
@@ -663,7 +667,6 @@ void enviar_create(linea_create linea, void* sock){
 
 	free(buffer);
 
-
 }
 
 void enviar_describe_general(void* sock){
@@ -721,7 +724,6 @@ void reinicio_estadisticas(){
 
 	pthread_exit(0);
 }
-
 void enviar_drop(void* sock,char* tabla){
 
 	int socket = *(int*)sock;
@@ -761,7 +763,6 @@ t_memoria_del_pool *obtener_memoria_criterio_create(char* criterio, char* linea)
 
 	return memoria;
 }
-
 
 void recibir_pueba(){
 	t_memoria_del_pool *memoria = list_get(l_memorias, 0);
