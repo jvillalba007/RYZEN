@@ -133,6 +133,12 @@ int ejecutar_linea( char *linea ){
 
 	char** parametros = string_split(linea, " ");
 
+	if (es_string(parametros[0],"CREATE")){ //AGREGO ESTO PORQUE SI ES UN CREATE NO VA A EXISTIR LA TABLA!
+
+		memoria = obtener_memoria_criterio_create( parametros[2], linea);
+		res = ejecutar_linea_memoria( memoria , linea );
+
+	}else{
 	char* n_tabla = obtener_nombre_tabla( parametros );
 
 	if( n_tabla != NULL ) tabla = obtener_tabla( n_tabla );
@@ -176,9 +182,11 @@ int ejecutar_linea( char *linea ){
 			}
 		}
 	}
+	free(n_tabla);
+	}
 
 	split_liberar(parametros);
-	free(n_tabla);
+
 
 	return res;
 }
@@ -239,7 +247,7 @@ t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla, char*
 	return memoria;
 }
 
-t_memoria_del_pool *obtener_memoria_SC( t_tabla_consistencia* tabla ){
+t_memoria_del_pool *obtener_memoria_SC(){
 
 
 	if( !list_is_empty( l_criterio_SC ) ) return list_get( l_criterio_SC , 0 );
@@ -311,7 +319,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		insert.key = atoi(split[2]);
 		insert.value = split[3];
 
-		enviar_insert(insert, socket);
+		enviar_insert(insert, &socket);
 		free(insert.tabla);
 		free(insert.value);
 
@@ -330,7 +338,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		select.tabla = split[1];
 		select.key = atoi(split[2]);
 
-		enviar_select(select, socket);
+		enviar_select(select, &socket);
 
 		free(select.tabla);
 
@@ -362,7 +370,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		create.nro_particiones = atoi(split[3]);
 		create.tiempo_compactacion = *(u_int32_t*)split[4];
 
-		enviar_create(create, socket);
+		enviar_create(create, &socket);
 
 		int respuesta;
 		recv(socket, &respuesta, sizeof(int), MSG_WAITALL);
@@ -387,7 +395,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		char* tabla = split[1];
 
-		enviar_drop(socket, tabla);
+		enviar_drop(&socket, tabla);
 
 		int respuesta;
 		recv(socket, &respuesta, sizeof(int), MSG_WAITALL);
@@ -403,7 +411,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	else if(es_string(split[0], "DESCRIBE")){
 
 		if(split[1] == NULL){
-			enviar_describe_general(socket);
+			enviar_describe_general(&socket);
 
 			int tamanio;
 			recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
@@ -426,7 +434,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			list_destroy(lista);
 
 		}else{
-			enviar_describe_especial(socket, split[1]);
+			enviar_describe_especial(&socket, split[1]);
 
 			int tamanio;
 			recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
@@ -564,11 +572,6 @@ void crear_procesadores(){
 	}
 }
 
-
-void ejecutar_describe(){
-
-}
-
 char* obtener_linea(FILE* archivo){
 
 	char leido;
@@ -609,8 +612,9 @@ bool buscar_pcb( t_PCB* pcb_it ){
 	log_info(logger, "tamanio lista de listos: %d", list_size( l_pcb_listos ));
 }
 
-void enviar_insert(linea_insert linea, int socket){
+void enviar_insert(linea_insert linea, int* sock){
 
+	int socket = *(int*)sock;
 	int tamanio;
 	char* buffer = serializar_insert( linea, &tamanio);
 
@@ -626,8 +630,9 @@ void enviar_insert(linea_insert linea, int socket){
 	free(buffer);
 }
 
-void enviar_select(linea_select linea, int socket){
+void enviar_select(linea_select linea, int* sock){
 
+	int socket = *(int*)sock;
 	int tamanio;
 
 	char* buffer = serializar_select(linea, &tamanio);
@@ -644,8 +649,9 @@ void enviar_select(linea_select linea, int socket){
 	free(buffer);
 }
 
-void enviar_create(linea_create linea, int socket){
+void enviar_create(linea_create linea, int* sock){
 
+	int socket = *(int*)sock;
 	int tamanio;
 
 	char* buffer = serializar_create(linea, &tamanio);
@@ -665,8 +671,9 @@ void enviar_create(linea_create linea, int socket){
 
 }
 
-void enviar_describe_general(int socket){
+void enviar_describe_general(int* sock){
 
+	int socket = *(int*)sock;
 	t_header *paquete = malloc(sizeof(t_header));
 	paquete->emisor = KERNEL;
 	paquete->tipo_mensaje = DESCRIBE;
@@ -677,7 +684,9 @@ void enviar_describe_general(int socket){
 
 }
 
-void enviar_describe_especial(int socket, char* tabla){
+void enviar_describe_especial(int* sock, char* tabla){
+
+	int socket = *(int*)sock;
 	int tamanio;
 	char* buffer = serializar_string(tabla, &tamanio);
 
@@ -717,7 +726,9 @@ void reinicio_estadisticas(){
 
 	pthread_exit(0);
 }
-void enviar_drop(int socket,char* tabla){
+void enviar_drop(int* sock,char* tabla){
+
+	int socket = *(int*)sock;
 	int tamanio;
 	char* buffer = serializar_string(tabla, &tamanio);
 
@@ -733,3 +744,24 @@ void enviar_drop(int socket,char* tabla){
 	free(buffer);
 }
 
+t_memoria_del_pool *obtener_memoria_criterio_create(char* criterio, char* linea){
+
+	t_memoria_del_pool *memoria=NULL;
+
+	if( string_equals_ignore_case( criterio ,"SC" ) ){
+
+		memoria = obtener_memoria_SC();
+	}
+
+	else if(string_equals_ignore_case( criterio ,"EC") ){
+
+		memoria = obtener_memoria_EC();
+	}
+
+	else if( string_equals_ignore_case( criterio ,"SHC") ){
+
+		memoria = obtener_memoria_SHC(linea);
+	}
+
+	return memoria;
+}

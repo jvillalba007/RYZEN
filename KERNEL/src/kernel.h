@@ -22,6 +22,7 @@ t_memoria_del_pool *obtener_memoria_SC();
 t_memoria_del_pool *obtener_memoria_EC();
 t_memoria_del_pool *obtener_memoria_SHC(char* linea);
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ); //ejecuta en memoria la linea
+t_memoria_del_pool *obtener_memoria_criterio_create(char* criterio, char* linea); //En caso de que venga un create no va a existir la tabla
 
 void crear_procesadores();
 void ejecutar_describe();
@@ -33,12 +34,12 @@ void parar_por_quantum(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a listos
 int rand_num(int max);
 void reinicio_estadisticas();
 
-void enviar_insert(linea_insert linea, int socket);
-void enviar_select(linea_select linea, int socket);
-void enviar_create(linea_create linea, int socket);
-void enviar_describe_general(int socket);
-void enviar_describe_especial(int socket, char* tabla);
-void enviar_drop(int socket, char* tabla);
+void enviar_insert(linea_insert linea, int* socket);
+void enviar_select(linea_select linea, int* socket);
+void enviar_create(linea_create linea, int* socket);
+void enviar_describe_general(int* socket);
+void enviar_describe_especial(int* socket, char* tabla);
+void enviar_drop(int* socket, char* tabla);
 
 
 #endif
