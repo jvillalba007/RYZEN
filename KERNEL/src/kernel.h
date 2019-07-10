@@ -40,7 +40,8 @@ void enviar_create(linea_create linea, void* socket);
 void enviar_describe_general(void* socket);
 void enviar_describe_especial(void* socket, char* tabla);
 void enviar_drop(void* socket, char* tabla);
-void recibir_pueba();
+
+//void recibir_pueba();
 
 
 

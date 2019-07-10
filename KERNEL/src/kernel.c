@@ -549,9 +549,6 @@ void conectar_memoria(){
 	buffer.payload_size = 32;
 	send(socket_memoria, &buffer, sizeof(buffer), 0);
 	//TODO habria que realizar aca el handshake con memoria.
-
-	recibir_pueba();
-
 }
 
 void crear_procesadores(){
@@ -763,7 +760,7 @@ t_memoria_del_pool *obtener_memoria_criterio_create(char* criterio, char* linea)
 
 	return memoria;
 }
-
+/*
 void recibir_pueba(){
 	t_memoria_del_pool *memoria = list_get(l_memorias, 0);
 	int socket =memoria->socket;
@@ -774,3 +771,4 @@ void recibir_pueba(){
 	char* palabra = deserializar_string(buffer);
 	log_info(logger, "%s", palabra);
 }
+*/
