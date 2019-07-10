@@ -12,6 +12,7 @@
 		__typeof__ (b) _b = (b); \
 		_a < _b ? _a : _b; })
 
+
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
@@ -27,10 +28,18 @@
 	#include <commons/bitarray.h>
 	#include <errno.h>
 	#include <inttypes.h>
+	#include <sys/inotify.h>
 
 	#include "shared/protocolo.h"
 
+	#define CONFIG_FOLDER "../config/"
+	#define CONFIG_FILE "LFS.cfg"
+	#define CONFIG_PATH CONFIG_FOLDER CONFIG_FILE
+
+
 	#define TABLES_FOLDER "tables/"
+	#define EVENT_SIZE ( sizeof (struct inotify_event) + 8 )
+	#define BUF_LEN ( 1024 * EVENT_SIZE )
 
 	typedef struct {
 		char* puerto_lfs;
@@ -57,7 +66,6 @@
 
 	void iniciar_logger(void);
 	void iniciar_config(void);
-	void crear_config(void);
 	void leer_config(void);
 	void loggear_config(void);
 	void liberar_logger(t_log*);
@@ -70,6 +78,9 @@
 	void leer_metadata(void);
 	void loggear_metadata(void);
 	void iniciar_dict_table_status(void);
+	void primer_config(void);
+	void after_cd_config(void);
+
 	//void crear_carpeta(char* carpeta);
 
 #endif

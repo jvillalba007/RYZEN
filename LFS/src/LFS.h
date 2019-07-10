@@ -26,6 +26,7 @@
 	void assignHandler();
 	void hilo_compactacion(void*);
 	void consola_procesar_comando(char*);
+	void inotify_config(void);
 
 #endif /* LFS_H */
 

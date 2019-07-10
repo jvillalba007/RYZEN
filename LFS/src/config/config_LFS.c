@@ -8,11 +8,17 @@ void iniciar_logger(void)
 	log_info(g_logger, "logger iniciado");
 }
 
-void crear_config() {
-    config = config_create("LFS.cfg");
+void primer_config() {
+    config = config_create("config/LFS.cfg");
 }
 
+void after_cd_config() {
+	config = config_create(CONFIG_PATH);
+}
+
+
 void leer_config() {
+
 	lfs_config.puerto_lfs = strdup(config_get_string_value(config, "PUERTO_LFS"));
 	lfs_config.punto_montaje = strdup(config_get_string_value(config, "PUNTO_MONTAJE"));
 	lfs_config.retardo_lfs = config_get_int_value(config, "RETARDO_LFS");
@@ -82,7 +88,8 @@ void iniciar_dict_table_status(){
 
 void iniciar_config(){
 	iniciar_logger();
-	crear_config();
+
+	primer_config();
 	leer_config();
 	loggear_config();
 

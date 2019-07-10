@@ -5,6 +5,7 @@ void crear_servidor(){
 	int cliente;
 	t_header *buffer = malloc( sizeof( t_header ) );
 
+	log_info(g_logger, "El puerto de escucha es: %s", lfs_config.puerto_lfs);
 	socketServidor = socket_create_listener( NULL , lfs_config.puerto_lfs ); // @suppress("Symbol is not resolved")
 
 	if( socketServidor < 0  ){
@@ -109,6 +110,55 @@ void hilo_compactacion(void* tabla)
 	pthread_exit(0);
 }
 
+
+
+void inotify_config(){
+
+	char buffer[BUF_LEN];
+
+	int file_descriptor = inotify_init();
+	if (file_descriptor < 0) {
+		perror("inotify_init");
+	}
+
+	int watch_descriptor = inotify_add_watch(file_descriptor, CONFIG_FOLDER, IN_MODIFY | IN_CREATE | IN_CLOSE_WRITE);
+
+	while(!EXIT_PROGRAM){
+
+		int length = read(file_descriptor, buffer, BUF_LEN);
+		if (length < 0) {
+			perror("read");
+		}
+
+		int offset = 0;
+
+		while (offset < length) {
+
+			struct inotify_event *event = (struct inotify_event *) &buffer[offset];
+
+			if (event->len) {
+				//log_info(g_logger, "Event detected on: %s", event->name);
+				if (string_contains(event->name, CONFIG_FILE)){
+					log_info(g_logger, "Config File changed");
+					liberar_config(lfs_config);
+					after_cd_config();
+					leer_config();
+					loggear_config();
+				}
+			}
+			offset += sizeof (struct inotify_event) + event->len;
+		}
+
+	}
+
+	inotify_rm_watch(file_descriptor, watch_descriptor);
+	close(file_descriptor);
+
+
+	pthread_exit(0);
+}
+
+
 void iniciar_hilos_compactacion()
 {
 	void hilos(linea_create* tabla)
@@ -153,6 +203,17 @@ int main(void) {
 	iniciar_montaje();
 	iniciar_hilos_compactacion();
 
+	// INICIAR HILO INOTIFY
+	pthread_attr_t attr_inotify;
+	pthread_attr_init(&attr_inotify);
+
+	pthread_t tid_inotify;
+	pthread_create(&tid_inotify, &attr_inotify, (void*)inotify_config, NULL);
+
+	pthread_t* idHiloIno = malloc(sizeof(pthread_t));
+	*idHiloIno = tid_inotify;
+	list_add(threads,idHiloIno);
+
 	// INICIAR SOCKET SERVIDOR
 	pthread_attr_t attr_server;
 	pthread_attr_init(&attr_server);
@@ -178,10 +239,12 @@ int main(void) {
 	*idHilo = tid_dump;
 	list_add(threads,idHilo);
 
+
 	//Esperar a que el hilo termine
 	pthread_join(tid_consola, NULL);
 	pthread_join(tid_dump, NULL);
 	pthread_join(tid_server, NULL);
+	pthread_join(tid_inotify, NULL);
 
 	liberar_memtable();
 	liberar_bitmap();
