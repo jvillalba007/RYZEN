@@ -548,7 +548,13 @@ void conectar_memoria(){
 	buffer.tipo_mensaje = CONEXION;
 	buffer.payload_size = 32;
 	send(socket_memoria, &buffer, sizeof(buffer), 0);
-	//TODO habria que realizar aca el handshake con memoria.
+
+	int cantidad_memorias;
+	recv(socket_memoria, &cantidad_memorias, sizeof(int), MSG_WAITALL);
+
+	for(int i=0;i<cantidad_memorias;i++){
+		recibir_agregar_memoria(&socket_memoria);
+	}
 }
 
 void crear_procesadores(){
@@ -759,6 +765,48 @@ t_memoria_del_pool *obtener_memoria_criterio_create(char* criterio, char* linea)
 	}
 
 	return memoria;
+}
+
+void recibir_agregar_memoria(void* sock){
+	int socket_memoria = *(int*)sock;
+
+	int tamanio_buffer;
+	recv(socket_memoria, &tamanio_buffer, sizeof(int), MSG_WAITALL);
+
+	char *buffer = malloc(tamanio_buffer + 1);
+	recv(socket_memoria, buffer, tamanio_buffer, MSG_WAITALL);
+
+	pmemoria memoria_recibir;
+	deserializar_memoria(buffer, &memoria_recibir);
+
+	t_memoria_del_pool* memoria = malloc( sizeof( t_memoria_del_pool ) );
+	memoria->ip = memoria_recibir.ip;
+	memoria->puerto = memoria_recibir.puerto;
+	memoria->numero_memoria=0;
+	memoria->activa = memoria_recibir.activa;
+	if(memoria_recibir.activa){
+		int socket = socket_connect_to_server(memoria->ip, memoria->puerto);
+		log_info(logger, "El socket devuelto es: %d", socket);
+		if( socket == -1  ){
+
+			log_error(logger, "¡Error no se pudo conectar con MEMORIA");
+
+			memoria->socket = socket;
+		}else{
+		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket_memoria);
+		memoria->socket = socket;
+		}
+	}else{
+
+		memoria->socket = -1;
+	}
+
+	memoria->cantidad_carga = 0;
+	memoria->cantidad_insert = 0;
+	memoria->cantidad_select = 0;
+	list_add(l_memorias , memoria );
+	free(buffer);
+
 }
 /*
 void recibir_pueba(){
