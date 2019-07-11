@@ -79,3 +79,8 @@ int isNumeric (const char * s)
     return *p == '\0';
 }
 
+uint64_t getCurrentTime() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (double) (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000;
+}

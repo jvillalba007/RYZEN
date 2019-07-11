@@ -104,6 +104,172 @@ char* deserializar_string(char* buffer)
 	return string;
 }
 
+char* serializar_memorias(t_list* memorias,int* longitud)
+{
+	char* buffer = malloc(sizeof(int));
+	int pos = 0;
+	int buffer_size = 0;
+
+	int cant_elementos = list_size(memorias);
+	memcpy(buffer, (void*) &(cant_elementos), sizeof(int));
+	pos += sizeof(int);
+	buffer_size += sizeof(int);
+
+	void serializar(pmemoria* mem)
+	{
+		int longitud;
+
+		pmemoria memoria;
+		memoria.numero_memoria = mem->numero_memoria;
+		memoria.ip = mem->ip;
+		memoria.puerto = mem->puerto;
+		memoria.socket=-1;
+		memoria.activa=0;
+
+		char* serializado = serializar_memoria(memoria,&longitud);
+
+		buffer = realloc(buffer, buffer_size + longitud);
+		memcpy(buffer+pos, (void*) serializado, longitud);
+		pos += longitud;
+		buffer_size += longitud;
+
+		free(serializado);
+	}
+
+	list_iterate(memorias,(void*) serializar);
+	*(longitud) = buffer_size;
+
+	return buffer;
+}
+
+t_list* deserializar_memorias(char* buffer)
+{
+
+	t_list* memorias = list_create();
+	int cant_elementos = 0;
+	int pos = 0;
+	memcpy((void*) &(cant_elementos), (void*) buffer, sizeof(int));
+	pos += sizeof(int);
+
+	for(int i=0;i<cant_elementos;i++)
+	{
+		pmemoria* memoria = malloc(sizeof(pmemoria));
+		deserializar_memoria(buffer+pos, memoria);
+		pos += sizeof(int) + sizeof(u_int16_t) + strlen(memoria->ip) + sizeof(u_int16_t) + strlen(memoria->puerto) + sizeof(int) + sizeof(bool);
+		list_add(memorias,memoria);
+	}
+
+	return memorias;
+}
+
+char* serializar_memoria(pmemoria memoria, int* longitud)
+{
+	int pos = 0;
+	u_int16_t len_ip = strlen(memoria.ip);
+	u_int16_t len_port = strlen(memoria.puerto);
+	int buffer_size = sizeof(int) + sizeof(u_int16_t) + len_ip + sizeof(u_int16_t) + len_port + sizeof(int) + sizeof(bool);
+
+	char* buffer = malloc(buffer_size);
+	memcpy(buffer, (void*) &(memoria.numero_memoria), sizeof(int));
+	pos+=sizeof(int);
+	memcpy(buffer+pos, (void*) &(len_ip), sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+	memcpy(buffer+pos, (void*) memoria.ip, len_ip);
+	pos+=len_ip;
+	memcpy(buffer+pos, (void*) &(len_port), sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+	memcpy(buffer+pos, (void*) memoria.puerto, len_port);
+	pos+=len_port;
+	memcpy(buffer+pos, (void*) &(memoria.socket), sizeof(int));
+	pos+=sizeof(int);
+	memcpy(buffer+pos, (void*) &(memoria.activa), sizeof(bool));
+	*(longitud) = buffer_size;
+
+	return buffer;
+}
+
+void deserializar_memoria(char* buffer, pmemoria* memoria)
+{
+	int pos = 0;
+	u_int16_t len_ip;
+	u_int16_t len_port;
+
+	memcpy((void*) &(memoria->numero_memoria), (void*) buffer, sizeof(int));
+	pos+=sizeof(int);
+	memcpy((void*) &(len_ip), (void*) buffer+pos, sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+	memoria->ip = malloc(len_ip+1);
+	memcpy((void*) memoria->ip, (void*) buffer+pos,len_ip);
+	memoria->ip[len_ip] = '\0';
+	pos+=len_ip;
+	memcpy((void*) &(len_port), (void*) buffer+pos, sizeof(u_int16_t));
+	pos+=sizeof(u_int16_t);
+	memoria->puerto = malloc(len_port+1);
+	memcpy((void*) memoria->puerto, (void*) buffer+pos,len_port);
+	memoria->puerto[len_port] = '\0';
+	pos+=len_port;
+	memcpy((void*) &(memoria->socket), (void*) buffer+pos, sizeof(int));
+	pos+=sizeof(int);
+	memcpy((void*) &(memoria->activa), (void*) buffer+pos, sizeof(bool));
+}
+
+char* serializar_describe(t_list* describes,int* longitud)
+{
+	char* buffer = malloc(sizeof(int));
+	int pos = 0;
+	int buffer_size = 0;
+
+	int cant_elementos = list_size(describes);
+	memcpy(buffer, (void*) &(cant_elementos), sizeof(int));
+	pos += sizeof(int);
+	buffer_size += sizeof(int);
+
+	void serializar(linea_create* linea)
+	{
+		int longitud;
+
+		linea_create lineac;
+		lineac.tabla = linea->tabla;
+		lineac.nro_particiones = linea->nro_particiones;
+		lineac.tiempo_compactacion = linea->tiempo_compactacion;
+		lineac.tipo_consistencia = linea->tipo_consistencia;
+
+		char* serializado = serializar_create(lineac,&longitud);
+
+		buffer = realloc(buffer, buffer_size + longitud);
+		memcpy(buffer+pos, (void*) serializado, longitud);
+		pos += longitud;
+		buffer_size += longitud;
+
+		free(serializado);
+	}
+
+	list_iterate(describes,(void*) serializar);
+	*(longitud) = buffer_size;
+
+	return buffer;
+}
+
+t_list* deserializar_describe(char* buffer)
+{
+
+	t_list* describes = list_create();
+	int cant_elementos = 0;
+	int pos = 0;
+	memcpy((void*) &(cant_elementos), (void*) buffer, sizeof(int));
+	pos += sizeof(int);
+
+	for(int i=0;i<cant_elementos;i++)
+	{
+		linea_create* linea = malloc(sizeof(linea_create));
+		deserializar_create(buffer+pos, linea);
+		pos += sizeof(u_int16_t) + strlen(linea->tabla) + sizeof(u_int8_t) + strlen(linea->tipo_consistencia) + sizeof(u_int8_t) + sizeof(u_int32_t);
+		list_add(describes,linea);
+	}
+
+	return describes;
+}
+
 char* serializar_create(linea_create linea, int* longitud)
 {
 	int pos = 0;
@@ -162,7 +328,7 @@ char* serializar_response_select(linea_response_select linea, int* longitud)
 	pos+=sizeof(u_int16_t);
 	memcpy(buffer+pos, (void*) linea.value, len_value);
 	pos+=len_value;
-	memcpy(buffer+pos, (void*) &(linea.timestamp), sizeof(int32_t));
+	memcpy(buffer+pos, (void*) &(linea.timestamp), sizeof(uint64_t));
 	*(longitud) = buffer_size;
 
 	return buffer;
@@ -179,5 +345,5 @@ void deserializar_response_select(char* buffer, linea_response_select* linea)
 	memcpy((void*) linea->value, (void*) buffer+pos,len_value);
 	linea->value[len_value] = '\0';
 	pos+=len_value;
-	memcpy((void*) &(linea->timestamp), (void*) buffer+pos, sizeof(int32_t));
+	memcpy((void*) &(linea->timestamp), (void*) buffer+pos, sizeof(uint64_t));
 }
