@@ -21,6 +21,7 @@ typedef struct {
 	int MULTIPROCESAMIENTO;
 	int SLEEP_EJECUCION;
 	int METADATA_REFRESH;
+	int GOSSIPING_REFRESH;
 	int QUANTUM;
 } ck;
 

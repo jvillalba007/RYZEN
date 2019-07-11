@@ -1,5 +1,18 @@
 #include "kernel.h"
 
+
+void handler(int id) {
+
+}
+
+void assignHandler() {
+	struct sigaction sa = {0};
+    sa.sa_handler = handler;
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGUSR1, &sa, NULL);
+}
+
+
 int main() {
 
 	inicializar_logs_y_configs();
@@ -25,27 +38,30 @@ int main() {
 */
 
 	//INICIA CLIENTE MEMORIA
-	conectar_memoria();
+	//conectar_memoria();
 
 	//HILO REINICIO_ESTADISTICAS
-	pthread_t hilo_reinicio_estadisticas;
-	pthread_create(&hilo_reinicio_estadisticas, NULL, (void*) reinicio_estadisticas, NULL);
-	log_info(logger,"iniciando hilo estadisticas %d", hilo_reinicio_estadisticas);
+	pthread_create(&tid_estadisticas, NULL, (void*) reinicio_estadisticas, NULL);
+	log_info(logger,"iniciando hilo estadisticas %d", tid_estadisticas);
+
+	//HILO GOSSIPING
+	pthread_create(&tid_gossiping, NULL, (void*) hilo_gossiping, NULL);
+	log_info(logger,"iniciando hilo gossiping %d", tid_gossiping);
 
 	//INICIA CONSOLA
 	pthread_t hilo_consola;
 	pthread_create(&hilo_consola, NULL , (void*) consola, NULL);
 	log_info(logger, "Kernel > Hilo creado de consola...");
 
-	
 	//INICIA HILOS DE EJECUCION
 	crear_procesadores();
 
 	pthread_join(hilo_consola, NULL);
+	pthread_join(tid_estadisticas, NULL);
+	pthread_join(tid_gossiping, NULL);
 	log_info(logger, "FIN hilo consola");
-
-	pthread_join(hilo_reinicio_estadisticas, NULL);
-	log_info(logger, "fin hilo reinicio estadisticas");
+	log_info(logger, "FIN hilo reinicio estadisticas");
+	log_info(logger, "FIN hilo gossiping");
 
 	liberar_kernel();
 
@@ -543,18 +559,8 @@ void conectar_memoria(){
 	memoria_original->cantidad_carga = 0;
 	list_add(l_memorias , memoria_original );
 
-	t_header buffer;
-	buffer.emisor = KERNEL;
-	buffer.tipo_mensaje = CONEXION;
-	buffer.payload_size = 32;
-	send(socket_memoria, &buffer, sizeof(buffer), 0);
-
-	int cantidad_memorias;
-	recv(socket_memoria, &cantidad_memorias, sizeof(int), MSG_WAITALL);
-
-	for(int i=0;i<cantidad_memorias;i++){
-		recibir_agregar_memoria(&socket_memoria);
-	}
+	//hago gossiping con la memoria principal. TODO: verificar si esto debe estar en un loop hasta que logre conectarse realmente
+	gossiping( memoria_original );
 }
 
 void crear_procesadores(){
@@ -705,12 +711,15 @@ void enviar_describe_especial(void* sock, char* tabla){
 
 void reinicio_estadisticas(){
 
-	struct timespec time;
-	time.tv_sec = 30;
-	time.tv_nsec = 0;
+	struct timespec ts;
+	ts.tv_sec = kernel_config.METADATA_REFRESH / 1000;
+	ts.tv_nsec = (kernel_config.METADATA_REFRESH % 1000) * 1000000;
+
+	assignHandler();
+
 	while(!exit_global){
 
-		nanosleep(&time, NULL);
+		nanosleep(&ts, NULL);
 		log_info(logger, "iniciando reincio estadisticas");
 
 		void reiniciar_memorias(t_memoria_del_pool* memoria)
@@ -808,6 +817,92 @@ void recibir_agregar_memoria(void* sock){
 	free(buffer);
 
 }
+
+
+void hilo_gossiping(){
+
+	struct timespec ts;
+	ts.tv_sec = kernel_config.GOSSIPING_REFRESH / 1000;
+	ts.tv_nsec = (kernel_config.GOSSIPING_REFRESH % 1000) * 1000000;
+
+	assignHandler();
+
+	while(!exit_global){
+
+		nanosleep(&ts, NULL);
+		log_info(logger, "iniciando gossiping");
+
+	}
+
+	pthread_exit(0);
+}
+
+
+int gossiping( t_memoria_del_pool *memoria ){
+
+	log_info(logger, "memoria recibida para gossiping: %d" , memoria->numero_memoria);
+	if( memoria->socket != -1 ){
+
+		int socketmemoria = socket_connect_to_server(memoria->ip,  memoria->puerto );
+		log_info(logger, "%d" ,socketmemoria);
+
+		if( socketmemoria == -1 ){
+			memoria->activa=-1;//verificar si debo sacarlas de los criterios o no...diria que no.
+			log_info(logger, "no se pudo conectar con memoria. se rechaza gossiping");
+			return -1;
+		}
+		memoria->socket=socketmemoria;
+	}
+
+	//genero intercambio
+	t_header buffer;
+	buffer.emisor=KERNEL;
+	buffer.tipo_mensaje =  GOSSIPING;
+	send(memoria->socket, &buffer, sizeof( buffer ) , 0);
+
+	//TODO:hacer el recv de la lista de memorias para agregar a tabla
+	//recv
+	t_list *memorias = list_create();
+
+
+	void agregar_memoria_gossip( pmemoria *memoria ){
+
+		bool memoria_encontrada( t_memoria_del_pool *memoria_pool ){
+
+			if( memoria_pool->numero_memoria == memoria->numero_memoria ) return true;
+			return false;
+		}
+
+		//si no la encuentra la agrego a la lista
+		if( list_find( l_memorias , (void*)memoria_encontrada ) == NULL ){
+
+			t_memoria_del_pool* memoria_nueva = malloc( sizeof( t_memoria_del_pool ) );
+			memoria_nueva->activa=1;
+			memoria_nueva->numero_memoria=memoria->numero_memoria;
+			memoria_nueva->ip = strdup(memoria->ip);
+			memoria_nueva->puerto = strdup(memoria->puerto);
+			memoria_nueva->cantidad_carga=0;
+			memoria_nueva->cantidad_insert=0;
+			memoria_nueva->cantidad_select=0;
+			memoria_nueva->socket=-1;
+			list_add(l_memorias , memoria_nueva );
+			log_info(logger, "se agrega al pool la memoria: %d",  memoria_nueva->numero_memoria );
+		}
+		else{
+			log_info(logger, "ya se encuentra en el pool la memoria: %d",  memoria->numero_memoria );
+		}
+
+
+	}
+
+	//recorro lista de gossiping y agrego las nuevas
+	list_iterate( memorias , (void*)agregar_memoria_gossip );
+
+
+	return 0;
+}
+
+
 /*
 void recibir_pueba(){
 	t_memoria_del_pool *memoria = list_get(l_memorias, 0);

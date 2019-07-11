@@ -33,6 +33,7 @@ void leer_configs() {
 	kernel_config.MULTIPROCESAMIENTO = config_get_int_value(config, "MULTIPROCESAMIENTO");
 	kernel_config.SLEEP_EJECUCION = config_get_int_value(config, "SLEEP_EJECUCION");
 	kernel_config.METADATA_REFRESH = config_get_int_value(config, "METADATA_REFRESH");
+	kernel_config.GOSSIPING_REFRESH = config_get_int_value(config, "GOSSIPING_REFRESH");
     kernel_config.QUANTUM = config_get_int_value(config, "QUANTUM");
 
 	//	Clausura de la estructura config
