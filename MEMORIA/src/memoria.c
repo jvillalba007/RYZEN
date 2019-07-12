@@ -846,7 +846,7 @@ void agregar_memorias_gossiping( t_list *memorias_seed ){
 		if( list_find( tabla_memorias , (void*)memoria_encontrada ) == NULL ){
 
 			t_memoria* memoria_nueva = malloc( sizeof( t_memoria ) );
-			memoria_nueva->activa=1;
+			memoria_nueva->activa=0;
 			memoria_nueva->numero_memoria=memoria_seed->numero_memoria;
 			memoria_nueva->ip = strdup(memoria_seed->ip);
 			memoria_nueva->puerto = strdup(memoria_seed->puerto);
