@@ -61,6 +61,9 @@ void hilo_journal();//corre cada x tiempo proceso journal
 void journal();
 void hilo_gossiping();//corre cada x tiempo proceso gossiping
 void gossiping();
+void agregar_memorias_gossiping( t_list *memorias_seed );//recibe tabla de intercambio de gossip y verifica si la agrega o no a la tabla de memorias.
 t_list* get_memorias_activas( t_list* tabla_memorias );
+
+
 
 #endif /* MEMORIA_H_ */

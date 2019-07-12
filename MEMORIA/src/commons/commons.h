@@ -87,8 +87,8 @@
 
 	t_list* tabla_memorias;
 
-	int mem_initialize();
-	void crear_log();
+	int mem_initialize( char *fileCFG  );
+	void crear_log( char* fileCFG );
 	void imprimir_config();
 	void liberar_tablas();
 	void liberar_mem_config(mem_cfg mem_config);

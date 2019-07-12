@@ -21,15 +21,16 @@ void assignHandler() {
     sigaction(SIGUSR1, &sa, NULL);
 }
 
-int main(void) {
 
+int main(int argc, char *argv[]) {
 
-	if (mem_initialize() == -1) {
+	if (mem_initialize( argv[1] ) == -1) {
 		log_destroy(mem_log);
 		return EXIT_FAILURE;
 	}
 
 	imprimir_config();
+	log_info(mem_log, "[MEMORIA] ARCHIVO RECIBIDO: %s", argv[1]);
 
 	//CLIENTE CON LFS
 	//crear_cliente_lfs();
@@ -177,14 +178,36 @@ int atender_request(int cliente, t_msg* msg)
 
 		if(msg->header->tipo_mensaje == GOSSIPING)
 		{
+			log_info(mem_log, "Se recibe tabla de gossiping de una memoria");
 			char* data;
 			data = malloc(msg->header->payload_size);
 			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES...
 			t_list* mems = deserializar_memorias(data);
-			free(data);
 
+			agregar_memorias_gossiping( mems );
+			free(data);
 			liberar_tabla_memorias(mems);
+
+
+			//ENVIO INFO DE TABLA
+			t_header buffer;
+			buffer.emisor=MEMORIA;
+			buffer.tipo_mensaje =  GOSSIPING;
+
+			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
+			char* data_send = serializar_memorias(memorias_activas,&buffer.payload_size);
+
+			send(cliente, &buffer, sizeof( buffer ) , 0);
+			send(cliente, data_send, buffer.payload_size , 0);
+			free(data_send);
 		}
+
+		if(msg->header->tipo_mensaje == CONEXION)
+		{
+			log_info(mem_log, "Se recibe mensaje de conexion de una memoria");
+			send(cliente, &mem_config.memory_number, sizeof( int ) , 0);
+		}
+
 		if(msg->header->tipo_mensaje == DESCONEXION)
 		{
 			log_error(mem_log, "[Memoria] Se desconecto una Memoria");
@@ -745,7 +768,6 @@ void gossiping(){
 			if( memoria->activa == 0 ){
 
 				int socketSeed = socket_connect_to_server(memoria->ip,  memoria->puerto );
-				log_info(mem_log, "%d" ,socketSeed);
 				if( socketSeed == -1  ){
 
 					memoria->socket=-1;
@@ -753,18 +775,27 @@ void gossiping(){
 					return;
 				}
 				else{
-
+					log_info(mem_log, "ME CONECTE CON UNA MEMORIA CON SOCKET:%d" ,socketSeed);
+					t_header buffer;
+					buffer.emisor=MEMORIA;
+					buffer.tipo_mensaje =CONEXION;
+					buffer.payload_size = 0;
+					send(socketSeed, &buffer, sizeof( buffer ) , 0);
+					log_info(mem_log, "HAGO EL SEND");
+					int numero_memoria_seed;
+					recv(socketSeed , &numero_memoria_seed, sizeof(int), MSG_WAITALL);
+					log_info(mem_log, "HAGO EL RECV");
 					memoria->socket=socketSeed;
 					memoria->activa=1;
-					log_info(mem_log, "Se creo el socket cliente con MEMROIA de numero: %d", socketSeed);
+					memoria->numero_memoria = numero_memoria_seed;
+					log_info(mem_log, "Se creo el socket cliente con MEMROIA de numero:%d , de la memoria numero:%d", memoria->socket , memoria->numero_memoria);
 				}
 			}
 
-
-			//intercambiar tablas de gossip
+			log_info(mem_log, "MEMORIA gossiping activa numero:%d hago intercambio de tablas" ,memoria->numero_memoria );
 			t_header buffer;
 			buffer.emisor=MEMORIA;
-			buffer.tipo_mensaje =  GOSSIPING;
+			buffer.tipo_mensaje = GOSSIPING;
 
 			/*ENVIO MEMORIAS ACTIVAS*/
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
@@ -772,6 +803,19 @@ void gossiping(){
 			char* data = serializar_memorias(memorias_activas,&buffer.payload_size);
 			send(memoria->socket, &buffer, sizeof( buffer ) , 0);
 			send(memoria->socket, data, buffer.payload_size , 0);
+			free(data);
+
+			t_header header_memoria;
+			recv(memoria->socket , &header_memoria, sizeof(t_header), MSG_WAITALL);
+
+			char *buffer_tabla = malloc( header_memoria.payload_size);
+			recv(memoria->socket , buffer_tabla, header_memoria.payload_size , MSG_WAITALL);
+
+			t_list *memorias_seed = deserializar_memorias(buffer_tabla);
+			agregar_memorias_gossiping( memorias_seed );
+
+			free( buffer_tabla );
+			liberar_tabla_memorias(memorias_seed);
 
 		}
 
@@ -783,6 +827,44 @@ void gossiping(){
 	}
 
 }
+
+
+
+void agregar_memorias_gossiping( t_list *memorias_seed ){
+
+
+	void agregar_memoria_gossip( pmemoria *memoria_seed ){
+
+
+		bool memoria_encontrada( t_memoria *memoria_tabla ){
+
+			if( memoria_tabla->numero_memoria == memoria_seed->numero_memoria ) return true;
+			return false;
+		}
+
+		//si no la encuentra la agrego a la lista
+		if( list_find( tabla_memorias , (void*)memoria_encontrada ) == NULL ){
+
+			t_memoria* memoria_nueva = malloc( sizeof( t_memoria ) );
+			memoria_nueva->activa=1;
+			memoria_nueva->numero_memoria=memoria_seed->numero_memoria;
+			memoria_nueva->ip = strdup(memoria_seed->ip);
+			memoria_nueva->puerto = strdup(memoria_seed->puerto);
+			memoria_nueva->socket=-1;
+			list_add(tabla_memorias , memoria_nueva );
+			log_info(mem_log, "se agrega al pool la memoria: %d",  memoria_nueva->numero_memoria );
+		}
+		else{
+			log_info(mem_log, "ya se encuentra en el pool la memoria: %d",  memoria_seed->numero_memoria );
+		}
+
+	}
+
+	//recorro lista de gossiping y agrego las nuevas
+	list_iterate( memorias_seed , (void*)agregar_memoria_gossip );
+
+}
+
 
 
 t_list* get_memorias_activas( t_list* tabla_memorias ){
@@ -804,10 +886,24 @@ void hilo_gossiping(){
 
 	assignHandler();
 
+	void logear_memoria( t_memoria *memoria ){
+
+		log_info(mem_log, "MEMORIA: %d", memoria->numero_memoria );
+	}
+
 	while ( !EXIT_PROGRAM ) {
 
 		nanosleep(&ts, NULL);
+
+		log_info(mem_log, "INICIA gossiping" );
+		list_iterate( tabla_memorias , (void*)logear_memoria );
+
 		gossiping();
+
+		log_info(mem_log, "FINALIZA gossiping" );
+
+		//loggeo tabla seed
+		list_iterate( tabla_memorias , (void*)logear_memoria );
 
 	}
 

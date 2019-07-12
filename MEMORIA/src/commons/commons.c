@@ -7,10 +7,10 @@
 
 #include "commons.h"
 
-int mem_initialize() {
+int mem_initialize( char *fileCFG ) {
 
-	config = config_create(pathCFG);
-	crear_log();
+	config = config_create(fileCFG);
+	crear_log( fileCFG );
 
 	if (config == NULL) {
 		log_error(mem_log, "Error al leer ruta del archivo de configuracion");
@@ -56,12 +56,17 @@ void imprimir_config() {
 	log_info(mem_log, "MEMORY_NUMBER: %d", mem_config.memory_number);
 }
 
-void crear_log() {
-	mem_log = log_create(pathLOG, "LISSANDRA-MEMORIA", false, LOG_LEVEL_TRACE);
+void crear_log( char* fileCFG ) {
+
+	char* NombreArchivo = string_substring(fileCFG, 0 , strlen(fileCFG) - 4);
+	char* fileLOG = string_from_format("%s.LOG", NombreArchivo);
+
+	mem_log = log_create(fileLOG, "LISSANDRA-MEMORIA", false, LOG_LEVEL_TRACE);
 	if (mem_log == NULL) {
 		printf("No se pudo crear el log. Abortando ejecución\n");
 		exit(EXIT_FAILURE);
 	}
+
 }
 
 void imprimir_arrays(char** split,char* nombre)
