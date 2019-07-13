@@ -300,12 +300,13 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		if( socket == -1  ){
 			//TODO:falta confirmacion de si se saca o no del criterio
 			log_error(logger, "¡Error no se pudo conectar con MEMORIA");
-			desconectar_memoria(memoria);
+			//desconectar_memoria(memoria);
 			memoria->activa = false;
+			memoria->socket = -1;
 			return -1;
 
 		}
-		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket);
+		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
 
 		memoria->socket = socket;
 		memoria->activa = true;
@@ -324,14 +325,11 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		insert.value = split[3];
 
 		enviar_insert(insert, &socket);
-		free(insert.tabla);
-		free(insert.value);
 
 		operaciones_totales++;
 		memoria->cantidad_carga++;
 		memoria->cantidad_insert++;
 		memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
-
 
 	}
 	else if(es_string(split[0], "SELECT")){
@@ -343,8 +341,6 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		select.key = atoi(split[2]);
 
 		enviar_select(select, &socket);
-
-		free(select.tabla);
 
 		int tamanio;
 		recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
@@ -366,8 +362,6 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	}
 	else if(es_string(split[0], "CREATE")){
 
-
-
 		linea_create create;
 		create.tabla = split[1];
 		create.tipo_consistencia = split[2];
@@ -379,18 +373,16 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		int respuesta;
 		recv(socket, &respuesta, sizeof(int), MSG_WAITALL);
-		if (respuesta>0){
+		if (respuesta > 0){
 			t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
 			tabla->criterio_consistencia = split[2];
-			tabla->nombre_tabla = split[1];
+			tabla->nombre_tabla = strdup(split[1]);
 			list_add(l_tablas, tabla);
 			log_info(logger,"tabla %s creada", split[1]);
 		}
 		else{
 			log_error(logger,"no se pudo crear la tabla %s", split[1]);
 		}
-		free(create.tabla);
-		free(create.tipo_consistencia);
 
 		operaciones_totales++;
 	}
@@ -405,8 +397,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		if(respuesta>0){
 			log_info(logger,"se hizo drop de la tabla %s",split[1]);
 			//TODO: si esta en la metadata debo quitarla
+			quitar_tabla_lista( split[1]);
 
-		}else{
+		}
+		else{
 			log_error(logger,"no se realizo correctamente el drop de la tabla %s",split[1]);
 		}
 
@@ -629,16 +623,16 @@ void enviar_insert(linea_insert linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
-	char* buffer = serializar_insert( linea, &tamanio);
 
-	t_header *paquete = malloc(sizeof(t_header));
-	paquete->emisor = KERNEL;
-	paquete->tipo_mensaje = INSERT;
-	paquete->payload_size = tamanio;
+
+	t_header paquete;
+	paquete.emisor = KERNEL;
+	paquete.tipo_mensaje = INSERT;
+	paquete.payload_size = tamanio;
 	send(socket, &paquete, sizeof(t_header), 0);
-	free(paquete);
 
-	send(socket, &buffer, tamanio, 0);
+	char* buffer = serializar_insert( linea, &tamanio);
+	send(socket, buffer, tamanio, 0);
 
 	free(buffer);
 }
@@ -648,17 +642,14 @@ void enviar_select(linea_select linea, void* sock){
 	int socket = *(int*)sock;
 	int tamanio;
 
-	char* buffer = serializar_select(linea, &tamanio);
-
-	t_header *paquete = malloc(sizeof(t_header));
-	paquete->emisor = KERNEL;
-	paquete->tipo_mensaje = SELECT;
-	paquete->payload_size = tamanio;
-
+	t_header paquete;
+	paquete.emisor = KERNEL;
+	paquete.tipo_mensaje = SELECT;
+	paquete.payload_size = tamanio;
 	send(socket, &paquete, sizeof(t_header), 0);
-	free(paquete);
 
-	send(socket, &buffer, tamanio, 0);
+	char* buffer = serializar_select(linea, &tamanio);
+	send(socket, buffer, tamanio, 0);
 	free(buffer);
 }
 
@@ -677,8 +668,7 @@ void enviar_create(linea_create linea, void* sock){
 	send(socket, &paquete, sizeof(t_header), 0);
 	free(paquete);
 
-	send(socket, &buffer, tamanio, 0);
-
+	send(socket, buffer, tamanio, 0);
 	free(buffer);
 
 }
@@ -686,14 +676,12 @@ void enviar_create(linea_create linea, void* sock){
 void enviar_describe_general(void* sock){
 
 	int socket = *(int*)sock;
-	t_header *paquete = malloc(sizeof(t_header));
-	paquete->emisor = KERNEL;
-	paquete->tipo_mensaje = DESCRIBE;
-	paquete->payload_size = 0;
+	t_header paquete;
+	paquete.emisor = KERNEL;
+	paquete.tipo_mensaje = DESCRIBE;
+	paquete.payload_size = 0;
 
 	send(socket, &paquete, sizeof(t_header), 0);
-	free(paquete);
-
 }
 
 void enviar_describe_especial(void* sock, char* tabla){
@@ -702,15 +690,13 @@ void enviar_describe_especial(void* sock, char* tabla){
 	int tamanio;
 	char* buffer = serializar_string(tabla, &tamanio);
 
-	t_header *paquete = malloc(sizeof(t_header));
-	paquete->emisor = KERNEL;
-	paquete->tipo_mensaje = DESCRIBE;
-	paquete->payload_size = tamanio;
-
+	t_header paquete;
+	paquete.emisor = KERNEL;
+	paquete.tipo_mensaje = DESCRIBE;
+	paquete.payload_size = tamanio;
 	send(socket, &paquete, sizeof(t_header), 0);
-	free(paquete);
 
-	send(socket, &buffer, tamanio, 0);
+	send(socket, buffer, tamanio, 0);
 	free(buffer);
 }
 
@@ -749,15 +735,13 @@ void enviar_drop(void* sock,char* tabla){
 	int tamanio;
 	char* buffer = serializar_string(tabla, &tamanio);
 
-	t_header *paquete = malloc(sizeof(t_header));
-	paquete->emisor = KERNEL;
-	paquete->tipo_mensaje = DROP;
-	paquete->payload_size = tamanio;
-
+	t_header paquete;
+	paquete.emisor = KERNEL;
+	paquete.tipo_mensaje = DROP;
+	paquete.payload_size = tamanio;
 	send(socket, &paquete, sizeof(t_header), 0);
-	free(paquete);
 
-	send(socket, &buffer, tamanio, 0);
+	send(socket, buffer, tamanio, 0);
 	free(buffer);
 }
 
@@ -1032,4 +1016,23 @@ int describe( t_memoria_del_pool *memoria ){
 	return 0;
 }
 
+
+void quitar_tabla_lista( char* tabla ){
+
+	bool es_tabla( t_tabla_consistencia *tabla_it ){
+
+		if( string_equals_ignore_case( tabla , tabla_it->nombre_tabla )) return true;
+		return false;
+	}
+
+	t_tabla_consistencia *tabla_encontrada = list_remove_by_condition( l_tablas , (void*)es_tabla );
+
+	if( tabla_encontrada != NULL ){
+		log_info(logger,"se quita de la metadata la tabla %s",tabla_encontrada->nombre_tabla);
+		free_tabla( tabla_encontrada );
+	}
+	else{
+		log_info(logger,"La tabla:%s a la que se hizo drop no estaba en la metadata " ,tabla);
+	}
+}
 

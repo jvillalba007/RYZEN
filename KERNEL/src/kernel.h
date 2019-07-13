@@ -57,4 +57,6 @@ void agregar_tabla_describe( linea_create* tabla_describe ); //agrega tabla en e
 void hilo_describe();
 int describe();
 
+void quitar_tabla_lista( char* tabla );//a partir de un nombre de tabla la busca en la metadata y la borra si existe
+
 #endif
