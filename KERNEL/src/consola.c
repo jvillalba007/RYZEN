@@ -113,7 +113,12 @@ void procesar_comando (char* linea) {
 				if (es_string(parametros[0], "METRICS")) {
 
 					log_info(logger, "Ejecuto metrics");
-					//TODO: ejecutar metrics
+					if(!list_is_empty(l_memorias)){
+						list_iterate(l_memorias, (void*)ejecutar_metricas);
+					}else{
+						printf("No conozco ninguna memoria\n");
+					}
+
 				}
             }
         }
@@ -283,4 +288,13 @@ void notificar_error_comando_cantidad_parametros(void) {
 void notificar_error_tipo_consistencia(void) {
     printf("Error: criterio de consistencia incorrecto.\n");
     log_info(logger, "Error: criterio de consistencia incorrecto.");
+}
+
+void ejecutar_metricas(t_memoria_del_pool* memoria){
+	printf("METRICAS DE LA MEMORIA %d\n", memoria->numero_memoria);
+	printf("Memory Load: %d \n", memoria->cantidad_carga);
+	printf("Writes: %d \n",memoria->cantidad_insert);
+	printf("Write Latency / 30s: %f \n",memoria->tiempo_insert);
+	printf("Reads: %d \n", memoria->cantidad_select);
+	printf("Read Latency / 30s: %f\n", memoria->tiempo_select);
 }

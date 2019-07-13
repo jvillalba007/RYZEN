@@ -25,4 +25,5 @@ void notificar_error_comando_incorrecto (void);
 void notificar_error_comando_cantidad_parametros (void);
 void notificar_error_tipo_consistencia (void);
 
+void ejecutar_metricas(t_memoria_del_pool* memoria);
 #endif
