@@ -45,6 +45,7 @@ void enviar_describe_general(void* socket);
 void enviar_describe_especial(void* socket, char* tabla);
 void enviar_drop(void* socket, char* tabla);
 void recibir_agregar_memoria(void* socket_memoria);
+void desconectar_memoria(t_memoria_del_pool* memoria);
 
 void hilo_gossiping(); //Ejecuta cada x tiempo el gossiping con alguna memoria
 int gossiping( t_memoria_del_pool *memoria );

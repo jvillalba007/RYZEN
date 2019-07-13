@@ -312,8 +312,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		if( socket == -1  ){
 
 			log_error(logger, "¡Error no se pudo conectar con MEMORIA");
-			//TODO: ojo aca no hay que hacer un exit hay que hacer un return -1 , hay que desactivar la memoria y quitarla del pool del criterio donde estas
-			exit(EXIT_FAILURE);
+			desconectar_memoria(memoria);
+			memoria->activa = false;
+			return -1;
 
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket);
@@ -901,7 +902,30 @@ int gossiping( t_memoria_del_pool *memoria ){
 
 	return 0;
 }
+void desconectar_memoria(t_memoria_del_pool* memoria){
 
+	bool memoria_encontrada( t_memoria_del_pool *memoria_pool ){
+
+		if( memoria_pool->numero_memoria == memoria->numero_memoria ) return true;
+		return false;
+	}
+
+	if(es_string(memoria->criterio, "SHC")){
+
+		list_remove_by_condition(l_criterio_SHC, (void*)memoria_encontrada);
+
+	}else{
+		if(es_string(memoria->criterio, "SC")){
+
+			list_remove_by_condition(l_criterio_SC, (void*)memoria_encontrada);
+
+		}else{
+
+			list_remove_by_condition(l_criterio_EC, (void*)memoria_encontrada);
+
+		}
+	}
+}
 
 /*
 void recibir_pueba(){

@@ -204,7 +204,7 @@ void enviar_journal_lista_memorias (t_list* lista) {
     
     void _enviar_journal_a_cada_memoria(t_memoria_del_pool* m) {
         //  A cada memoria se le ordena el JOURNAL
-        int socket = *(int*) m->socket;
+        int socket = m->socket;
         
         t_header *paquete = malloc(sizeof(t_header));
         paquete->emisor = KERNEL;
@@ -214,8 +214,8 @@ void enviar_journal_lista_memorias (t_list* lista) {
         send(socket, &paquete, sizeof(t_header), 0);
         free(paquete);
         
-        log_info(logger, "Se envió el journal a la memoria %d sin problemas.", m->numero_memoria);
-        printf("Se envió el journal a la memoria %d sin problemas.\n", m->numero_memoria);
+        log_info(logger, "Se envió el journal a la memoria %d sin problemas.", socket);
+        printf("Se envió el journal a la memoria %d sin problemas.\n", socket);
    }
 
    list_iterate(lista, (void*) _enviar_journal_a_cada_memoria);
