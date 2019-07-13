@@ -62,13 +62,13 @@ t_list* get_memorias_activas( t_list* tabla_memorias ){
 		return memoria->activa ? true : false;
 	}
 
-	if (list_is_empty(tabla_memorias)) return NULL;
-
 	return list_filter( tabla_memorias , (void*) is_memoria_activa  );
 }
 
 
 t_memoria_del_pool* obtener_memoria_random( t_list *memorias ){
+
+	if (list_is_empty(memorias)) return NULL;
 
 	t_list* memorias_activas = get_memorias_activas(memorias) ;
 	t_memoria_del_pool* mem = NULL;
