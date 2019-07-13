@@ -49,9 +49,8 @@ void desconectar_memoria(t_memoria_del_pool* memoria);
 
 void hilo_gossiping(); //Ejecuta cada x tiempo el gossiping con alguna memoria
 int gossiping( t_memoria_del_pool *memoria );
+void agregar_memoria_gossip( pmemoria *memoria ); //verifica si la memoria recibida existe o no en la tabla para agregarla o desecharla
 
-//void recibir_pueba();
-
-
+void agregar_tabla_describe( linea_create* tabla_describe ); //agrega tabla en el sistema si no existe
 
 #endif

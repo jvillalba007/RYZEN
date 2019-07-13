@@ -17,25 +17,7 @@ int main() {
 
 	inicializar_logs_y_configs();
 	inicializar_kernel();
-/*
-	//inicializo memoria y tabla de pruebas
-	t_memoria_del_pool* memoria_sc = malloc( sizeof( t_memoria_del_pool ) );
-	memoria_sc->activa=true;
-	memoria_sc->numero_memoria=0;
-	memoria_sc->criterio = strdup("EC");
-	list_add(l_memorias , memoria_sc );
 
-	t_tabla_consistencia* tabla = malloc( sizeof( t_tabla_consistencia ) );
-	tabla->criterio_consistencia= strdup("SHC");
-	tabla->nombre_tabla= strdup( "test" );
-	list_add( l_tablas , tabla );
-
-	t_memoria_del_pool* memoria_sc2 = malloc( sizeof( t_memoria_del_pool ) );
-	memoria_sc2->activa=true;
-	memoria_sc2->numero_memoria=1;
-	memoria_sc2->criterio = strdup("EC");
-	list_add(l_memorias , memoria_sc2 );
-*/
 
 	//INICIA CLIENTE MEMORIA
 	//conectar_memoria();
@@ -153,38 +135,16 @@ int ejecutar_linea( char *linea ){
 		memoria = obtener_memoria_criterio_create( parametros[2], linea);
 		res = ejecutar_linea_memoria( memoria , linea );
 
-	}else{
-	char* n_tabla = obtener_nombre_tabla( parametros );
-
-	if( n_tabla != NULL ) tabla = obtener_tabla( n_tabla );
-
-	if( tabla != NULL ){
-		log_info(logger, "Tabla encontrada: %s", tabla->nombre_tabla );
-		memoria = obtener_memoria_criterio( tabla, linea);
-
-		if( memoria != NULL ){
-
-			log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
-			res = ejecutar_linea_memoria( memoria , linea );
-		}
-		else{
-			//TODO: si memoria es null definir que hacer. Supongo que no va a realizar nada .
-			log_info(logger, "Memoria para ejecutar no encontrada" );
-			res=0;
-		}
 	}
-	//Tabla es null si es un select drop o insert rompo
 	else{
-		log_info(logger, "No se encuentra la tabla" );
-		if( string_equals_ignore_case( parametros[0], "SELECT") || string_equals_ignore_case( parametros[0], "INSERT") || string_equals_ignore_case( parametros[0], "DROP") ){
-			log_info(logger, "Se cancela ejecucion de operacion: %s", parametros[0] );
-			res= -1;
-		}
-		//es un describe general o de una tabla que no esta en sistema.
-		else
-		{
-			log_info(logger, "es un DESCRIBE se ejecuta memoria random" );
-			memoria = obtener_memoria_EC();
+		char* n_tabla = obtener_nombre_tabla( parametros );
+
+		if( n_tabla != NULL ) tabla = obtener_tabla( n_tabla );
+
+		if( tabla != NULL ){
+			log_info(logger, "Tabla encontrada: %s", tabla->nombre_tabla );
+			memoria = obtener_memoria_criterio( tabla, linea);
+
 			if( memoria != NULL ){
 
 				log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
@@ -196,8 +156,32 @@ int ejecutar_linea( char *linea ){
 				res=0;
 			}
 		}
-	}
-	free(n_tabla);
+		//Tabla es null si es un select drop o insert rompo
+		else{
+			log_info(logger, "No se encuentra la tabla" );
+			if( string_equals_ignore_case( parametros[0], "SELECT") || string_equals_ignore_case( parametros[0], "INSERT") || string_equals_ignore_case( parametros[0], "DROP") ){
+				log_info(logger, "Se cancela ejecucion de operacion: %s", parametros[0] );
+				res= -1;
+			}
+			//es un describe general o de una tabla que no esta en sistema.
+			else
+			{
+				log_info(logger, "es un DESCRIBE se ejecuta memoria random" );//TODO:decidir en que lista
+				memoria = obtener_memoria_random( l_criterio_EC );
+				if( memoria != NULL ){
+
+					log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
+					res = ejecutar_linea_memoria( memoria , linea );
+				}
+				else{
+					//TODO: si memoria es null definir que hacer. Supongo que no va a realizar nada .
+					log_info(logger, "Memoria para ejecutar no encontrada" );
+					res=0;
+				}
+			}
+		}
+
+		free(n_tabla);
 	}
 
 	split_liberar(parametros);
@@ -310,7 +294,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		socket = socket_connect_to_server(memoria->ip, memoria->puerto);
 		log_info(logger, "El socket devuelto es: %d", socket);
 		if( socket == -1  ){
-
+			//TODO:falta confirmacion de si se saca o no del criterio
 			log_error(logger, "¡Error no se pudo conectar con MEMORIA");
 			desconectar_memoria(memoria);
 			memoria->activa = false;
@@ -427,6 +411,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	else if(es_string(split[0], "DESCRIBE")){
 
 		if(split[1] == NULL){
+
+			log_info(logger,"Ejecuto DESCRIBE general");
 			enviar_describe_general(&socket);
 
 			int tamanio;
@@ -434,39 +420,26 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			char *buffer = malloc(tamanio+1);
 			recv(socket, buffer, tamanio, MSG_WAITALL);
 
-			t_list *lista = deserializar_describe(buffer);
-			int tamanio_lista = list_size(lista);
+			t_list *lista_tablas = deserializar_describe(buffer);
 
-			for(int i=0; tamanio_lista; i++){
+			list_iterate( lista_tablas , (void*)agregar_tabla_describe );
+			log_info(logger,"Se termino de ejecutar DESCRIBE general");
 
-				t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
-				linea_create *tabla_lista = list_remove(lista, 0);
-				tabla->criterio_consistencia = tabla_lista->tipo_consistencia;
-				tabla->nombre_tabla = tabla_lista->tabla;
-				list_add(l_tablas, tabla);
-				log_info(logger,"tabla %s agregada", tabla->nombre_tabla);
-				}
-
-			list_destroy(lista);
+			list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
 
 		}else{
+
 			enviar_describe_especial(&socket, split[1]);
 
 			int tamanio;
 			recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
 			char *buffer = malloc(tamanio+1);
 			recv(socket, buffer, tamanio, MSG_WAITALL);
-			t_list *lista = deserializar_describe(buffer);
 
-			t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
-			linea_create *tabla_lista = list_remove(lista, 0);
-			tabla->criterio_consistencia = tabla_lista->tipo_consistencia;
-			tabla->nombre_tabla = tabla_lista->tabla;
-			list_add(l_tablas, tabla);
-
-			log_info(logger,"tabla %s agregada", tabla->nombre_tabla);
-
-			list_destroy(lista);
+			t_list *lista_tablas = deserializar_describe(buffer);
+			list_iterate( lista_tablas , (void*)agregar_tabla_describe );
+			log_info(logger,"Se termino de ejecutar DESCRIBE");
+			list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
 		}
 		operaciones_totales++;
 	}
@@ -476,6 +449,35 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 	split_liberar(split);
 	return 0;
+}
+
+
+
+void agregar_tabla_describe( linea_create* tabla_describe ){
+
+	bool tabla_encontrada( t_tabla_consistencia *tabla ){
+
+		if( string_equals_ignore_case(tabla->nombre_tabla , tabla_describe->tabla ) ) return true;
+		return false;
+	}
+
+	//si no la encuentra la agrego a la lista
+	if( list_find( l_tablas , (void*)tabla_encontrada ) == NULL ){
+
+		t_tabla_consistencia *tabla_nueva = malloc( sizeof(t_tabla_consistencia ) );
+		tabla_nueva->nombre_tabla = strdup( tabla_describe->tabla );
+		tabla_nueva->criterio_consistencia = strdup( tabla_describe->tipo_consistencia );
+		tabla_nueva->nro_particiones = tabla_describe->nro_particiones ;
+		tabla_nueva->tiempo_compactacion = tabla_describe->tiempo_compactacion;
+
+		list_add(l_tablas , tabla_nueva );
+		log_info(logger, "se agrega la tabla :s",  tabla_nueva->nombre_tabla );
+	}
+	else{
+		log_info(logger, "ya se encuentra en el sistema la tabla: %s",  tabla_describe->tabla );
+
+	}
+
 }
 
 t_PCB* obtener_pcb_ejecutar(){
@@ -833,6 +835,22 @@ void hilo_gossiping(){
 		nanosleep(&ts, NULL);
 		log_info(logger, "iniciando gossiping");
 
+		t_memoria_del_pool *memoria = obtener_memoria_random( l_memorias );
+		if( memoria== NULL ){
+			log_info(logger, "No se encuentra memoria disponible para realizar gossiping");
+			return;
+		}
+
+		log_info(logger, "La memoria random activa elegida es:%d",memoria->numero_memoria);
+		int res = gossiping(memoria);
+		if( res ==-1 ){
+
+			log_info(logger, "Falla gossiping con memoria:%d",memoria->numero_memoria);
+		}
+		else{
+			log_info(logger, "Se realiza gossiping exitosamente con memoria:%d",memoria->numero_memoria);
+		}
+
 	}
 
 	pthread_exit(0);
@@ -852,6 +870,7 @@ int gossiping( t_memoria_del_pool *memoria ){
 			log_info(logger, "no se pudo conectar con memoria. se rechaza gossiping");
 			return -1;
 		}
+		log_info(logger, "Se establece conexion con memoria: %d: socket: %d" , memoria->numero_memoria , memoria->socket);
 		memoria->socket=socketmemoria;
 	}
 
@@ -861,47 +880,56 @@ int gossiping( t_memoria_del_pool *memoria ){
 	buffer.tipo_mensaje =  GOSSIPING;
 	send(memoria->socket, &buffer, sizeof( buffer ) , 0);
 
-	//TODO:hacer el recv de la lista de memorias para agregar a tabla
-	//recv
-	t_list *memorias = list_create();
 
+	t_header header_tabla;
+	recv(memoria->socket , &header_tabla, sizeof(t_header), MSG_WAITALL);
 
-	void agregar_memoria_gossip( pmemoria *memoria ){
+	char *buffer_tabla = malloc( header_tabla.payload_size);
+	recv(memoria->socket , buffer_tabla, header_tabla.payload_size , MSG_WAITALL);
 
-		bool memoria_encontrada( t_memoria_del_pool *memoria_pool ){
-
-			if( memoria_pool->numero_memoria == memoria->numero_memoria ) return true;
-			return false;
-		}
-
-		//si no la encuentra la agrego a la lista
-		if( list_find( l_memorias , (void*)memoria_encontrada ) == NULL ){
-
-			t_memoria_del_pool* memoria_nueva = malloc( sizeof( t_memoria_del_pool ) );
-			memoria_nueva->activa=1;
-			memoria_nueva->numero_memoria=memoria->numero_memoria;
-			memoria_nueva->ip = strdup(memoria->ip);
-			memoria_nueva->puerto = strdup(memoria->puerto);
-			memoria_nueva->cantidad_carga=0;
-			memoria_nueva->cantidad_insert=0;
-			memoria_nueva->cantidad_select=0;
-			memoria_nueva->socket=-1;
-			list_add(l_memorias , memoria_nueva );
-			log_info(logger, "se agrega al pool la memoria: %d",  memoria_nueva->numero_memoria );
-		}
-		else{
-			log_info(logger, "ya se encuentra en el pool la memoria: %d",  memoria->numero_memoria );
-		}
-
-
-	}
+	t_list *memorias_seed = deserializar_memorias(buffer_tabla);
 
 	//recorro lista de gossiping y agrego las nuevas
-	list_iterate( memorias , (void*)agregar_memoria_gossip );
+	list_iterate( memorias_seed , (void*)agregar_memoria_gossip );
 
+	free( buffer_tabla );
+	liberar_memorias_gossiping(memorias_seed);
 
 	return 0;
 }
+
+
+void agregar_memoria_gossip( pmemoria *memoria ){
+
+	bool memoria_encontrada( t_memoria_del_pool *memoria_pool ){
+
+		if( memoria_pool->numero_memoria == memoria->numero_memoria ) return true;
+		return false;
+	}
+
+	//si no la encuentra la agrego a la lista
+	if( list_find( l_memorias , (void*)memoria_encontrada ) == NULL ){
+
+		t_memoria_del_pool* memoria_nueva = malloc( sizeof( t_memoria_del_pool ) );
+		memoria_nueva->activa=0; //desactivada ya que no esta asociada a ningun criterio
+		memoria_nueva->numero_memoria=memoria->numero_memoria;
+		memoria_nueva->ip = strdup(memoria->ip);
+		memoria_nueva->puerto = strdup(memoria->puerto);
+		memoria_nueva->cantidad_carga=0;
+		memoria_nueva->cantidad_insert=0;
+		memoria_nueva->cantidad_select=0;
+		memoria_nueva->socket=-1;
+		list_add(l_memorias , memoria_nueva );
+		log_info(logger, "se agrega al pool la memoria: %d",  memoria_nueva->numero_memoria );
+	}
+	else{
+		log_info(logger, "ya se encuentra en el pool la memoria: %d",  memoria->numero_memoria );
+	}
+
+
+}
+
+
 void desconectar_memoria(t_memoria_del_pool* memoria){
 
 	bool memoria_encontrada( t_memoria_del_pool *memoria_pool ){
@@ -927,15 +955,3 @@ void desconectar_memoria(t_memoria_del_pool* memoria){
 	}
 }
 
-/*
-void recibir_pueba(){
-	t_memoria_del_pool *memoria = list_get(l_memorias, 0);
-	int socket =memoria->socket;
-	int tamanio;
-	recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
-	char* buffer = malloc(tamanio + 1);
-	recv(socket, buffer, tamanio, MSG_WAITALL);
-	char* palabra = deserializar_string(buffer);
-	log_info(logger, "%s", palabra);
-}
-*/

@@ -58,38 +58,16 @@ void procesar_comando (char* linea) {
             }
             else {
 
-                log_info(logger, "NO es un comando planificable.");
                 if (es_string(parametros[0],"JOURNAL")) {
 
                 	log_info(logger, "Ejecuto journal");
-                	
-                    //agregar un par de memorias a l_memorias
-                    log_info(logger, "Memorias: %d.", list_size(l_memorias));
-                    printf("Memorias: %d.\n", list_size(l_memorias));
-
-                    t_list* l_memorias_activas = filtrar_memorias_activas();
-                    
-                    if (l_memorias_activas != NULL) {
-                        //  Hay memorias activas
-                        log_info(logger, "Memorias activas: %d.", list_size(l_memorias_activas));
-                        printf("Memorias activas: %d.\n", list_size(l_memorias_activas));
-
-                        enviar_journal_lista_memorias(l_memorias_activas);
-                    }
-                    else {
-                        //  No hay memorias activas
-                        log_info(logger, "No hay memorias activas para hacerles el journal.");
-                        puts("No hay memorias activas para hacerles el journal.");
-                    }
-
-                    list_destroy_and_destroy_elements(l_memorias_activas, (void*) free_memoria);
-                    
+					enviar_journal_lista_memorias(l_memorias);
+					log_info(logger, "Journal finalizado");
                 }
 				if (es_string(parametros[0], "ADD")) {
                     //  ADD MEMORY numero_de_memoria TO criterio_de_consistencia
                     t_memoria_del_pool* m = obtener_memoria(atoi(parametros[2]));
                     if (m != NULL) {
-                        //  El número de memoria está en la lista de memorias
                         
                         if (es_string(parametros[4], "SC") OR es_string(parametros[4], "SHC") OR es_string(parametros[4], "EC")) {
                             
@@ -98,25 +76,27 @@ void procesar_comando (char* linea) {
                                 if (list_is_empty(l_criterio_SC)) {
                                 	log_info(logger, "Se agrega a criterio SC memoria: %d", m->numero_memoria);
                                     list_add(l_criterio_SC, m);
+                                    m->activa= 1;
                                 }
                                 else {
                                     log_info(logger, "Error en el comando ADD: Ya existe una memoria asignada al criterio SC.");
-                                    puts("Error en el comando ADD: Ya existe una memoria asignada al criterio SC.");
                                 }
                                 
                             }
                             else if (es_string(parametros[4], "SHC")) {
 
-                            	if (!list_is_empty(l_criterio_SHC)) {
-                                    enviar_journal_lista_memorias(l_criterio_SHC);
-                                }
-
+                            	list_add(l_criterio_SHC, m);
+                            	m->activa=1;
                             	log_info(logger, "Se agrega a criterio SHC memoria: %d", m->numero_memoria);
-                                list_add(l_criterio_SHC, m);
+
+                            	log_info(logger, "Inicio journal en criterio SHC");
+								enviar_journal_lista_memorias(l_criterio_SHC);
+								log_info(logger, "FIN journla en criteiro shc");
                             }
                             else {
                                 log_info(logger, "Se agrega a criterio EC memoria: %d", m->numero_memoria);
                                 list_add(l_criterio_EC, m);
+                                m->activa= 1;
                             }
                         }
                         else {
@@ -127,7 +107,6 @@ void procesar_comando (char* linea) {
                     else {
                         //  El número de memoria NO está en la lista de memorias
                         log_info(logger, "Error en el comando ADD: número de memoria desconocido.");
-                        puts("Error en el comando ADD: número de memoria desconocido.");
                     }
 				}
 				if (es_string(parametros[0], "METRICS")) {
@@ -166,20 +145,6 @@ void crear_pcb (char* string_codigo, t_tipo_request tipo) {
     id_pcbs++;
 }
 
-t_list* filtrar_memorias_activas (void) {
-    t_list* m = NULL;
-    
-    bool _es_memoria_activa (t_memoria_del_pool *x) {
-        return x->activa;
-    }
-
-    if (!list_is_empty(l_memorias)) {
-        m = list_filter(l_memorias, (void*) _es_memoria_activa);
-    }
-
-    return m;
-}
-
 
 t_memoria_del_pool* obtener_memoria(int numero_de_memoria) {
     t_memoria_del_pool* mem = NULL;
@@ -200,25 +165,46 @@ t_memoria_del_pool* obtener_memoria(int numero_de_memoria) {
     return mem;
 }
 
-void enviar_journal_lista_memorias (t_list* lista) {
+void enviar_journal_lista_memorias (t_list* memorias) {
     
-    void _enviar_journal_a_cada_memoria(t_memoria_del_pool* m) {
-        //  A cada memoria se le ordena el JOURNAL
-        int socket = m->socket;
-        
-        t_header *paquete = malloc(sizeof(t_header));
-        paquete->emisor = KERNEL;
-        paquete->tipo_mensaje = JOURNAL;
-        paquete->payload_size = 0;
+    void enviar_journal_memoria(t_memoria_del_pool* m) {
 
-        send(socket, &paquete, sizeof(t_header), 0);
-        free(paquete);
-        
-        log_info(logger, "Se envió el journal a la memoria %d sin problemas.", socket);
-        printf("Se envió el journal a la memoria %d sin problemas.\n", socket);
+    	//intento conectarme
+    	if( m->socket == -1 ){
+
+    		int socketmemoria = socket_connect_to_server(m->ip,  m->puerto );
+			if( socketmemoria == -1  ){
+
+				m->socket=-1;
+				log_error(logger, "¡Error no se pudo conectar con MEMORIA");
+				//TODO: si no me puedo conectar la memoria esta caida deberia hacer algo. desactivarla de los criterios en donde esta ....
+				return;
+			}
+			log_info(logger, "conexion existosa con memoria: %d de socket:", m->numero_memoria , m->socket );
+			m->socket = socketmemoria;
+    	}
+
+		t_header header;
+		header.emisor=KERNEL;
+		header.tipo_mensaje = JOURNAL;
+		header.payload_size = 0;
+		send(m->socket, &header, sizeof( header ) , 0);
+		log_info(logger, "Se envió el journal a la memoria: %d", m->numero_memoria);
    }
 
-   list_iterate(lista, (void*) _enviar_journal_a_cada_memoria);
+
+    t_list* l_memorias_activas = get_memorias_activas( memorias );
+
+	if (l_memorias_activas == NULL) {
+
+		log_info(logger, "No hay memorias activas para hacerles el journal.");
+		return;
+
+	}
+
+	log_info(logger, "Memorias activas: %d.", list_size(l_memorias_activas));
+	list_iterate(l_memorias_activas, (void*) enviar_journal_memoria);
+	list_destroy(l_memorias_activas);
 }
 
 bool es_comando_conocido (char** parametros) {

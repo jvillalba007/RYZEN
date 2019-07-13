@@ -55,6 +55,38 @@ void loggear_configs() {
 
 
 
+t_list* get_memorias_activas( t_list* tabla_memorias ){
+
+	bool is_memoria_activa( t_memoria_del_pool * memoria ){
+
+		return memoria->activa ? true : false;
+	}
+
+	if (list_is_empty(tabla_memorias)) return NULL;
+
+	return list_filter( tabla_memorias , (void*) is_memoria_activa  );
+}
+
+
+t_memoria_del_pool* obtener_memoria_random( t_list *memorias ){
+
+	t_list* memorias_activas = get_memorias_activas(memorias) ;
+	t_memoria_del_pool* mem = NULL;
+
+	if( list_is_empty( memorias_activas )) return NULL;
+
+	int index = rand_num(list_size( memorias));
+	mem = list_get( memorias, index);
+
+	list_destroy( memorias_activas);
+	return mem;
+}
+
+
+
+
+
+
 void liberar_config() {
     free(kernel_config.IP_MEMORIA);
     free(kernel_config.PUERTO_MEMORIA);
@@ -121,6 +153,7 @@ void free_tabla(t_tabla_consistencia* tabla_borrar){
 	free(tabla_borrar);
 }
 
+
 void terminar_hilos_procesadores(){
 
 	void terminar_hilo_procesador(pthread_t* id_hilo)
@@ -133,7 +166,22 @@ void terminar_hilos_procesadores(){
 	list_iterate(l_procesadores,(void*)terminar_hilo_procesador);
 }
 
+void liberar_memorias_gossiping(t_list *memorias){
 
+	list_destroy_and_destroy_elements(memorias , (void*)free_memoria_gossiping);
+}
 
+void free_memoria_gossiping( pmemoria *memoria ){
 
+	free( memoria->ip );
+	free( memoria->puerto );
+	free( memoria );
+}
+
+void free_tabla_describe( linea_create *linea ){
+
+	free(linea->tabla);
+	free(linea->tipo_consistencia);
+	free(linea);
+}
 

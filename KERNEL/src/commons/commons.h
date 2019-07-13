@@ -9,6 +9,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "shared/utils.h"
+#include <shared/protocolo.h>
 #include <signal.h>
 #include <time.h>
 
@@ -53,6 +54,8 @@ typedef struct{
 typedef struct{
     char* nombre_tabla;
     char* criterio_consistencia;
+    u_int8_t nro_particiones;
+	u_int32_t tiempo_compactacion;
 } t_tabla_consistencia;
 
 
@@ -109,12 +112,17 @@ void leer_configs(void);
 void loggear_inicio_logger(void);
 void loggear_configs(void);
 
+t_memoria_del_pool* obtener_memoria_random( t_list* memorias ); //obtiene memoria del pool para realizar el gossiping
+t_list* get_memorias_activas( t_list* tabla_memorias ); //me da las memorias activas de una lista
+
 void liberar_kernel();//libera todos los pedidos de la memoria del proceso
 void liberar_config();
 void free_Pcb(t_PCB* pcb_borrar);
 void free_memoria(t_memoria_del_pool* memoria_borrar);
 void free_tabla(t_tabla_consistencia* tabla_borrar);
 void terminar_hilos_procesadores();
-
+void liberar_memorias_gossiping(t_list *memorias);
+void free_memoria_gossiping( pmemoria *memoria );
+void free_tabla_describe( linea_create *linea ); //hace el free de los elementos recibidos en un describe
 
 #endif

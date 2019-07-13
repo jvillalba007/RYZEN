@@ -14,9 +14,8 @@ void consola ();
 void procesar_comando (char*);
 void crear_pcb (char* string_codigo, t_tipo_request tipo);
 
-t_list* filtrar_memorias_activas (void);
 t_memoria_del_pool* obtener_memoria (int);
-void enviar_journal_lista_memorias (t_list*);
+void enviar_journal_lista_memorias (t_list* ); //recibe una lista y envia un journal a las memorias que esten activas de esa lista
 bool es_comando_conocido (char**);
 bool es_correcta_cantidad_parametros (char*, int);
 bool es_comando_planificable (char*);
