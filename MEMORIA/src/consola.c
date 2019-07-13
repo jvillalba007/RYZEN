@@ -116,7 +116,9 @@ void consola_procesar_comando(char* linea)
 	}
 
 	else if(cantParametros >= 1 && string_equals_ignore_case(parametros[0],"DESCRIBE")){
-		string_iterate_lines(parametros,puts);
+		char* tabla = cantParametros == 1 ? NULL :  parametros[1];
+		log_info(mem_log, "Tira un Describe a LFS..." );
+		enviar_describe_lfs(tabla);
 	}
 
 	else if(cantParametros == 2 && string_equals_ignore_case(parametros[0],"DROP")){

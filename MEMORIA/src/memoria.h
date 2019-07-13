@@ -47,15 +47,15 @@ fila_Frames inicializar_fila_frame( linea_insert linea ); //inicializa la linea 
 
 void ejecutar_insert(linea_insert *linea); //ejecuta comando insert tanto como desde consola como desde una request de kernel
 fila_TPaginas * ejecutar_select( linea_select* linea ); //ejecuta comando select tanto desde consola como request de kernel. devuelve la pagina para devolver la info
-void ejecutar_drop( char* tabla );
+int ejecutar_drop( char* tabla );
 
 
 
 /******** REQUEST LFS *******/
+void enviar_describe_lfs( char *tabla );
 void enviar_create_lfs( linea_create linea_c );
 linea_response_select* enviar_select_lfs( linea_select *linea ); //request de select a LFS devuelve puntero del struct o null si lfs no pudo resolverla
-void enviar_drop_lfs( char *tabla );
-void enviar_insert_lfs( linea_insert linea ); //seguramente la utilice el journal
+int enviar_drop_lfs( char *tabla );
 
 void hilo_journal();//corre cada x tiempo proceso journal
 void journal();

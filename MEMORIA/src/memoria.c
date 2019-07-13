@@ -83,7 +83,6 @@ void estructurar_memoria(){
 }
 
 void iniciar_memoria_contigua(){
-	maximo_value = 4;
 	int tamanio_fila = tamanio_fila_Frames();
 
 	log_info(mem_log, "***INICIAMOS MEMORIA CONTIGUA ****");
@@ -240,9 +239,36 @@ int atender_kernel(int cliente, t_msg* msg)
 			deserializar_select(data,&linea);
 			free(data);
 
-			ejecutar_select(&linea);
+			fila_TPaginas* pagina = ejecutar_select(&linea);
+
+			if(pagina == NULL)
+			{
+				t_header paquete;
+				paquete.emisor=MEMORIA;
+				paquete.tipo_mensaje = -1;
+				send(cliente, &paquete,sizeof(t_header),0);
+				break;
+			}
 
 			free(linea.tabla);
+
+			fila_Frames frame;
+			leer_de_frame( pagina->frame_registro , &frame );
+
+			t_header paquete;
+			paquete.emisor=MEMORIA;
+			paquete.tipo_mensaje = 1;
+
+			linea_response_select linears;
+			linears.value = strdup(frame.value);
+			linears.timestamp = frame.key;
+
+			char* data = serializar_response_select(linears,&paquete.payload_size);
+
+			send(cliente, &paquete,sizeof(t_header),0);
+			send(cliente, data, paquete.payload_size, 0);
+			free(data);
+			free(linears.value);
 
 		}
 		break;
@@ -255,26 +281,35 @@ int atender_kernel(int cliente, t_msg* msg)
 			deserializar_insert(data,&linea);
 			free(data);
 
-			(strlen(linea.value) >= maximo_value) ? log_info(mem_log, "Tam Value no Permitido") : ejecutar_insert(&linea);
+			t_header paquete;
+			if(strlen(linea.value) >= maximo_value)
+			{
+				paquete.tipo_mensaje = -1; //FALLO
+				log_info(mem_log, "Tam Value no Permitido");
+			}
+			else
+			{
+				paquete.tipo_mensaje = 1; //OKEY
+				ejecutar_insert(&linea);
+			}
 
 			free(linea.tabla);
 			free(linea.value);
+
+			paquete.emisor = MEMORIA;
+			send(cliente, &paquete,sizeof(t_header),0);
 		}
 		break;
 
 		case CREATE:{
 			log_info(mem_log, "ALGORITMIA CREATE");
-			linea_create linea;
-			data = malloc(msg->header->payload_size);
-			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES..
-			deserializar_create(data,&linea);
-			free(data);
+			send(socketClienteLfs,msg->header,sizeof(msg->header),0);
+			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
 
-			log_info(mem_log, "CREATE tabla: %s , consistencia: %s , particiones: %d , tiempo_compactacion: %d",linea.tabla ,linea.tipo_consistencia , linea.nro_particiones , linea.tiempo_compactacion );
-			enviar_create_lfs( linea );
-
-			free(linea.tabla);
-			free(linea.tipo_consistencia);
+			t_header paquete;
+			recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
+			paquete.emisor = MEMORIA;
+			send(cliente, &paquete,sizeof(t_header),0);
 		}
 		break;
 
@@ -284,10 +319,48 @@ int atender_kernel(int cliente, t_msg* msg)
 			data = malloc(msg->header->payload_size);
 			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES..
 			tabla = deserializar_string(data);
-			ejecutar_drop(tabla);
+			int resultadoDROP = ejecutar_drop(tabla);
 			free(data);
 			free(tabla);
 
+			t_header paquete;
+			paquete.emisor = MEMORIA;
+			paquete.tipo_mensaje = resultadoDROP;
+			send(cliente, &paquete,sizeof(t_header),0);
+		}
+		break;
+
+		case DESCRIBE:{
+			log_info(mem_log, "ALGORITMIA DESCRIBE");
+			send(socketClienteLfs,msg->header,sizeof(msg->header),0);
+			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
+
+			t_header paquete;
+			recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
+			paquete.emisor = MEMORIA;
+			char *data = malloc(paquete.payload_size);
+			recv(socketClienteLfs, data, paquete.payload_size, MSG_WAITALL);
+
+			send(cliente, &paquete,sizeof(t_header),0);
+			send(cliente, data, paquete.payload_size, 0);
+			free(data);
+		}
+		break;
+
+		case GOSSIPING:{
+			log_info(mem_log, "GOSSIPING");
+
+			t_header paquete;
+			paquete.emisor=MEMORIA;
+			paquete.tipo_mensaje = GOSSIPING;
+
+			/*ENVIO MEMORIAS ACTIVAS*/
+			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
+
+			char* data = serializar_memorias(memorias_activas,&paquete.payload_size);
+			send(cliente, &paquete, sizeof(t_header) , 0);
+			send(cliente, data, paquete.payload_size , 0);
+			free(data);
 		}
 		break;
 
@@ -296,6 +369,11 @@ int atender_kernel(int cliente, t_msg* msg)
 			journal();
 			log_info(mem_log, "TERMINO JOURNAL..." );
 
+		}
+		break;
+
+		case CONEXION:{
+			log_info(mem_log, "Se Conecta KERNEL");
 		}
 		break;
 
@@ -309,7 +387,7 @@ int atender_kernel(int cliente, t_msg* msg)
 	return 1;
 }
 
-void ejecutar_drop( char* tabla ){
+int ejecutar_drop( char* tabla ){
 
 	log_info(mem_log, "***************INICIA DROP**********************" ) ;
 
@@ -334,7 +412,7 @@ void ejecutar_drop( char* tabla ){
 		log_info(mem_log, "LIBERADO SEGMENTO");
 	}
 
-	enviar_drop_lfs( tabla );
+	return enviar_drop_lfs( tabla );
 
 }
 
@@ -599,11 +677,11 @@ void crear_cliente_lfs(){
 	t_header buffer;
 	buffer.emisor=MEMORIA;
 	buffer.tipo_mensaje = CONEXION ;
-	buffer.payload_size = 32;
+	buffer.payload_size = 0;
 
 	send(socketClienteLfs, &buffer, sizeof( buffer ) , 0);
 	/* TODO lfs nos devuelve valores, terminar de realizar */
-	//maximo_value = 5;
+	recv(socketClienteLfs, &maximo_value, sizeof(int), MSG_WAITALL);
 
 }
 
@@ -667,18 +745,87 @@ linea_response_select* enviar_select_lfs( linea_select *linea ){
 	//TODO: hacer la request de select al lfs
 	log_info(mem_log, "REQUEST DE SELECT A LFS"  ) ;
 
+	t_header paquete;
+
+	char* buffer = serializar_select(*linea, &paquete.payload_size);
+	paquete.emisor = MEMORIA;
+	paquete.tipo_mensaje = SELECT;
+	send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+	send(socketClienteLfs, buffer, paquete.payload_size, 0);
+	free(buffer);
+
+	t_header paqueteLFS;
+	recv(socketClienteLfs, &paqueteLFS, sizeof(t_header), MSG_WAITALL);
+
+	if(paqueteLFS.tipo_mensaje == -1) //FALLO
+	{
+		return NULL;
+	}
+
+	char *data = malloc(paqueteLFS.payload_size);
+	recv(socketClienteLfs, data, paqueteLFS.payload_size, MSG_WAITALL);
+
 	linea_response_select* linea_response = malloc(sizeof(linea_response_select));
-	linea_response->timestamp = 10;
-    linea_response->value = strdup( "AAA" );
+	deserializar_response_select(data, linea_response);
+	free(data);
 
     return linea_response;
 }
 
-void enviar_drop_lfs( char *tabla ){
+void enviar_describe_lfs( char *tabla ){
 
+	t_header paquete;
+	paquete.emisor = MEMORIA;
+	paquete.tipo_mensaje = DESCRIBE;
+	paquete.payload_size = 0;
+
+	if(tabla != NULL)
+	{
+		char* buffer;
+		buffer = serializar_string(tabla, &(paquete.payload_size));
+		send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+		send(socketClienteLfs, buffer, paquete.payload_size, 0);
+		free(buffer);
+	}
+	else
+	{
+		send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+	}
+
+	t_header paqueteLFS;
+	recv(socketClienteLfs, &paqueteLFS, sizeof(t_header), MSG_WAITALL);
+	char *data = malloc(paqueteLFS.payload_size);
+	recv(socketClienteLfs, data, paqueteLFS.payload_size, MSG_WAITALL);
+	free(data);
+}
+
+int enviar_drop_lfs( char *tabla ){
+
+	t_header paquete;
+	paquete.emisor = MEMORIA;
+	paquete.tipo_mensaje = DROP;
+
+	char* buffer = serializar_string(tabla, &(paquete.payload_size));
+	send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+	send(socketClienteLfs, buffer, paquete.payload_size, 0);
+	free(buffer);
+
+	t_header paqueteLFS;
+	recv(socketClienteLfs, &paqueteLFS, sizeof(t_header), MSG_WAITALL);
+
+	return paqueteLFS.tipo_mensaje;
 }
 
 void enviar_create_lfs( linea_create linea_c ){
+
+	t_header paquete;
+	paquete.emisor = MEMORIA;
+	paquete.tipo_mensaje = CREATE;
+
+	char* buffer = serializar_create(linea_c, &(paquete.payload_size));
+	send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+	send(socketClienteLfs, buffer, paquete.payload_size, 0);
+	free(buffer);
 
 }
 
