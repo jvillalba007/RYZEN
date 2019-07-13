@@ -765,7 +765,7 @@ void gossiping(){
 		if( memoria->numero_memoria != mem_config.memory_number ){
 
 			//verifico si esta desactivada para tratarme de conectar
-			if( memoria->activa == 0 ){
+			if( memoria->activa == 0 || memoria->socket == -1 ){
 
 				int socketSeed = socket_connect_to_server(memoria->ip,  memoria->puerto );
 				if( socketSeed == -1  ){
@@ -774,23 +774,33 @@ void gossiping(){
 					log_error(mem_log, "¡Error no se pudo conectar con MEMORIA");
 					return;
 				}
+				//si me conecto verifico si es una memoria del archivo de config (activa=0) para obtener el numero de memoria
 				else{
-					log_info(mem_log, "ME CONECTE CON UNA MEMORIA CON SOCKET:%d" ,socketSeed);
-					t_header buffer;
-					buffer.emisor=MEMORIA;
-					buffer.tipo_mensaje =CONEXION;
-					buffer.payload_size = 0;
-					send(socketSeed, &buffer, sizeof( buffer ) , 0);
-					log_info(mem_log, "HAGO EL SEND");
-					int numero_memoria_seed;
-					recv(socketSeed , &numero_memoria_seed, sizeof(int), MSG_WAITALL);
-					log_info(mem_log, "HAGO EL RECV");
-					memoria->socket=socketSeed;
-					memoria->activa=1;
-					memoria->numero_memoria = numero_memoria_seed;
-					log_info(mem_log, "Se creo el socket cliente con MEMROIA de numero:%d , de la memoria numero:%d", memoria->socket , memoria->numero_memoria);
+
+					if( memoria->activa == 0 ){
+
+						log_info(mem_log, "ME CONECTE CON UNA MEMORIA CON SOCKET:%d" ,socketSeed);
+						t_header buffer;
+						buffer.emisor=MEMORIA;
+						buffer.tipo_mensaje =CONEXION;
+						buffer.payload_size = 0;
+						send(socketSeed, &buffer, sizeof( buffer ) , 0);
+						log_info(mem_log, "HAGO EL SEND");
+						int numero_memoria_seed;
+						recv(socketSeed , &numero_memoria_seed, sizeof(int), MSG_WAITALL);
+						log_info(mem_log, "HAGO EL RECV");
+						memoria->socket=socketSeed;
+						memoria->activa=1;
+						memoria->numero_memoria = numero_memoria_seed;
+						log_info(mem_log, "Se creo el socket cliente con MEMROIA de numero:%d , de la memoria numero:%d", memoria->socket , memoria->numero_memoria);
+					}
+					else{
+						memoria->socket=socketSeed;
+						log_info(mem_log, "Se creo el socket cliente con MEMROIA de numero:%d , de la memoria numero:%d", memoria->socket , memoria->numero_memoria);
+					}
 				}
 			}
+
 
 			log_info(mem_log, "MEMORIA gossiping activa numero:%d hago intercambio de tablas" ,memoria->numero_memoria );
 			t_header buffer;
@@ -846,7 +856,7 @@ void agregar_memorias_gossiping( t_list *memorias_seed ){
 		if( list_find( tabla_memorias , (void*)memoria_encontrada ) == NULL ){
 
 			t_memoria* memoria_nueva = malloc( sizeof( t_memoria ) );
-			memoria_nueva->activa=0;
+			memoria_nueva->activa=1;
 			memoria_nueva->numero_memoria=memoria_seed->numero_memoria;
 			memoria_nueva->ip = strdup(memoria_seed->ip);
 			memoria_nueva->puerto = strdup(memoria_seed->puerto);
