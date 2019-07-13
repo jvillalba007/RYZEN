@@ -12,6 +12,7 @@
 
 pthread_t tid_estadisticas;
 pthread_t tid_gossiping;
+pthread_t tid_describe;
 
 void conectar_memoria();
 void inicializar_kernel(); //inicializa las listas que se utilizaran en kernel
@@ -52,5 +53,8 @@ int gossiping( t_memoria_del_pool *memoria );
 void agregar_memoria_gossip( pmemoria *memoria ); //verifica si la memoria recibida existe o no en la tabla para agregarla o desecharla
 
 void agregar_tabla_describe( linea_create* tabla_describe ); //agrega tabla en el sistema si no existe
+
+void hilo_describe();
+int describe();
 
 #endif

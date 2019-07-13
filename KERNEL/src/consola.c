@@ -15,6 +15,7 @@ void consola() {
         	exit_global=1;
         	pthread_kill(tid_estadisticas, SIGUSR1);
         	pthread_kill(tid_gossiping, SIGUSR1);
+        	pthread_kill(tid_describe, SIGUSR1);
             free(linea);
             break;
         }

@@ -20,7 +20,7 @@ int main() {
 
 
 	//INICIA CLIENTE MEMORIA
-	//conectar_memoria();
+	conectar_memoria();
 
 	//HILO REINICIO_ESTADISTICAS
 	pthread_create(&tid_estadisticas, NULL, (void*) reinicio_estadisticas, NULL);
@@ -29,6 +29,10 @@ int main() {
 	//HILO GOSSIPING
 	pthread_create(&tid_gossiping, NULL, (void*) hilo_gossiping, NULL);
 	log_info(logger,"iniciando hilo gossiping %d", tid_gossiping);
+
+	//HILO DESCRIBE
+	pthread_create(&tid_describe, NULL, (void*) hilo_describe, NULL);
+	log_info(logger,"iniciando hilo describe %d", tid_describe);
 
 	//INICIA CONSOLA
 	pthread_t hilo_consola;
@@ -370,6 +374,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		create.nro_particiones = atoi(split[3]);
 		create.tiempo_compactacion = *(u_int32_t*)split[4];
 
+		//TODO: aca tiene que haber confirmacion de que se realizo correctamente
 		enviar_create(create, &socket);
 
 		int respuesta;
@@ -388,8 +393,6 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		free(create.tipo_consistencia);
 
 		operaciones_totales++;
-
-
 	}
 	else if(es_string(split[0], "DROP")){
 
@@ -401,6 +404,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		recv(socket, &respuesta, sizeof(int), MSG_WAITALL);
 		if(respuesta>0){
 			log_info(logger,"se hizo drop de la tabla %s",split[1]);
+			//TODO: si esta en la metadata debo quitarla
+
 		}else{
 			log_error(logger,"no se realizo correctamente el drop de la tabla %s",split[1]);
 		}
@@ -413,21 +418,17 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		if(split[1] == NULL){
 
 			log_info(logger,"Ejecuto DESCRIBE general");
-			enviar_describe_general(&socket);
+			int result = describe(memoria);
+			if( result== -1 ){
 
-			int tamanio;
-			recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
-			char *buffer = malloc(tamanio+1);
-			recv(socket, buffer, tamanio, MSG_WAITALL);
+				log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
+			}
+			else{
+				log_info(logger, "Se realiza describe exitosamente con memoria:%d",memoria->numero_memoria);
+			}
 
-			t_list *lista_tablas = deserializar_describe(buffer);
-
-			list_iterate( lista_tablas , (void*)agregar_tabla_describe );
-			log_info(logger,"Se termino de ejecutar DESCRIBE general");
-
-			list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
-
-		}else{
+		}
+		else{
 
 			enviar_describe_especial(&socket, split[1]);
 
@@ -556,14 +557,15 @@ void conectar_memoria(){
 	t_memoria_del_pool* memoria_original = malloc( sizeof( t_memoria_del_pool ) );
 	memoria_original->ip = kernel_config.IP_MEMORIA;
 	memoria_original->puerto = kernel_config.PUERTO_MEMORIA;
-	memoria_original->activa=true;
+	memoria_original->activa=0; //no esta asociada a ningun criteiro no esta activa
 	memoria_original->numero_memoria=0;
 	memoria_original->socket = socket_memoria;
 	memoria_original->cantidad_carga = 0;
 	list_add(l_memorias , memoria_original );
 
-	//hago gossiping con la memoria principal. TODO: verificar si esto debe estar en un loop hasta que logre conectarse realmente
+	//hago gossiping con la memoria principal.
 	gossiping( memoria_original );
+	describe( memoria_original );
 }
 
 void crear_procesadores(){
@@ -715,8 +717,10 @@ void enviar_describe_especial(void* sock, char* tabla){
 void reinicio_estadisticas(){
 
 	struct timespec ts;
-	ts.tv_sec = kernel_config.METADATA_REFRESH / 1000;
-	ts.tv_nsec = (kernel_config.METADATA_REFRESH % 1000) * 1000000;
+
+	//cada 30 segundos
+	ts.tv_sec = 30000 / 1000;
+	ts.tv_nsec = (30000 % 1000) * 1000000;
 
 	assignHandler();
 
@@ -838,18 +842,21 @@ void hilo_gossiping(){
 		t_memoria_del_pool *memoria = obtener_memoria_random( l_memorias );
 		if( memoria== NULL ){
 			log_info(logger, "No se encuentra memoria disponible para realizar gossiping");
-			return;
-		}
-
-		log_info(logger, "La memoria random activa elegida es:%d",memoria->numero_memoria);
-		int res = gossiping(memoria);
-		if( res ==-1 ){
-
-			log_info(logger, "Falla gossiping con memoria:%d",memoria->numero_memoria);
 		}
 		else{
-			log_info(logger, "Se realiza gossiping exitosamente con memoria:%d",memoria->numero_memoria);
+
+			log_info(logger, "La memoria random activa elegida es:%d",memoria->numero_memoria);
+			int res = gossiping(memoria);
+			if( res ==-1 ){
+
+				log_info(logger, "Falla gossiping con memoria:%d",memoria->numero_memoria);
+			}
+			else{
+				log_info(logger, "Se realiza gossiping exitosamente con memoria:%d",memoria->numero_memoria);
+			}
+
 		}
+
 
 	}
 
@@ -860,13 +867,13 @@ void hilo_gossiping(){
 int gossiping( t_memoria_del_pool *memoria ){
 
 	log_info(logger, "memoria recibida para gossiping: %d" , memoria->numero_memoria);
-	if( memoria->socket != -1 ){
+	if( memoria->socket == -1 ){
 
 		int socketmemoria = socket_connect_to_server(memoria->ip,  memoria->puerto );
 		log_info(logger, "%d" ,socketmemoria);
 
 		if( socketmemoria == -1 ){
-			memoria->activa=-1;//verificar si debo sacarlas de los criterios o no...diria que no.
+			memoria->activa=0;//verificar si debo sacarlas de los criterios o no...diria que no.
 			log_info(logger, "no se pudo conectar con memoria. se rechaza gossiping");
 			return -1;
 		}
@@ -954,4 +961,75 @@ void desconectar_memoria(t_memoria_del_pool* memoria){
 		}
 	}
 }
+
+
+void hilo_describe(){
+
+	struct timespec ts;
+	ts.tv_sec = kernel_config.METADATA_REFRESH / 1000;
+	ts.tv_nsec = (kernel_config.METADATA_REFRESH % 1000) * 1000000;
+
+	assignHandler();
+
+	while(!exit_global){
+
+		nanosleep(&ts, NULL);
+		log_info(logger, "iniciando describe en hilo");
+
+
+		t_memoria_del_pool *memoria = obtener_memoria_random( l_memorias );
+		if( memoria== NULL ){
+			log_info(logger, "No se encuentra memoria disponible para realizar describe en hilo");
+		}
+		else{
+
+			log_info(logger, "La memoria random activa elegida es:%d",memoria->numero_memoria);
+			int res = describe( memoria );
+
+			if( res== -1 ){
+
+				log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
+			}
+			else{
+				log_info(logger, "Se realiza describe exitosamente con memoria:%d",memoria->numero_memoria);
+			}
+
+		}
+	}
+
+	pthread_exit(0);
+}
+
+int describe( t_memoria_del_pool *memoria ){
+
+	if( memoria->socket == -1 ){
+
+		int socketmemoria = socket_connect_to_server(memoria->ip,  memoria->puerto );
+		log_info(logger, "%d" ,socketmemoria);
+
+		if( socketmemoria == -1 ){
+			memoria->activa= 0;//verificar si debo sacarlas de los criterios o no...diria que no.
+			log_info(logger, "no se pudo conectar con memoria. se rechaza describe");
+			return -1;
+		}
+		log_info(logger, "Se establece conexion con memoria: %d: socket: %d" , memoria->numero_memoria , memoria->socket);
+		memoria->socket=socketmemoria;
+	}
+
+	log_info(logger,"comienza DESCRIBE con memoria:%d" , memoria->numero_memoria);
+	enviar_describe_general(&memoria->socket);
+	int tamanio;
+	recv(memoria->socket , &tamanio, sizeof(int), MSG_WAITALL);
+	char *buffer = malloc(tamanio+1);
+	recv(memoria->socket , buffer, tamanio, MSG_WAITALL);
+
+	t_list *lista_tablas = deserializar_describe(buffer);
+
+	list_iterate( lista_tablas , (void*)agregar_tabla_describe );
+	list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
+	free(buffer);
+
+	return 0;
+}
+
 
