@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 	log_info(mem_log, "[MEMORIA] ARCHIVO RECIBIDO: %s", argv[1]);
 
 	//CLIENTE CON LFS
-	//crear_cliente_lfs();
+	crear_cliente_lfs();
 
 	//ESTRUCTURAR/INICIALIZACION DE MEMORIA
 	estructurar_memoria();
@@ -245,7 +245,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			{
 				t_header paquete;
 				paquete.emisor=MEMORIA;
-				paquete.tipo_mensaje = -1;
+				paquete.tipo_mensaje = EJECUCIONERROR;
 				send(cliente, &paquete,sizeof(t_header),0);
 				break;
 			}
@@ -257,7 +257,7 @@ int atender_kernel(int cliente, t_msg* msg)
 
 			t_header paquete;
 			paquete.emisor=MEMORIA;
-			paquete.tipo_mensaje = 1;
+			paquete.tipo_mensaje = EJECUCIONOK;
 
 			linea_response_select linears;
 			linears.value = strdup(frame.value);
@@ -284,12 +284,12 @@ int atender_kernel(int cliente, t_msg* msg)
 			t_header paquete;
 			if(strlen(linea.value) >= maximo_value)
 			{
-				paquete.tipo_mensaje = -1; //FALLO
+				paquete.tipo_mensaje = EJECUCIONERROR; //FALLO
 				log_info(mem_log, "Tam Value no Permitido");
 			}
 			else
 			{
-				paquete.tipo_mensaje = 1; //OKEY
+				paquete.tipo_mensaje = EJECUCIONOK; //OKEY
 				ejecutar_insert(&linea);
 			}
 
@@ -338,6 +338,13 @@ int atender_kernel(int cliente, t_msg* msg)
 			t_header paquete;
 			recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
 			paquete.emisor = MEMORIA;
+
+			if(paquete.tipo_mensaje == EJECUCIONERROR)
+			{
+				send(cliente, &paquete,sizeof(t_header),0);
+				break;
+			}
+
 			char *data = malloc(paquete.payload_size);
 			recv(socketClienteLfs, data, paquete.payload_size, MSG_WAITALL);
 
@@ -683,6 +690,8 @@ void crear_cliente_lfs(){
 	/* TODO lfs nos devuelve valores, terminar de realizar */
 	recv(socketClienteLfs, &maximo_value, sizeof(int), MSG_WAITALL);
 
+	log_info(mem_log, "MAXIMO VALUE: %d", maximo_value);
+
 }
 
 char* ejecutar_lru(){
@@ -757,7 +766,7 @@ linea_response_select* enviar_select_lfs( linea_select *linea ){
 	t_header paqueteLFS;
 	recv(socketClienteLfs, &paqueteLFS, sizeof(t_header), MSG_WAITALL);
 
-	if(paqueteLFS.tipo_mensaje == -1) //FALLO
+	if(paqueteLFS.tipo_mensaje == EJECUCIONERROR) //FALLO
 	{
 		return NULL;
 	}

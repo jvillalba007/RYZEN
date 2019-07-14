@@ -14,22 +14,16 @@ int msg_await(int socket, t_msg* msg){
 		return -1;
 	}
 
-	msg->header = header;
-
-	if( header->payload_size > 0 ){
-
-		void* payload = malloc(header->payload_size);
-		result_recv = recv(socket, payload, header->payload_size, MSG_WAITALL);
-		if(result_recv < 1){
-			free(header);
-			free(payload);
-			return -1;
-		}
-
-
-		msg->payload = payload;
+	void* payload = malloc(header->payload_size);
+	result_recv = recv(socket, payload, header->payload_size, MSG_WAITALL);
+	if(result_recv < 1){
+		free(header);
+		free(payload);
+		return -1;
 	}
 
+	msg->header = header;
+	msg->payload = payload;
 	return result_recv;
 }
 
