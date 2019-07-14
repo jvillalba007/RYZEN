@@ -637,9 +637,9 @@ void enviar_insert(linea_insert linea, void* sock){
 	paquete.emisor = KERNEL;
 	paquete.tipo_mensaje = INSERT;
 	paquete.payload_size = tamanio;
-	send(socket, &paquete, sizeof(t_header), 0);
-
 	char* buffer = serializar_insert( linea, &tamanio);
+
+	send(socket, &paquete, sizeof(t_header), 0);
 	send(socket, buffer, tamanio, 0);
 
 	free(buffer);
@@ -654,9 +654,9 @@ void enviar_select(linea_select linea, void* sock){
 	paquete.emisor = KERNEL;
 	paquete.tipo_mensaje = SELECT;
 	paquete.payload_size = tamanio;
-	send(socket, &paquete, sizeof(t_header), 0);
-
 	char* buffer = serializar_select(linea, &tamanio);
+
+	send(socket, &paquete, sizeof(t_header), 0);
 	send(socket, buffer, tamanio, 0);
 	free(buffer);
 }
