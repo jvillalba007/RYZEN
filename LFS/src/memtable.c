@@ -10,9 +10,11 @@
 //Create_memtable
 fila_memtable* create_memtable(char* tabla)
 {
+
 	fila_memtable* ftabla = malloc(sizeof(fila_memtable));
 	ftabla->tabla = strdup(tabla);
 	ftabla->registros = NULL;
+
 
 	list_add(memtable,ftabla);
 
@@ -39,12 +41,16 @@ fila_memtable* obtener_tabla(char *nombre_tabla){
 //insert_memtable
 void insert_memtable(char* tabla,fila_registros* registro)
 {
+
+	pthread_mutex_lock(&mem_mutex);
+
 	fila_memtable* ftabla = obtener_tabla(tabla);
 	if( ftabla == NULL ) ftabla = create_memtable(tabla);
 	if( ftabla->registros == NULL) ftabla->registros = list_create();
 
 	list_add(ftabla->registros,registro);
 
+	pthread_mutex_unlock(&mem_mutex);
 }
 
 //Obtener registros de tabla que esta en memtable que coincide con la key buscada
@@ -82,6 +88,8 @@ t_list* obtener_tabla_registros(fila_memtable* ftabla, u_int16_t key){
 //select_memtable
 t_list* select_memtable(char* tabla,u_int16_t key)
 {
+	pthread_mutex_lock(&mem_mutex);
+
 	fila_memtable* ftabla = obtener_tabla(tabla);
 	if( ftabla == NULL ){
 		log_info(g_logger, "NO SE ENCONTRO %s en memtable", tabla);
@@ -89,6 +97,8 @@ t_list* select_memtable(char* tabla,u_int16_t key)
 	}
 	t_list* registros =  obtener_tabla_registros(ftabla,key);
 	if( registros == NULL ) log_info(g_logger, "NO SE ENCONTRO KEY %d en TABLA %s de memtable",key,tabla);
+
+	pthread_mutex_unlock(&mem_mutex);
 
 	return registros;
 

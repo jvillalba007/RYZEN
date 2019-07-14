@@ -14,7 +14,6 @@ int compactate(char* table){
 	exist = table_exist(table);
 	if (!exist){
 		// tabla ya no existe
-		kill_compactator_thread(table);
 		return 1;
 	}
 
@@ -52,9 +51,6 @@ int compactate(char* table){
 	return 0;
 }
 
-int kill_compactator_thread(char* table){
-
-}
 
 void block_table(char* table){
 

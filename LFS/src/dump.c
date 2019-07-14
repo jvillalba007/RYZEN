@@ -95,10 +95,17 @@ void dumpear_tablas_memtable() {
 
 		if(!list_is_empty(memtable))
 		{
+
+		    pthread_mutex_lock(&operation_mutex);
+
 			list_iterate(memtable,(void*)dumpear_tablas);
+
 			list_destroy(memtable);
 			log_info(g_logger, "LIBERADO MEMTABLE");
 			memtable = list_create();
+
+		    pthread_mutex_unlock(&operation_mutex);
+
 			log_info(g_logger, "NUEVO MEMTABLE");
 		}
 }

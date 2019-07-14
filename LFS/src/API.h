@@ -43,4 +43,7 @@
 
 		const char* folder_path;
 
+		pthread_mutex_t operation_mutex;
+
+
 #endif /* API_H_ */

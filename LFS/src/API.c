@@ -29,6 +29,8 @@ int insert_record(linea_insert* datos, char* fixed_timestamp){
 
 	fila_registros* registro = malloc(sizeof(fila_registros));
 
+    pthread_mutex_lock(&operation_mutex);
+
 	if (fixed_timestamp == NULL){
 		// Timestamp no proporcionado
 		registro->timestamp = getCurrentTime();
@@ -49,6 +51,8 @@ int insert_record(linea_insert* datos, char* fixed_timestamp){
 	}
 
 	free(full_path);
+
+    pthread_mutex_unlock(&operation_mutex);
 
 
 	retardo();
@@ -107,6 +111,8 @@ int drop_table(char* table_name){
 
 	int ok;
 
+    pthread_mutex_lock(&operation_mutex);
+
 	drop_memtable(table_name);
 
     DIR *d;
@@ -139,6 +145,9 @@ int drop_table(char* table_name){
 	rmdir(table_path);
 
 	free(table_path);
+
+    pthread_mutex_unlock(&operation_mutex);
+
 
 	retardo();
 	return 0;
@@ -299,6 +308,8 @@ char* select_table_key(linea_select* datos){
 		return NULL;
 	}
 
+	pthread_mutex_lock(&operation_mutex);
+
 	// get registros memtable
 	t_list* select_mem;
 	select_mem = select_memtable(datos->tabla, datos->key);
@@ -394,6 +405,8 @@ char* select_table_key(linea_select* datos){
  	free(partition_path);
 
 
+ 	pthread_mutex_unlock(&operation_mutex);
+
  	retardo();
  	return last_value;
 
@@ -473,6 +486,7 @@ linea_create* read_table_metadata(char* table_name){
 
 void* procesar_describe(int cant_parametros, char** parametros){
 
+    pthread_mutex_lock(&operation_mutex);
 
 	// DESCRIBE TABLA
 	if (cant_parametros == 2){
@@ -500,6 +514,8 @@ void* procesar_describe(int cant_parametros, char** parametros){
         }
         closedir(d);
     }
+
+    pthread_mutex_unlock(&operation_mutex);
 
     retardo();
     return list_metadata;

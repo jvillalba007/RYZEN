@@ -8,5 +8,6 @@
 #ifndef DUMP_H_
 #define DUMP_H_
 #include "LFS.h"
+#include "API.h"
 void dump();
 #endif /* DUMP_H_ */

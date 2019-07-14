@@ -61,7 +61,7 @@ void console_process() {
 				shutdown(socketServidor,SHUT_RDWR);
 				liberar_threads();
 			}
-		else {
+		else if ( strcmp(buffer, "") != 0){
 			consola_procesar_comando(buffer);
 		}
 

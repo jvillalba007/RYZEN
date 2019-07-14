@@ -34,6 +34,7 @@
 	void liberar_tablas_memtable(t_list* memtable);
 	void liberar_memtable();
 
+	pthread_mutex_t mem_mutex;
 
 
 #endif /* MEMTABLE_H_ */

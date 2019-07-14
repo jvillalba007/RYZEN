@@ -391,6 +391,9 @@ void crearTemporal(char* table_name,char* temporal, int* ok){
 
 void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 	t_config* config_archivo;
+
+	pthread_mutex_lock(&isolation_mutex);
+
 	config_archivo = config_create(pathParticion);
 
 	int bytes = config_get_int_value(config_archivo, "TAMANIO");
@@ -460,6 +463,8 @@ void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 
 	config_destroy(config_archivo);
 	split_liberar(bloques_strings);
+
+	pthread_mutex_unlock(&isolation_mutex);
 }
 
 void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok){
@@ -511,6 +516,8 @@ void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok){
 	}
 
 	*ok = 1;
+
+	pthread_mutex_lock(&isolation_mutex);
 
 	t_config* config_archivo = config_create(pathParticion);
 
@@ -564,5 +571,8 @@ void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok){
 	free(tamanio_str);
 	split_liberar(bloques_arr_strings);
 	config_destroy(config_archivo);
+
+	pthread_mutex_unlock(&isolation_mutex);
+
 	return;
 }

@@ -42,4 +42,6 @@
 	fila_registros* get_last_registro(t_list* registros);
 	void liberar_bloques(char* path, int* ok);
 
+	pthread_mutex_t isolation_mutex;
+
 #endif /* FILESYSTEM_H_ */
