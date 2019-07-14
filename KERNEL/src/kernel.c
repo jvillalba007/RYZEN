@@ -668,14 +668,12 @@ void enviar_create(linea_create linea, void* sock){
 
 	char* buffer = serializar_create(linea, &tamanio);
 
-	t_header *paquete = malloc(sizeof(t_header));
-	paquete->emisor = KERNEL;
-	paquete->tipo_mensaje = CREATE;
-	paquete->payload_size = tamanio;
+	t_header paquete;
+	paquete.emisor = KERNEL;
+	paquete.tipo_mensaje = CREATE;
+	paquete.payload_size = tamanio;
 
 	send(socket, &paquete, sizeof(t_header), 0);
-	free(paquete);
-
 	send(socket, buffer, tamanio, 0);
 	free(buffer);
 
