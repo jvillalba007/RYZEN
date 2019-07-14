@@ -13,7 +13,7 @@
 	#include <commons/collections/list.h>
 
 	typedef enum {DESCONOCIDO, KERNEL,MEMORIA,LFS} e_emisor;
-	typedef enum {CONEXION,DESCONEXION,SELECT,INSERT,CREATE,DESCRIBE,DROP,JOURNAL} e_tipo_msg;
+	typedef enum {CONEXION,DESCONEXION,SELECT,INSERT,CREATE,DESCRIBE,DROP,JOURNAL,GOSSIPING,EJECUCIONERROR,EJECUCIONOK} e_tipo_msg;
 
 	typedef struct {
 		e_emisor emisor;
