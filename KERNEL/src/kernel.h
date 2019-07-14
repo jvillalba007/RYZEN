@@ -27,7 +27,6 @@ t_memoria_del_pool *obtener_memoria_SC();
 t_memoria_del_pool *obtener_memoria_EC();
 t_memoria_del_pool *obtener_memoria_SHC(char* linea);
 int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ); //ejecuta en memoria la linea
-t_memoria_del_pool *obtener_memoria_criterio_create(char* criterio, char* linea); //En caso de que venga un create no va a existir la tabla
 
 void crear_procesadores();
 void ejecutar_describe();
@@ -46,7 +45,6 @@ void enviar_describe_general(void* socket);
 void enviar_describe_especial(void* socket, char* tabla);
 void enviar_drop(void* socket, char* tabla);
 void recibir_agregar_memoria(void* socket_memoria);
-void desconectar_memoria(t_memoria_del_pool* memoria);
 
 void hilo_gossiping(); //Ejecuta cada x tiempo el gossiping con alguna memoria
 int gossiping( t_memoria_del_pool *memoria );

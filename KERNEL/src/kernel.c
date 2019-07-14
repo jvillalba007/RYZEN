@@ -82,6 +82,7 @@ void ejecutar_procesador(){
 			else
 			{
 				int k= 0;
+				int res=0;
 
 				char** split = string_split(pcb->request_comando, " ");
 				log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
@@ -89,38 +90,34 @@ void ejecutar_procesador(){
 				apuntar_archivo(archivo, pcb->pc);
 				split_liberar(split);
 
-				while( (k < kernel_config.QUANTUM) && (!feof(archivo)) ){
+				while( (k < kernel_config.QUANTUM) && (!feof(archivo)) && res != -1 ){
 
 					linea = obtener_linea(archivo);
 
 					if(linea != NULL){
 
-					log_info(logger, "la linea a ejecutar es: %s" , linea  );
-					int res = ejecutar_linea( linea );
-					k++;
-					pcb->pc++;
-					free(linea);
-
-					if(res == 0){
-						log_info(logger, "la linea se ejecuto correctamente");
-					}else {
-						finalizar_pcb(pcb);
-						k = kernel_config.QUANTUM;
-					}
+						log_info(logger, "la linea a ejecutar es: %s" , linea  );
+						res = ejecutar_linea( linea );
+						k++;
+						pcb->pc++;
+						free(linea);
+						if(res == 0){
+							log_info(logger, "la linea se ejecuto correctamente");
+						}
 					}
 				}
 
-				if(feof(archivo)){
+				//si es fin de archivo o es un error de ejecucion finalizo el pcb
+				if( feof(archivo) || res == -1 ){
+					log_info(logger, "Se finaliza pcb por fin de archivo o linea ejecutada incorrectamente");
 					finalizar_pcb(pcb);
 				} else{
+					log_info(logger, "Se desaloja pcb a listo de listos por fin de quantum");
 					parar_por_quantum(pcb);
 				}
 				fclose(archivo);
 			}
-			free(pcb->request_comando);
-			free(pcb);
 		}
-
 	}
 	log_info(logger,"cerrando hilo");
 	pthread_exit(0);
@@ -128,22 +125,58 @@ void ejecutar_procesador(){
 
 int ejecutar_linea( char *linea ){
 
-	int res;
+	int res=0;
 	t_tabla_consistencia *tabla=NULL;
 	t_memoria_del_pool *memoria=NULL;
 
 	char** parametros = string_split(linea, " ");
 
-	if (es_string(parametros[0],"CREATE")){ //AGREGO ESTO PORQUE SI ES UN CREATE NO VA A EXISTIR LA TABLA!
 
-		memoria = obtener_memoria_criterio_create( parametros[2], linea);
+	//si es CREATE DESCRIBE DROP
+	if (es_string(parametros[0],"CREATE") || es_string(parametros[0],"DESCRIBE") || es_string(parametros[0],"DROP") ) {
+
+
+		if (es_string(parametros[0],"DROP") ) {
+
+			//verifico que este en la metadata
+			if( obtener_tabla( parametros[1]) == NULL ){
+
+				log_info(logger, "No existe en la metadata del sistema la tabla:%s", parametros[1] );
+				res=-1;
+				split_liberar(parametros);
+				return res;
+			}
+		}
+		if (es_string(parametros[0],"CREATE") ) {
+
+			//verifico que este en la metadata
+			if( obtener_tabla( parametros[1]) != NULL ){
+
+				log_info(logger, "La tabla:%s ya se encuentra creada en el sistema. No es posible volver a crearla", parametros[1] );
+				res=-1;
+				split_liberar(parametros);
+				return res;
+			}
+		}
+
+		t_list *memorias_activas = get_memorias_activas( l_memorias );
+		memoria = obtener_memoria_random( memorias_activas );
+		if( memoria == NULL ) {
+			log_info(logger, "Memoria para ejecutar no encontrada. No hay memorias activas" );
+			res=-1;
+			split_liberar(parametros);
+			return res;
+		}
+
+		log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
 		res = ejecutar_linea_memoria( memoria , linea );
-
 	}
+	//es un insert o select
 	else{
-		char* n_tabla = obtener_nombre_tabla( parametros );
 
+		char* n_tabla = obtener_nombre_tabla( parametros );
 		if( n_tabla != NULL ) tabla = obtener_tabla( n_tabla );
+		free(n_tabla);
 
 		if( tabla != NULL ){
 			log_info(logger, "Tabla encontrada: %s", tabla->nombre_tabla );
@@ -155,42 +188,22 @@ int ejecutar_linea( char *linea ){
 				res = ejecutar_linea_memoria( memoria , linea );
 			}
 			else{
-				//TODO: si memoria es null definir que hacer. Supongo que no va a realizar nada .
 				log_info(logger, "Memoria para ejecutar no encontrada" );
-				res=0;
+				res=-1;
+				split_liberar(parametros);
+				return res;
 			}
 		}
-		//Tabla es null si es un select drop o insert rompo
 		else{
 			log_info(logger, "No se encuentra la tabla" );
-			if( string_equals_ignore_case( parametros[0], "SELECT") || string_equals_ignore_case( parametros[0], "INSERT") || string_equals_ignore_case( parametros[0], "DROP") ){
-				log_info(logger, "Se cancela ejecucion de operacion: %s", parametros[0] );
-				res= -1;
-			}
-			//es un describe general o de una tabla que no esta en sistema.
-			else
-			{
-				log_info(logger, "es un DESCRIBE se ejecuta memoria random" );//TODO:decidir en que lista
-				memoria = obtener_memoria_random( l_criterio_EC );
-				if( memoria != NULL ){
-
-					log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
-					res = ejecutar_linea_memoria( memoria , linea );
-				}
-				else{
-					//TODO: si memoria es null definir que hacer. Supongo que no va a realizar nada .
-					log_info(logger, "Memoria para ejecutar no encontrada" );
-					res=0;
-				}
-			}
+			log_info(logger, "Se cancela ejecucion de operacion: %s", parametros[0] );
+			res= -1;
+			split_liberar(parametros);
+			return res;
 		}
-
-		free(n_tabla);
 	}
 
 	split_liberar(parametros);
-
-
 	return res;
 }
 
@@ -290,6 +303,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 
 	int socket;
+	int res=0;
 
 	if(memoria->socket != -1){
 		socket = memoria->socket;
@@ -298,13 +312,12 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		socket = socket_connect_to_server(memoria->ip, memoria->puerto);
 		log_info(logger, "El socket devuelto es: %d", socket);
 		if( socket == -1  ){
-			//TODO:falta confirmacion de si se saca o no del criterio
-			log_error(logger, "¡Error no se pudo conectar con MEMORIA");
-			//desconectar_memoria(memoria);
+
+			log_error(logger, "¡Error no se pudo conectar con MEMORIA:%d", memoria->numero_memoria );
+			log_info(logger, "Se deshabilita memoria:%d", memoria->numero_memoria );
 			memoria->activa = false;
 			memoria->socket = -1;
 			return -1;
-
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
 
@@ -326,10 +339,16 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		enviar_insert(insert, &socket);
 
-		operaciones_totales++;
-		memoria->cantidad_carga++;
-		memoria->cantidad_insert++;
-		memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
+		t_header paquete_recv;
+		recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+		if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+		else{
+
+			operaciones_totales++;
+			memoria->cantidad_carga++;
+			memoria->cantidad_insert++;
+			memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
+		}
 
 	}
 	else if(es_string(split[0], "SELECT")){
@@ -341,6 +360,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		select.key = atoi(split[2]);
 
 		enviar_select(select, &socket);
+
+		//TODO: aca tiene que haber confirmacion de que se realizo correctamente
 
 		int tamanio;
 		recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
@@ -371,20 +392,17 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		//TODO: aca tiene que haber confirmacion de que se realizo correctamente
 		enviar_create(create, &socket);
 
-		int respuesta;
-		recv(socket, &respuesta, sizeof(int), MSG_WAITALL);
-		if (respuesta > 0){
+		t_header paquete_recv;
+		recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+		if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+		else{
 			t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
 			tabla->criterio_consistencia = split[2];
 			tabla->nombre_tabla = strdup(split[1]);
 			list_add(l_tablas, tabla);
+			operaciones_totales++;
 			log_info(logger,"tabla %s creada", split[1]);
 		}
-		else{
-			log_error(logger,"no se pudo crear la tabla %s", split[1]);
-		}
-
-		operaciones_totales++;
 	}
 	else if(es_string(split[0], "DROP")){
 
@@ -392,35 +410,24 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		enviar_drop(&socket, tabla);
 
-		int respuesta;
-		recv(socket, &respuesta, sizeof(int), MSG_WAITALL);
-		if(respuesta>0){
-			log_info(logger,"se hizo drop de la tabla %s",split[1]);
-			//TODO: si esta en la metadata debo quitarla
-			quitar_tabla_lista( split[1]);
-
-		}
+		t_header paquete_recv;
+		recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+		if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
 		else{
-			log_error(logger,"no se realizo correctamente el drop de la tabla %s",split[1]);
+			log_info(logger,"se hizo drop de la tabla %s",split[1]);
+			quitar_tabla_lista( split[1]);
+			operaciones_totales++;
 		}
-
-		//TODO: en el primer send al menos habria que verificar si se pudo hacer ya que si algo falla hay que abortar el proceso...esto es importante. Esto es en todos los envios
-		operaciones_totales++;
 	}
 	else if(es_string(split[0], "DESCRIBE")){
 
 		if(split[1] == NULL){
 
 			log_info(logger,"Ejecuto DESCRIBE general");
-			int result = describe(memoria);
-			if( result== -1 ){
-
-				log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
-			}
-			else{
-				log_info(logger, "Se realiza describe exitosamente con memoria:%d",memoria->numero_memoria);
-			}
-
+			//TODO verificar si describe necesita confirmacion verificar tambien si el describe puede fallar si se cancela pcb
+			res = describe(memoria);
+			if( res == -1 ) log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
+			else log_info(logger, "Se realiza describe exitosamente con memoria:%d",memoria->numero_memoria);
 		}
 		else{
 
@@ -443,7 +450,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	}
 
 	split_liberar(split);
-	return 0;
+	return res;
 }
 
 
@@ -608,7 +615,7 @@ int rand_num(int max){
 
 void parar_por_quantum(t_PCB* pcb){
 
-bool buscar_pcb( t_PCB* pcb_it ){
+	bool buscar_pcb( t_PCB* pcb_it ){
 
 		if(  pcb_it->id == pcb->id  ) return true;
 		return false;
@@ -745,27 +752,6 @@ void enviar_drop(void* sock,char* tabla){
 	free(buffer);
 }
 
-t_memoria_del_pool *obtener_memoria_criterio_create(char* criterio, char* linea){
-
-	t_memoria_del_pool *memoria=NULL;
-
-	if( string_equals_ignore_case( criterio ,"SC" ) ){
-
-		memoria = obtener_memoria_SC();
-	}
-
-	else if(string_equals_ignore_case( criterio ,"EC") ){
-
-		memoria = obtener_memoria_EC();
-	}
-
-	else if( string_equals_ignore_case( criterio ,"SHC") ){
-
-		memoria = obtener_memoria_SHC(linea);
-	}
-
-	return memoria;
-}
 
 void recibir_agregar_memoria(void* sock){
 	int socket_memoria = *(int*)sock;
@@ -918,32 +904,6 @@ void agregar_memoria_gossip( pmemoria *memoria ){
 	}
 
 
-}
-
-
-void desconectar_memoria(t_memoria_del_pool* memoria){
-
-	bool memoria_encontrada( t_memoria_del_pool *memoria_pool ){
-
-		if( memoria_pool->numero_memoria == memoria->numero_memoria ) return true;
-		return false;
-	}
-
-	if(es_string(memoria->criterio, "SHC")){
-
-		list_remove_by_condition(l_criterio_SHC, (void*)memoria_encontrada);
-
-	}else{
-		if(es_string(memoria->criterio, "SC")){
-
-			list_remove_by_condition(l_criterio_SC, (void*)memoria_encontrada);
-
-		}else{
-
-			list_remove_by_condition(l_criterio_EC, (void*)memoria_encontrada);
-
-		}
-	}
 }
 
 
