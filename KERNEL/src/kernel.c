@@ -363,10 +363,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		//TODO: aca tiene que haber confirmacion de que se realizo correctamente
 
-		int tamanio;
-		recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
-		char* buffer = malloc(tamanio+1);
-		recv(socket, buffer, tamanio, MSG_WAITALL);
+		t_header paquete;
+		recv(socket, &paquete, sizeof(t_header), MSG_WAITALL);
+		char* buffer = malloc(paquete.payload_size);
+		recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
 
 		linea_response_select *response_select = malloc(sizeof(linea_response_select));
 		deserializar_response_select(buffer, response_select);
@@ -433,15 +433,16 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 			enviar_describe_especial(&socket, split[1]);
 
-			int tamanio;
-			recv(socket, &tamanio, sizeof(int), MSG_WAITALL);
-			char *buffer = malloc(tamanio+1);
-			recv(socket, buffer, tamanio, MSG_WAITALL);
+			t_header paquete;
+			recv(socket, &paquete, sizeof(t_header), MSG_WAITALL);
+			char* buffer = malloc(paquete.payload_size);
+			recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
 
 			t_list *lista_tablas = deserializar_describe(buffer);
 			list_iterate( lista_tablas , (void*)agregar_tabla_describe );
 			log_info(logger,"Se termino de ejecutar DESCRIBE");
 			list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
+			free(buffer);
 		}
 		operaciones_totales++;
 	}
@@ -963,10 +964,10 @@ int describe( t_memoria_del_pool *memoria ){
 
 	log_info(logger,"comienza DESCRIBE con memoria:%d" , memoria->numero_memoria);
 	enviar_describe_general(&memoria->socket);
-	int tamanio;
-	recv(memoria->socket , &tamanio, sizeof(int), MSG_WAITALL);
-	char *buffer = malloc(tamanio+1);
-	recv(memoria->socket , buffer, tamanio, MSG_WAITALL);
+	t_header paquete;
+	recv(memoria->socket , &paquete, sizeof(t_header), MSG_WAITALL);
+	char* buffer = malloc(paquete.payload_size);
+	recv(memoria->socket , buffer, paquete.payload_size, MSG_WAITALL);
 
 	t_list *lista_tablas = deserializar_describe(buffer);
 
