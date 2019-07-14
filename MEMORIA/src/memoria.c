@@ -21,19 +21,31 @@ void assignHandler() {
     sigaction(SIGUSR1, &sa, NULL);
 }
 
+void retardoLFS(){
+
+	struct timespec ts;
+	ts.tv_sec = mem_config.retardo_fs / 1000;
+	ts.tv_nsec = (mem_config.retardo_fs  % 1000) * 1000000;
+
+	nanosleep(&ts, NULL);
+}
 
 int main(int argc, char *argv[]) {
-
-	if (mem_initialize( argv[1] ) == -1) {
+	if (mem_initialize(argv[1]) == -1) {
 		log_destroy(mem_log);
 		return EXIT_FAILURE;
 	}
 
 	imprimir_config();
-	log_info(mem_log, "[MEMORIA] ARCHIVO RECIBIDO: %s", argv[1]);
+	log_info(mem_log, "[MEMORIA] ARCHIVO RECIBIDO: %s", fileCFG);
+
+	// INICIAR HILO INOTIFY
+	pthread_t tid_inotify;
+	log_info(mem_log, "[MEMORIA] Abro hilo INOTIFY");
+	pthread_create(&tid_inotify, NULL, (void*)inotify_config, NULL);
 
 	//CLIENTE CON LFS
-	crear_cliente_lfs();
+	//crear_cliente_lfs();
 
 	//ESTRUCTURAR/INICIALIZACION DE MEMORIA
 	estructurar_memoria();
@@ -62,6 +74,8 @@ int main(int argc, char *argv[]) {
 	pthread_join(tid_journal, NULL);
 	pthread_join(tid_gossiping, NULL);
 	pthread_join(tid_server, NULL);
+	pthread_join(tid_inotify, NULL);
+	log_info(mem_log, "[MEMORIA] FINALIZO HILO INOTIFY");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO CONSOLA");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO JOURNAL");
 	log_info(mem_log, "[MEMORIA] FINALIZO HILO GOSSIPING");
@@ -305,9 +319,11 @@ int atender_kernel(int cliente, t_msg* msg)
 			log_info(mem_log, "ALGORITMIA CREATE");
 			send(socketClienteLfs,msg->header,sizeof(t_header),0);
 			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
-
 			t_header paquete;
 			recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
+
+			retardoLFS();
+
 			paquete.emisor = MEMORIA;
 			send(cliente, &paquete,sizeof(t_header),0);
 		}
@@ -347,6 +363,8 @@ int atender_kernel(int cliente, t_msg* msg)
 
 			char *data = malloc(paquete.payload_size);
 			recv(socketClienteLfs, data, paquete.payload_size, MSG_WAITALL);
+
+			retardoLFS();
 
 			send(cliente, &paquete,sizeof(t_header),0);
 			send(cliente, data, paquete.payload_size, 0);
@@ -412,7 +430,7 @@ int ejecutar_drop( char* tabla ){
 	}
 	else
 	{
-		drop_tabla_paginas(segmento);
+		drop_tabla_paginas(segmento,tamanio_fila_Frames());
 		list_remove_by_condition(tabla_segmentos,(void*)buscar_segmento);
 		free( segmento->nombre_tabla );
 		free(segmento);
@@ -491,7 +509,7 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 			journal();
 			log_info(mem_log, "TERMINO JOURNAL..." );
 
-			//pagina = ejecutar_select(linea );
+			pagina = ejecutar_select(linea );
 		}
 
 	}
@@ -547,7 +565,7 @@ void ejecutar_insert(linea_insert* linea){
 		journal();
 		log_info(mem_log, "TERMINO JOURNAL..." );
 
-		//ejecutar_insert(linea);
+		ejecutar_insert(linea);
 		}
 	}
 }
@@ -774,6 +792,8 @@ linea_response_select* enviar_select_lfs( linea_select *linea ){
 	char *data = malloc(paqueteLFS.payload_size);
 	recv(socketClienteLfs, data, paqueteLFS.payload_size, MSG_WAITALL);
 
+	retardoLFS();
+
 	linea_response_select* linea_response = malloc(sizeof(linea_response_select));
 	deserializar_response_select(data, linea_response);
 	free(data);
@@ -806,6 +826,8 @@ void enviar_describe_lfs( char *tabla ){
 	char *data = malloc(paqueteLFS.payload_size);
 	recv(socketClienteLfs, data, paqueteLFS.payload_size, MSG_WAITALL);
 	free(data);
+
+	retardoLFS();
 }
 
 int enviar_drop_lfs( char *tabla ){
@@ -822,6 +844,8 @@ int enviar_drop_lfs( char *tabla ){
 	t_header paqueteLFS;
 	recv(socketClienteLfs, &paqueteLFS, sizeof(t_header), MSG_WAITALL);
 
+	retardoLFS();
+
 	return paqueteLFS.tipo_mensaje;
 }
 
@@ -835,6 +859,8 @@ void enviar_create_lfs( linea_create linea_c ){
 	send(socketClienteLfs, &paquete, sizeof(t_header), 0);
 	send(socketClienteLfs, buffer, paquete.payload_size, 0);
 	free(buffer);
+
+	retardoLFS();
 
 }
 
@@ -1077,4 +1103,57 @@ void hilo_gossiping(){
 
 }
 
+void inotify_config(){
+
+ 	char buffer[BUF_LEN];
+
+ 	int file_descriptor = inotify_init();
+	if (file_descriptor < 0) {
+		perror("inotify_init");
+	}
+
+ 	int watch_descriptor = inotify_add_watch(file_descriptor, CONFIG_FOLDER, IN_MODIFY | IN_CREATE | IN_CLOSE_WRITE);
+
+ 	assignHandler();
+
+ 	while(!EXIT_PROGRAM){
+
+ 		int length = read(file_descriptor, buffer, BUF_LEN);
+		if (length < 0) {
+			perror("read");
+		}
+
+ 		int offset = 0;
+
+ 		while (offset < length) {
+
+ 			struct inotify_event *event = (struct inotify_event *) &buffer[offset];
+
+ 			if (event->len) {
+				//log_info(g_logger, "Event detected on: %s", event->name);
+				if (string_contains(event->name, fileCFG)){
+					log_info(mem_log, "Config File changed");
+
+					config = config_create(rutaCFG);
+					mem_config.retardo_mem = config_get_int_value(config, "RETARDO_MEM");
+					mem_config.retardo_fs = config_get_int_value(config, "RETARDO_FS");
+					mem_config.retardo_journal = config_get_int_value(config,"RETARDO_JOURNAL");
+					mem_config.retardo_gossiping = config_get_int_value(config,"RETARDO_GOSSIPING");
+
+					config_destroy(config);
+
+					imprimir_config();
+				}
+			}
+			offset += sizeof (struct inotify_event) + event->len;
+		}
+
+ 	}
+
+ 	inotify_rm_watch(file_descriptor, watch_descriptor);
+	close(file_descriptor);
+
+
+ 	pthread_exit(0);
+}
 

@@ -10,6 +10,7 @@
 
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include <commons/string.h>
 	#include <commons/config.h>
 	#include <commons/log.h>
 	#include <commons/collections/list.h>
@@ -19,7 +20,13 @@
 	#include <shared/protocolo.h>
 	#include <commons/bitarray.h>
 	#include <inttypes.h>
+	#include <time.h>
+	#include <sys/inotify.h>
 
+	#define EVENT_SIZE ( sizeof (struct inotify_event) + 8 )
+	#define BUF_LEN ( 1024 * EVENT_SIZE )
+
+	#define CONFIG_FOLDER "config/"
 	#define pathCFG "MEMORIA.CFG"
 	#define pathLOG "MEMORIA.LOG"
 
@@ -75,6 +82,9 @@
 	int cantidad_frames;
 	int frames_ocupados; //ME INDICA LA CANTIDAD DE FRAMES QUE ESTAN OCUPADOS ACTUALMENTE
 
+	char* fileCFG;
+	char* rutaCFG;
+
 	t_list* tabla_segmentos;
 	char* memoria;
 
@@ -87,8 +97,9 @@
 
 	t_list* tabla_memorias;
 
-	int mem_initialize( char *fileCFG  );
-	void crear_log( char* fileCFG );
+	void leer_config();
+	int mem_initialize( char* archivo  );
+	void crear_log( char* archivo );
 	void imprimir_config();
 	void liberar_tablas();
 	void liberar_mem_config(mem_cfg mem_config);
@@ -98,8 +109,7 @@
 	void liberar_tabla_segmentos(t_list* tabla_segmentos);
 	void liberar_tabla_memorias(t_list* tabla_memorias );
 	void liberar_fila_memoria(t_memoria* memoria_seed);
-	void drop_tabla_paginas(fila_TSegmentos *segmento);
-	void drop_fila_paginas(fila_TPaginas* fila_pagina);
+	void drop_tabla_paginas(fila_TSegmentos *segmento, int tamanio_fila_Frames);
 	void enviar_insert_LFS(linea_insert* linea);
 	void mem_exit_global();
 	void mem_exit_simple();

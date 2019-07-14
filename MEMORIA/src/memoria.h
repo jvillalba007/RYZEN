@@ -64,6 +64,6 @@ void gossiping();
 void agregar_memorias_gossiping( t_list *memorias_seed );//recibe tabla de intercambio de gossip y verifica si la agrega o no a la tabla de memorias.
 t_list* get_memorias_activas( t_list* tabla_memorias );
 
-
+void inotify_config(void);
 
 #endif /* MEMORIA_H_ */

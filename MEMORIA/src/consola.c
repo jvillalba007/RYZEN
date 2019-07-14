@@ -25,8 +25,10 @@ void consola(){
 			free(linea);
 			break;
 		}
+		else if ( strcmp(linea, "") != 0){
+			consola_procesar_comando(linea);
+		}
 
-		consola_procesar_comando(linea);
 		free(linea);
 	}
 	log_info(mem_log, "FIN DE CONSOLA");

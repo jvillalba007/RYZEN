@@ -7,10 +7,45 @@
 
 #include "commons.h"
 
-int mem_initialize( char *fileCFG ) {
+void retardo(){
 
-	config = config_create(fileCFG);
+	struct timespec ts;
+	ts.tv_sec = mem_config.retardo_mem / 1000;
+	ts.tv_nsec = (mem_config.retardo_mem  % 1000) * 1000000;
+
+	log_info(mem_log, "Durmiendo por %d milisegundos" , mem_config.retardo_mem);
+	nanosleep(&ts, NULL);
+}
+
+void leer_config() {
+	mem_config.puerto_mem = strdup(config_get_string_value(config, "PUERTO"));
+	mem_config.ip_mem = strdup(config_get_string_value(config, "IP"));
+	mem_config.ip_LFS = strdup(config_get_string_value(config, "IP_FS"));
+	mem_config.puerto_LFS = strdup(
+			config_get_string_value(config, "PUERTO_FS"));
+	mem_config.ip_SEEDS = config_get_array_value(config, "IP_SEEDS");
+	mem_config.puerto_SEEDS = config_get_array_value(config, "PUERTO_SEEDS");
+	mem_config.retardo_mem = config_get_int_value(config, "RETARDO_MEM");
+	mem_config.retardo_fs = config_get_int_value(config, "RETARDO_FS");
+	mem_config.tam_mem = config_get_int_value(config, "TAM_MEM");
+	mem_config.retardo_journal = config_get_int_value(config,
+			"RETARDO_JOURNAL");
+	mem_config.retardo_gossiping = config_get_int_value(config,
+			"RETARDO_GOSSIPING");
+	mem_config.memory_number = config_get_int_value(config, "MEMORY_NUMBER");
+	config_destroy(config);
+}
+
+int mem_initialize( char* archivo ) {
+
+	fileCFG = archivo;
+	rutaCFG = string_from_format("config/%s", fileCFG);
+
+	config = config_create(rutaCFG);
 	crear_log( fileCFG );
+
+	log_info(mem_log, "cfg: %s", fileCFG);
+	log_info(mem_log, "ruta cfg: %s", rutaCFG);
 
 	if (config == NULL) {
 		log_error(mem_log, "Error al leer ruta del archivo de configuracion");
@@ -19,21 +54,7 @@ int mem_initialize( char *fileCFG ) {
 	log_info(mem_log, ".:: LISSANDRA-MEMORIA ::.");
 	log_info(mem_log, ".:: Cargando configuracion ::.");
 
-	mem_config.puerto_mem = strdup(config_get_string_value(config, "PUERTO"));
-	mem_config.ip_mem = strdup(config_get_string_value(config, "IP"));
-	mem_config.ip_LFS = strdup(config_get_string_value(config, "IP_FS"));
-	mem_config.puerto_LFS = strdup(config_get_string_value(config, "PUERTO_FS"));
-	mem_config.ip_SEEDS = config_get_array_value(config, "IP_SEEDS");
-	mem_config.puerto_SEEDS = config_get_array_value(config, "PUERTO_SEEDS");
-	mem_config.retardo_mem = config_get_int_value(config, "RETARDO_MEM");
-	mem_config.retardo_fs = config_get_int_value(config, "RETARDO_FS");
-	mem_config.tam_mem = config_get_int_value(config, "TAM_MEM");
-	mem_config.retardo_journal = config_get_int_value(config,"RETARDO_JOURNAL");
-	mem_config.retardo_gossiping = config_get_int_value(config,"RETARDO_GOSSIPING");
-	mem_config.memory_number = config_get_int_value(config, "MEMORY_NUMBER");
-
-	config_destroy(config);
-
+	leer_config();
 	return 1;
 
 }
@@ -56,9 +77,9 @@ void imprimir_config() {
 	log_info(mem_log, "MEMORY_NUMBER: %d", mem_config.memory_number);
 }
 
-void crear_log( char* fileCFG ) {
+void crear_log( char* archivo ) {
 
-	char* NombreArchivo = string_substring(fileCFG, 0 , strlen(fileCFG) - 4);
+	char* NombreArchivo = string_substring(archivo, 0 , strlen(archivo) - 4);
 	char* fileLOG = string_from_format("%s.LOG", NombreArchivo);
 
 	mem_log = log_create(fileLOG, "LISSANDRA-MEMORIA", false, LOG_LEVEL_TRACE);
@@ -92,6 +113,8 @@ void list_iterate_pos(t_list* self, void(*closure)(void*,int*),int* pos) {
 
 int escribir_en_frame(char* frame, fila_Frames registro)
 {
+	retardo();
+
 	int pos = 0;
 	int len_value = strlen(registro.value);
 
@@ -115,6 +138,9 @@ int escribir_en_frame(char* frame, fila_Frames registro)
 
 void leer_de_frame(char* frame, fila_Frames* registro)
 {
+
+	retardo();
+
 	int pos = 0;
 	memcpy((void*) &(registro->timestamp), (void*) frame, sizeof(uint64_t));
 	pos+=sizeof(uint64_t);
@@ -181,15 +207,16 @@ void liberar_fila_memoria(t_memoria* memoria_seed){
 	free(memoria_seed);
 }
 
-void drop_fila_paginas(fila_TPaginas* fila_pagina)
-{
-	int nro_frame = (int)(fila_pagina->frame_registro-memoria)   / tamanio_fila_Frames();
-	bitarray_clean_bit(bitmap_frames, nro_frame);
-	log_info(mem_log, "FRAME DISPONIBLE N°: %d",nro_frame);
-	free(fila_pagina);
-}
+void drop_tabla_paginas(fila_TSegmentos *segmento, int tamanio_fila_Frames){
 
-void drop_tabla_paginas(fila_TSegmentos *segmento){
+	void drop_fila_paginas(fila_TPaginas* fila_pagina)
+	{
+		int nro_frame = (int)(fila_pagina->frame_registro-memoria)   / tamanio_fila_Frames;
+		bitarray_clean_bit(bitmap_frames, nro_frame);
+		log_info(mem_log, "FRAME DISPONIBLE N°: %d",nro_frame);
+		free(fila_pagina);
+	}
+
 	frames_ocupados = frames_ocupados - list_size(segmento->paginas);
 	list_iterate(segmento->paginas,(void*)drop_fila_paginas);
 	list_destroy(segmento->paginas);
