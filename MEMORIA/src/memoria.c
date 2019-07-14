@@ -303,7 +303,7 @@ int atender_kernel(int cliente, t_msg* msg)
 
 		case CREATE:{
 			log_info(mem_log, "ALGORITMIA CREATE");
-			send(socketClienteLfs,msg->header,sizeof(msg->header),0);
+			send(socketClienteLfs,msg->header,sizeof(t_header),0);
 			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
 
 			t_header paquete;
@@ -332,7 +332,7 @@ int atender_kernel(int cliente, t_msg* msg)
 
 		case DESCRIBE:{
 			log_info(mem_log, "ALGORITMIA DESCRIBE");
-			send(socketClienteLfs,msg->header,sizeof(msg->header),0);
+			send(socketClienteLfs,msg->header,sizeof(t_header),0);
 			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
 
 			t_header paquete;
