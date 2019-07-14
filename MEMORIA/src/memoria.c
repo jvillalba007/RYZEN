@@ -847,7 +847,7 @@ void journal()
 			linea.key = registro.key;
 			linea.value = strdup(registro.value);
 
-			//enviar_insert_LFS(&linea);
+			enviar_insert_LFS(&linea);
 			}
 		}
 
