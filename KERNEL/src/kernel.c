@@ -546,7 +546,7 @@ void inicializar_kernel(){
 
 void conectar_memoria(){
 	log_info(logger, "entro a socket");
-	socket_memoria = socket_connect_to_server("127.0.0.1", "8005");
+	socket_memoria = socket_connect_to_server(kernel_config.IP_MEMORIA, kernel_config.PUERTO_MEMORIA);
 	log_info(logger, "El socket devuelto es: %d", socket_memoria);
 	if( socket_memoria == -1  ){
 
@@ -855,6 +855,7 @@ int gossiping( t_memoria_del_pool *memoria ){
 	t_header buffer;
 	buffer.emisor=KERNEL;
 	buffer.tipo_mensaje =  GOSSIPING;
+	buffer.payload_size = 0;
 	send(memoria->socket, &buffer, sizeof( buffer ) , 0);
 
 
