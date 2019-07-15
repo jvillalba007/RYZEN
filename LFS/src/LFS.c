@@ -5,7 +5,7 @@ void crear_servidor(){
 	int cliente;
 
 	log_info(g_logger, "El puerto de escucha es: %s", lfs_config.puerto_lfs);
-	socketServidor = socket_create_listener( NULL , lfs_config.puerto_lfs ); // @suppress("Symbol is not resolved")
+	socketServidor = socket_create_listener( lfs_config.ip , lfs_config.puerto_lfs ); // @suppress("Symbol is not resolved")
 
 	if( socketServidor < 0  ){
 
@@ -193,6 +193,10 @@ int main(void) {
 
 	EXIT_PROGRAM = false;
 
+	pthread_mutex_init(&mem_mutex, NULL);
+	pthread_mutex_init(&isolation_mutex, NULL);
+	pthread_mutex_init(&operation_mutex, NULL);
+
 	iniciar_config();
 	iniciar_montaje();
 	iniciar_hilos_compactacion();
@@ -239,6 +243,10 @@ int main(void) {
 	pthread_join(tid_dump, NULL);
 	pthread_join(tid_server, NULL);
 	pthread_join(tid_inotify, NULL);
+
+	pthread_mutex_destroy(&mem_mutex);
+	pthread_mutex_destroy(&isolation_mutex);
+	pthread_mutex_destroy(&operation_mutex);
 
 	liberar_memtable();
 	liberar_bitmap();

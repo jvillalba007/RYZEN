@@ -41,6 +41,7 @@
 	typedef struct {
 		char* puerto_lfs;
 		char* punto_montaje;
+		char* ip;
 		int retardo_lfs;
 		int value_size;
 		int tiempo_dump;

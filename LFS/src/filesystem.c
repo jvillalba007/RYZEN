@@ -402,6 +402,9 @@ void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 	{
 		log_error(g_logger, "NO HAY DATOS");
 		config_destroy(config_archivo);
+
+		pthread_mutex_unlock(&isolation_mutex);
+
 		return;
 	}
 
@@ -551,6 +554,9 @@ void guardarDatos(char* pathParticion, int bytes, void* buffer, int* ok){
 				free(bloques_string);
 				split_liberar(bloques_arr_strings);
 				config_destroy(config_archivo);
+
+				pthread_mutex_unlock(&isolation_mutex);
+
 				return;
 			}
 

@@ -39,6 +39,7 @@ void leer_config() {
 
 	lfs_config.puerto_lfs = strdup(config_get_string_value(config, "PUERTO_LFS"));
 	lfs_config.punto_montaje = strdup(config_get_string_value(config, "PUNTO_MONTAJE"));
+	lfs_config.ip = strdup(config_get_string_value(config, "IP"));
 	lfs_config.retardo_lfs = config_get_int_value(config, "RETARDO_LFS");
 	lfs_config.value_size = config_get_int_value(config, "VALUE_SIZE");
 	lfs_config.tiempo_dump = config_get_int_value(config, "TIEMPO_DUMP");
@@ -76,6 +77,7 @@ void loggear_metadata() {
 void loggear_config() {
     log_info(g_logger, "PUERTO LFS: %s", lfs_config.puerto_lfs);
     log_info(g_logger, "PUNTO MONTAJE: %s", lfs_config.punto_montaje);
+    log_info(g_logger, "IP: %s", lfs_config.ip);
     log_info(g_logger, "RETARDO LFS: %d", lfs_config.retardo_lfs);
     log_info(g_logger, "TAMANO DE VALUE: %d", lfs_config.value_size);
     log_info(g_logger, "TIEMPO DE DUMP: %d", lfs_config.tiempo_dump);
@@ -84,6 +86,7 @@ void loggear_config() {
 void liberar_config(lfs_cfg lfs_config) {
     free(lfs_config.puerto_lfs);
     free(lfs_config.punto_montaje);
+    free(lfs_config.ip);
 
     free(CONFIG_FOLDER);
     free(CONFIG_PATH);

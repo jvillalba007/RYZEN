@@ -93,6 +93,9 @@ t_list* select_memtable(char* tabla,u_int16_t key)
 	fila_memtable* ftabla = obtener_tabla(tabla);
 	if( ftabla == NULL ){
 		log_info(g_logger, "NO SE ENCONTRO %s en memtable", tabla);
+
+		pthread_mutex_unlock(&mem_mutex);
+
 		return NULL;
 	}
 	t_list* registros =  obtener_tabla_registros(ftabla,key);

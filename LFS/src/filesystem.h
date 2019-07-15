@@ -23,7 +23,6 @@
 	#include <shared/utils.h>
 	#include "shared/protocolo.h"
 	#include "config/config_LFS.h"
-	#include "filesystem.h"
 	#include "memtable.h"
 
 	#define TABLES_FOLDER "tables/"

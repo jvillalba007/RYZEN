@@ -371,7 +371,10 @@ char* select_table_key(linea_select* datos){
 		log_info(g_logger, "No existe la clave %d en la tabla %s", datos->key, datos->tabla);
 		free(table_path);
 		free(partition_path);
-		return NULL;
+
+	 	pthread_mutex_unlock(&operation_mutex);
+
+	 	return NULL;
 
 	} else {
 
@@ -386,6 +389,9 @@ char* select_table_key(linea_select* datos){
 
 	if (filtered_list == NULL){
 		log_info(g_logger, "No existe la clave %d en la tabla %s", datos->key, datos->tabla);
+
+		pthread_mutex_unlock(&operation_mutex);
+
 		return NULL;
 	}
 
@@ -403,7 +409,6 @@ char* select_table_key(linea_select* datos){
 	buffer_size ? free(registros_buffer) : 0;
  	free(table_path);
  	free(partition_path);
-
 
  	pthread_mutex_unlock(&operation_mutex);
 
