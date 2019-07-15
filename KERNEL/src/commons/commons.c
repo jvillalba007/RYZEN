@@ -82,7 +82,15 @@ t_memoria_del_pool* obtener_memoria_random( t_list *memorias ){
 	return mem;
 }
 
+void retardo(){
 
+	struct timespec ts;
+	ts.tv_sec = kernel_config.SLEEP_EJECUCION / 1000;
+	ts.tv_nsec = (kernel_config.SLEEP_EJECUCION  % 1000) * 1000000;
+
+	log_info(logger, "Durmiendo por %d milisegundos" , kernel_config.SLEEP_EJECUCION);
+	nanosleep(&ts, NULL);
+}
 
 
 

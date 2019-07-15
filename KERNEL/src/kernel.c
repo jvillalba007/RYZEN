@@ -464,7 +464,6 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		if(split[1] == NULL){
 
 			log_info(logger,"Ejecuto DESCRIBE general");
-			//TODO verificar si describe necesita confirmacion verificar tambien si el describe puede fallar si se cancela pcb
 			res = describe(memoria);
 			if( res == -1 ) log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
 			else {
@@ -477,7 +476,6 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			log_info(logger,"Ejecuto DESCRIBE de tabla %s" , split[1] );
 			res_send = enviar_describe_especial(&socket, split[1]);
 			if( res_send == -1 ){
-				//TODO:verificar si esto hace que falle la ejecucion de script y que se aborte. se supone que si.
 				desactivar_memoria( memoria );
 				res=-1;
 				log_info( logger , "Falla send de enviar_descibe de tabla. Se da de baja la memoria y se sale de la operacion." );
@@ -511,6 +509,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		log_error(logger,"comando no reconocido");
 	}
 
+	retardo();
 	split_liberar(split);
 	return res;
 }
@@ -622,7 +621,7 @@ void conectar_memoria(){
 	buffer.tipo_mensaje =CONEXION;
 	buffer.payload_size = 0;
 	send(socket_memoria, &buffer, sizeof( buffer ) , 0);
-	log_info(logger, "HAGO EL SEND");
+	log_info(logger, "Consulto a memoria su numero");
 	int numero_memoria;
 	recv(socket_memoria , &numero_memoria, sizeof(int), MSG_WAITALL);
 
@@ -708,7 +707,7 @@ int enviar_insert(linea_insert linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
-
+	int res=0;
 	char* buffer = serializar_insert( linea, &tamanio);
 
 	t_header paquete;
@@ -716,19 +715,21 @@ int enviar_insert(linea_insert linea, void* sock){
 	paquete.tipo_mensaje = INSERT;
 	paquete.payload_size = tamanio;
 
-	send(socket, &paquete, sizeof(t_header), 0);
-	send(socket, buffer, tamanio, 0);
+	res = send(socket, &paquete, sizeof(t_header), 0);
+	if(res != -1){
+		res = send(socket, buffer, tamanio, 0);
+	}
 
 	free(buffer);
 
-	return 0;
+	return res;
 }
 
 int enviar_select(linea_select linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
-
+	int res=0;
 	char* buffer = serializar_select(linea, &tamanio);
 
 	t_header paquete;
@@ -736,18 +737,20 @@ int enviar_select(linea_select linea, void* sock){
 	paquete.tipo_mensaje = SELECT;
 	paquete.payload_size = tamanio;
 
-	send(socket, &paquete, sizeof(t_header), 0);
-	send(socket, buffer, tamanio, 0);
-	free(buffer);
+	res = send(socket, &paquete, sizeof(t_header), 0);
+	if(res != -1){
+		res = send(socket, buffer, tamanio, 0);
+	}
 
-	return 0;
+	free(buffer);
+	return res;
 }
 
 int enviar_create(linea_create linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
-
+	int res=0;
 	char* buffer = serializar_create(linea, &tamanio);
 
 	t_header paquete;
@@ -755,42 +758,67 @@ int enviar_create(linea_create linea, void* sock){
 	paquete.tipo_mensaje = CREATE;
 	paquete.payload_size = tamanio;
 
-	send(socket, &paquete, sizeof(t_header), 0);
-	send(socket, buffer, tamanio, 0);
-	free(buffer);
+	res = send(socket, &paquete, sizeof(t_header), 0);
+	if(res != -1){
+		res = send(socket, buffer, tamanio, 0);
+	}
 
-	return 0;
+	free(buffer);
+	return res;
 }
 
 int enviar_describe_general(void* sock){
 
 	int socket = *(int*)sock;
+	int res=0;
 	t_header paquete;
 	paquete.emisor = KERNEL;
 	paquete.tipo_mensaje = DESCRIBE;
 	paquete.payload_size = 0;
 
-	send(socket, &paquete, sizeof(t_header), 0);
+	res =send(socket, &paquete, sizeof(t_header), 0);
 
-	return 0;
+	return res;
 }
 
 int enviar_describe_especial(void* sock, char* tabla){
 
 	int socket = *(int*)sock;
 	int tamanio;
+	int res=0;
 	char* buffer = serializar_string(tabla, &tamanio);
 
 	t_header paquete;
 	paquete.emisor = KERNEL;
 	paquete.tipo_mensaje = DESCRIBE;
 	paquete.payload_size = tamanio;
-	send(socket, &paquete, sizeof(t_header), 0);
+	res = send(socket, &paquete, sizeof(t_header), 0);
+	if( res != -1 ){
+		res = send(socket, buffer, tamanio, 0);
+	}
 
-	send(socket, buffer, tamanio, 0);
 	free(buffer);
+	return res;
+}
 
-	return 0;
+int enviar_drop(void* sock,char* tabla){
+
+	int socket = *(int*)sock;
+	int tamanio;
+	char* buffer = serializar_string(tabla, &tamanio);
+	int res=0;
+
+	t_header paquete;
+	paquete.emisor = KERNEL;
+	paquete.tipo_mensaje = DROP;
+	paquete.payload_size = tamanio;
+	res=send(socket, &paquete, sizeof(t_header), 0);
+	if(res != -1){
+		res=send(socket, buffer, tamanio, 0);
+	}
+
+	free(buffer);
+	return res;
 }
 
 void reinicio_estadisticas(){
@@ -822,25 +850,8 @@ void reinicio_estadisticas(){
 
 	pthread_exit(0);
 }
-int enviar_drop(void* sock,char* tabla){
 
-	int socket = *(int*)sock;
-	int tamanio;
-	char* buffer = serializar_string(tabla, &tamanio);
-
-	t_header paquete;
-	paquete.emisor = KERNEL;
-	paquete.tipo_mensaje = DROP;
-	paquete.payload_size = tamanio;
-	send(socket, &paquete, sizeof(t_header), 0);
-
-	send(socket, buffer, tamanio, 0);
-	free(buffer);
-
-	return 0;
-}
-
-
+//TODO:no se usa habria que verificar si puede quitarse.
 void recibir_agregar_memoria(void* sock){
 	int socket_memoria = *(int*)sock;
 
@@ -931,8 +942,9 @@ int gossiping( t_memoria_del_pool *memoria ){
 		log_info(logger, "%d" ,socketmemoria);
 
 		if( socketmemoria == -1 ){
-			memoria->activa=0;//verificar si debo sacarlas de los criterios o no...diria que no.
-			log_info(logger, "no se pudo conectar con memoria. se rechaza gossiping");
+			//TODO:verificar si se desactiva memoria cuando esto ocurr
+			desactivar_memoria( memoria );
+			log_info(logger, "no se pudo conectar con memoria:%d. se rechaza gossiping" , memoria->numero_memoria);
 			return -1;
 		}
 		log_info(logger, "Se establece conexion con memoria: %d: socket: %d" , memoria->numero_memoria , memoria->socket);
@@ -1041,7 +1053,7 @@ int describe( t_memoria_del_pool *memoria ){
 		log_info(logger, "%d" ,socketmemoria);
 
 		if( socketmemoria == -1 ){
-			memoria->activa= 0;//verificar si debo sacarlas de los criterios o no...diria que no.
+			desactivar_memoria( memoria );
 			log_info(logger, "no se pudo conectar con memoria. se rechaza describe");
 			return -1;
 		}
@@ -1052,10 +1064,18 @@ int describe( t_memoria_del_pool *memoria ){
 	log_info(logger,"comienza DESCRIBE con memoria:%d" , memoria->numero_memoria);
 	int res_send = enviar_describe_general(&memoria->socket);
 	if( res_send == -1 ){
-		//TODO: verificar que hago aca tambien puede haber fallo de si no se ejecutook en memoria en ese caso no deberia desactivar la memoria pero aca si.
+		desactivar_memoria( memoria );
+		log_info(logger, "Fallo el envio de describe general. Se rechaza describe");
+		return -1;
 	}
 
-	//TODO:verificar si se ejecuto ok
+	t_header paquete_recv;
+	recv(memoria->socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+	if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) {
+		log_info(logger, "Fallo la ejecucion de describe en memoria/lfs. Se rechaza describe");
+		return -1;
+	}
+
 	t_header paquete;
 	recv(memoria->socket , &paquete, sizeof(t_header), MSG_WAITALL);
 	char* buffer = malloc(paquete.payload_size);

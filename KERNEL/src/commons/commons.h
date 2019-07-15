@@ -114,7 +114,7 @@ void loggear_configs(void);
 
 t_memoria_del_pool* obtener_memoria_random( t_list* memorias ); //obtiene memoria del pool para realizar el gossiping
 t_list* get_memorias_activas( t_list* tabla_memorias ); //me da las memorias activas de una lista
-
+void retardo(); //retardo de ejecucion
 void liberar_kernel();//libera todos los pedidos de la memoria del proceso
 void liberar_config();
 void free_Pcb(t_PCB* pcb_borrar);
