@@ -13,6 +13,7 @@
 pthread_t tid_estadisticas;
 pthread_t tid_gossiping;
 pthread_t tid_describe;
+pthread_t tid_inotify;
 
 void conectar_memoria();
 void inicializar_kernel(); //inicializa las listas que se utilizaran en kernel
@@ -35,7 +36,6 @@ void apuntar_archivo(FILE* archivo, int pc);
 
 void finalizar_pcb(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a finalizados
 void parar_por_quantum(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a listos
-int rand_num(int max);
 void reinicio_estadisticas();
 
 int enviar_insert(linea_insert linea, void* socket);
@@ -57,5 +57,7 @@ int describe();
 
 void quitar_tabla_lista( char* tabla );//a partir de un nombre de tabla la busca en la metadata y la borra si existe
 void desactivar_memoria(t_memoria_del_pool *memoria); //desactiva la memoria por una desconexion. la quita de los criterios donde esta asociada.
+
+void inotify_config();
 
 #endif

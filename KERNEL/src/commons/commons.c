@@ -24,7 +24,7 @@ void abrir_log() {
 }
 
 void crear_config() {
-	config = config_create("kernel.cfg");
+	config = config_create("config/kernel.cfg");
 }
 
 void leer_configs() {
@@ -93,7 +93,12 @@ void retardo(){
 }
 
 
+int rand_num(int max){
+	int numero;
+	numero = rand() % max;
 
+	return numero;
+}
 
 void liberar_config() {
     free(kernel_config.IP_MEMORIA);

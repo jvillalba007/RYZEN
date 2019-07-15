@@ -12,6 +12,13 @@
 #include <shared/protocolo.h>
 #include <signal.h>
 #include <time.h>
+#include <sys/inotify.h>
+
+#define EVENT_SIZE ( sizeof (struct inotify_event) + 8 )
+#define BUF_LEN ( 1024 * EVENT_SIZE )
+#define CONFIG_FOLDER "config/"
+#define CONFIG_FILE "kernel.cfg"
+
 
 t_log* logger;
 t_config* config;
@@ -111,6 +118,8 @@ void crear_config(void);
 void leer_configs(void);
 void loggear_inicio_logger(void);
 void loggear_configs(void);
+
+int rand_num(int max);
 
 t_memoria_del_pool* obtener_memoria_random( t_list* memorias ); //obtiene memoria del pool para realizar el gossiping
 t_list* get_memorias_activas( t_list* tabla_memorias ); //me da las memorias activas de una lista

@@ -22,6 +22,9 @@ int main() {
 	//INICIA CLIENTE MEMORIA
 	conectar_memoria();
 
+	log_info(logger, "iniciando hilo INOTIFY");
+	pthread_create(&tid_inotify, NULL, (void*)inotify_config, NULL);
+
 	//HILO REINICIO_ESTADISTICAS
 	pthread_create(&tid_estadisticas, NULL, (void*) reinicio_estadisticas, NULL);
 	log_info(logger,"iniciando hilo estadisticas %d", tid_estadisticas);
@@ -45,6 +48,8 @@ int main() {
 	pthread_join(hilo_consola, NULL);
 	pthread_join(tid_estadisticas, NULL);
 	pthread_join(tid_gossiping, NULL);
+	pthread_join(tid_inotify, NULL);
+	log_info(logger, "FIN hilo inotify");
 	log_info(logger, "FIN hilo consola");
 	log_info(logger, "FIN hilo reinicio estadisticas");
 	log_info(logger, "FIN hilo gossiping");
@@ -683,12 +688,6 @@ void apuntar_archivo(FILE* archivo, int pc){
 
 }
 
-int rand_num(int max){
-	int numero;
-	numero = rand() % max;
-
-	return numero;
-}
 
 void parar_por_quantum(t_PCB* pcb){
 
@@ -1147,5 +1146,57 @@ void desactivar_memoria(t_memoria_del_pool *memoria){
 
 	memoria->activa = false;
 	memoria->socket = -1;
+}
+
+
+void inotify_config(){
+
+	char buffer[BUF_LEN];
+	int file_descriptor = inotify_init();
+
+	assignHandler();
+
+	if (file_descriptor < 0) {
+		perror("inotify_init");
+	}
+	log_info(logger, "inicia inotify");
+
+	int watch_descriptor = inotify_add_watch(file_descriptor, CONFIG_FOLDER, IN_MODIFY | IN_CREATE | IN_CLOSE_WRITE);
+
+	while(!exit_global){
+
+		int length = read(file_descriptor, buffer, BUF_LEN);
+		if (length < 0) {
+			perror("read");
+		}
+
+		int offset = 0;
+
+		while (offset < length) {
+
+			struct inotify_event *event = (struct inotify_event *) &buffer[offset];
+
+			if (event->len) {
+				//log_info(g_logger, "Event detected on: %s", event->name);
+				if (string_contains(event->name, CONFIG_FILE)){
+					log_info(logger, "Config File changed");
+					config = config_create("config/kernel.cfg");
+					kernel_config.SLEEP_EJECUCION = config_get_int_value(config, "SLEEP_EJECUCION");
+					kernel_config.METADATA_REFRESH = config_get_int_value(config, "METADATA_REFRESH");
+					kernel_config.QUANTUM = config_get_int_value(config,"QUANTUM");
+					config_destroy(config);
+					loggear_configs();
+				}
+			}
+			offset += sizeof (struct inotify_event) + event->len;
+		}
+
+	}
+
+	inotify_rm_watch(file_descriptor, watch_descriptor);
+	close(file_descriptor);
+
+
+	pthread_exit(0);
 }
 
