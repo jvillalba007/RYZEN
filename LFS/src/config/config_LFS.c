@@ -84,6 +84,9 @@ void loggear_config() {
 void liberar_config(lfs_cfg lfs_config) {
     free(lfs_config.puerto_lfs);
     free(lfs_config.punto_montaje);
+
+    free(CONFIG_FOLDER);
+    free(CONFIG_PATH);
 }
 
 void liberar_logger(t_log* g_logger){
