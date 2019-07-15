@@ -129,7 +129,6 @@ void liberar_config();
 void free_Pcb(t_PCB* pcb_borrar);
 void free_memoria(t_memoria_del_pool* memoria_borrar);
 void free_tabla(t_tabla_consistencia* tabla_borrar);
-void terminar_hilos_procesadores();
 void liberar_memorias_gossiping(t_list *memorias);
 void free_memoria_gossiping( pmemoria *memoria );
 void free_tabla_describe( linea_create *linea ); //hace el free de los elementos recibidos en un describe

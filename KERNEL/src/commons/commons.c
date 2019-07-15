@@ -108,8 +108,7 @@ void liberar_config() {
 
 void liberar_kernel(){
 
-	/*log_info(logger, "libera hilos procesadores");*/
-	//terminar_hilos_procesadores();
+	log_info(logger, "libera hilos procesadores");
 	list_destroy_and_destroy_elements(l_procesadores  , (void*)free );
 
 	log_info(logger, "libero semaforo");
@@ -164,19 +163,6 @@ void free_tabla(t_tabla_consistencia* tabla_borrar){
 	free(tabla_borrar->nombre_tabla);
 	free(tabla_borrar->criterio_consistencia);
 	free(tabla_borrar);
-}
-
-
-void terminar_hilos_procesadores(){
-
-	void terminar_hilo_procesador(pthread_t* id_hilo)
-	{
-		log_info(logger, "cierro hilo de ejecucion id :%lu" , *(id_hilo));
-		/*TODO: solucionar esto. esta rompiendo*/
-		pthread_kill(*(id_hilo), SIGUSR1);
-	}
-
-	list_iterate(l_procesadores,(void*)terminar_hilo_procesador);
 }
 
 void liberar_memorias_gossiping(t_list *memorias){
