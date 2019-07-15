@@ -304,6 +304,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 	int socket;
 	int res=0;
+	int res_send = 0;
 
 	if(memoria->socket != -1){
 		socket = memoria->socket;
@@ -315,8 +316,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 			log_error(logger, "¡Error no se pudo conectar con MEMORIA:%d", memoria->numero_memoria );
 			log_info(logger, "Se deshabilita memoria:%d", memoria->numero_memoria );
-			memoria->activa = false;
-			memoria->socket = -1;
+
+			//DESACTIVO LA MEMORIA
+			desactivar_memoria(memoria);
 			return -1;
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
@@ -337,18 +339,26 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		insert.key = (uint16_t) atoi(split[2]);
 		insert.value = split[3];
 
-		enviar_insert(insert, &socket);
+		res_send = enviar_insert(insert, &socket);
+		if( res_send == -1 ){
 
-		t_header paquete_recv;
-		recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-		if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
-		else{
-
-			operaciones_totales++;
-			memoria->cantidad_carga++;
-			memoria->cantidad_insert++;
-			memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
+			desactivar_memoria( memoria );
+			res=-1;
+			log_info( logger , "Falla send de enviar_insert. Se da de baja la memoria y se sale de la operacion." );
+			log_info( logger , "Falla operacion: %s", linea );
 		}
+		else{
+			t_header paquete_recv;
+			recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+			else{
+				memoria->cantidad_carga++;
+				memoria->cantidad_insert++;
+				memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
+				operaciones_totales++;
+			}
+		}
+
 
 	}
 	else if(es_string(split[0], "SELECT")){
@@ -359,26 +369,40 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		select.tabla = split[1];
 		select.key = (uint16_t) atoi(split[2]);
 
-		enviar_select(select, &socket);
+		res_send = enviar_select(select, &socket);
+		if( res_send == -1 ){
 
-		//TODO: aca tiene que haber confirmacion de que se realizo correctamente
+			desactivar_memoria( memoria );
+			res=-1;
+			log_info( logger , "Falla send de enviar_select. Se da de baja la memoria y se sale de la operacion." );
+			log_info( logger , "Falla operacion: %s", linea );
+		}
+		else{
 
-		t_header paquete;
-		recv(socket, &paquete, sizeof(t_header), MSG_WAITALL);
-		char* buffer = malloc(paquete.payload_size);
-		recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
+			t_header paquete_recv;
+			recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+			else{
 
-		linea_response_select *response_select = malloc(sizeof(linea_response_select));
-		deserializar_response_select(buffer, response_select);
-		log_info(logger, "tabla %s con value %s", split[1], response_select->value);
+				t_header paquete;
+				recv(socket, &paquete, sizeof(t_header), MSG_WAITALL);
+				char* buffer = malloc(paquete.payload_size);
+				recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
 
-		free(buffer);
-		free(response_select->value);
+				linea_response_select *response_select = malloc(sizeof(linea_response_select));
+				deserializar_response_select(buffer, response_select);
+				log_info(logger, "tabla %s con value %s", split[1], response_select->value);
 
-		operaciones_totales++;
-		memoria->cantidad_carga++;
-		memoria->cantidad_select++;
-		memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
+				free(buffer);
+				free(response_select->value);
+
+				memoria->cantidad_carga++;
+				memoria->cantidad_select++;
+				memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
+				operaciones_totales++;
+			}
+
+		}
 
 	}
 	else if(es_string(split[0], "CREATE")){
@@ -389,34 +413,50 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		create.nro_particiones = atoi(split[3]);
 		create.tiempo_compactacion = *(u_int32_t*)split[4];
 
-		//TODO: aca tiene que haber confirmacion de que se realizo correctamente
-		enviar_create(create, &socket);
-
-		t_header paquete_recv;
-		recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-		if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
-		else{
-			t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
-			tabla->criterio_consistencia = strdup(split[2]);
-			tabla->nombre_tabla = strdup(split[1]);
-			list_add(l_tablas, tabla);
-			operaciones_totales++;
-			log_info(logger,"tabla %s creada, criterio: %s", split[1],split[2]);
+		res_send = enviar_create(create, &socket);
+		if( res_send == -1 ){
+			desactivar_memoria( memoria );
+			res=-1;
+			log_info( logger , "Falla send de enviar_create. Se da de baja la memoria y se sale de la operacion." );
+			log_info( logger , "Falla operacion: %s", linea );
 		}
+		else{
+
+			t_header paquete_recv;
+			recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+			else{
+				t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
+				tabla->criterio_consistencia = strdup(split[2]);
+				tabla->nombre_tabla = strdup(split[1]);
+				list_add(l_tablas, tabla);
+				operaciones_totales++;
+				log_info(logger,"tabla %s creada, criterio: %s", split[1],split[2]);
+			}
+		}
+
+
 	}
 	else if(es_string(split[0], "DROP")){
 
 		char* tabla = split[1];
 
-		enviar_drop(&socket, tabla);
-
-		t_header paquete_recv;
-		recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-		if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+		res_send = enviar_drop(&socket, tabla);
+		if( res_send == -1 ){
+			desactivar_memoria( memoria );
+			res=-1;
+			log_info( logger , "Falla send de enviar_create. Se da de baja la memoria y se sale de la operacion." );
+			log_info( logger , "Falla operacion: %s", linea );
+		}
 		else{
-			log_info(logger,"se hizo drop de la tabla %s",split[1]);
-			quitar_tabla_lista( split[1]);
-			operaciones_totales++;
+			t_header paquete_recv;
+			recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+			else{
+				log_info(logger,"se hizo drop de la tabla %s",split[1]);
+				quitar_tabla_lista( split[1]);
+				operaciones_totales++;
+			}
 		}
 	}
 	else if(es_string(split[0], "DESCRIBE")){
@@ -427,24 +467,45 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			//TODO verificar si describe necesita confirmacion verificar tambien si el describe puede fallar si se cancela pcb
 			res = describe(memoria);
 			if( res == -1 ) log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
-			else log_info(logger, "Se realiza describe exitosamente con memoria:%d",memoria->numero_memoria);
+			else {
+				operaciones_totales++;
+				log_info(logger, "Se realiza describe exitosamente con memoria:%d",memoria->numero_memoria);
+			}
 		}
 		else{
 
-			enviar_describe_especial(&socket, split[1]);
+			log_info(logger,"Ejecuto DESCRIBE de tabla %s" , split[1] );
+			res_send = enviar_describe_especial(&socket, split[1]);
+			if( res_send == -1 ){
+				//TODO:verificar si esto hace que falle la ejecucion de script y que se aborte. se supone que si.
+				desactivar_memoria( memoria );
+				res=-1;
+				log_info( logger , "Falla send de enviar_descibe de tabla. Se da de baja la memoria y se sale de la operacion." );
+				log_info( logger , "Falla operacion: %s", linea );
+			}
+			else{
 
-			t_header paquete;
-			recv(socket, &paquete, sizeof(t_header), MSG_WAITALL);
-			char* buffer = malloc(paquete.payload_size);
-			recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
+				t_header paquete_recv;
+				recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				else{
 
-			t_list *lista_tablas = deserializar_describe(buffer);
-			list_iterate( lista_tablas , (void*)agregar_tabla_describe );
-			log_info(logger,"Se termino de ejecutar DESCRIBE");
-			list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
-			free(buffer);
+					t_header paquete;
+					recv(socket, &paquete, sizeof(t_header), MSG_WAITALL);
+					char* buffer = malloc(paquete.payload_size);
+					recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
+
+					t_list *lista_tablas = deserializar_describe(buffer);
+					list_iterate( lista_tablas , (void*)agregar_tabla_describe );
+					log_info(logger,"Se termino de ejecutar DESCRIBE");
+					list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
+					free(buffer);
+					operaciones_totales++;
+				}
+
+			}
 		}
-		operaciones_totales++;
+
 	}
 	else{
 		log_error(logger,"comando no reconocido");
@@ -556,14 +617,30 @@ void conectar_memoria(){
 		exit(EXIT_FAILURE);
 	}
 	log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d", socket_memoria);
+	t_header buffer;
+	buffer.emisor=KERNEL;
+	buffer.tipo_mensaje =CONEXION;
+	buffer.payload_size = 0;
+	send(socket_memoria, &buffer, sizeof( buffer ) , 0);
+	log_info(logger, "HAGO EL SEND");
+	int numero_memoria;
+	recv(socket_memoria , &numero_memoria, sizeof(int), MSG_WAITALL);
+
 	t_memoria_del_pool* memoria_original = malloc( sizeof( t_memoria_del_pool ) );
-	memoria_original->ip = kernel_config.IP_MEMORIA;
-	memoria_original->puerto = kernel_config.PUERTO_MEMORIA;
+	memoria_original->ip = strdup(kernel_config.IP_MEMORIA);
+	memoria_original->puerto = strdup(kernel_config.PUERTO_MEMORIA);
 	memoria_original->activa=0; //no esta asociada a ningun criteiro no esta activa
-	memoria_original->numero_memoria=0;
+	memoria_original->numero_memoria=numero_memoria;
 	memoria_original->socket = socket_memoria;
 	memoria_original->cantidad_carga = 0;
+	memoria_original->cantidad_insert=0;
+	memoria_original->cantidad_select=0;
+	memoria_original->tiempo_insert=0;
+	memoria_original->tiempo_select=0;
+
 	list_add(l_memorias , memoria_original );
+
+	log_info(logger, "Se agrega memoria de archivo de configuracion con numero:%d" , numero_memoria);
 
 	//hago gossiping con la memoria principal.
 	gossiping( memoria_original );
@@ -627,7 +704,7 @@ void parar_por_quantum(t_PCB* pcb){
 	log_info(logger, "tamanio lista de listos: %d", list_size( l_pcb_listos ));
 }
 
-void enviar_insert(linea_insert linea, void* sock){
+int enviar_insert(linea_insert linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -643,9 +720,11 @@ void enviar_insert(linea_insert linea, void* sock){
 	send(socket, buffer, tamanio, 0);
 
 	free(buffer);
+
+	return 0;
 }
 
-void enviar_select(linea_select linea, void* sock){
+int enviar_select(linea_select linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -660,9 +739,11 @@ void enviar_select(linea_select linea, void* sock){
 	send(socket, &paquete, sizeof(t_header), 0);
 	send(socket, buffer, tamanio, 0);
 	free(buffer);
+
+	return 0;
 }
 
-void enviar_create(linea_create linea, void* sock){
+int enviar_create(linea_create linea, void* sock){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -678,9 +759,10 @@ void enviar_create(linea_create linea, void* sock){
 	send(socket, buffer, tamanio, 0);
 	free(buffer);
 
+	return 0;
 }
 
-void enviar_describe_general(void* sock){
+int enviar_describe_general(void* sock){
 
 	int socket = *(int*)sock;
 	t_header paquete;
@@ -689,9 +771,11 @@ void enviar_describe_general(void* sock){
 	paquete.payload_size = 0;
 
 	send(socket, &paquete, sizeof(t_header), 0);
+
+	return 0;
 }
 
-void enviar_describe_especial(void* sock, char* tabla){
+int enviar_describe_especial(void* sock, char* tabla){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -705,6 +789,8 @@ void enviar_describe_especial(void* sock, char* tabla){
 
 	send(socket, buffer, tamanio, 0);
 	free(buffer);
+
+	return 0;
 }
 
 void reinicio_estadisticas(){
@@ -736,7 +822,7 @@ void reinicio_estadisticas(){
 
 	pthread_exit(0);
 }
-void enviar_drop(void* sock,char* tabla){
+int enviar_drop(void* sock,char* tabla){
 
 	int socket = *(int*)sock;
 	int tamanio;
@@ -750,6 +836,8 @@ void enviar_drop(void* sock,char* tabla){
 
 	send(socket, buffer, tamanio, 0);
 	free(buffer);
+
+	return 0;
 }
 
 
@@ -962,7 +1050,12 @@ int describe( t_memoria_del_pool *memoria ){
 	}
 
 	log_info(logger,"comienza DESCRIBE con memoria:%d" , memoria->numero_memoria);
-	enviar_describe_general(&memoria->socket);
+	int res_send = enviar_describe_general(&memoria->socket);
+	if( res_send == -1 ){
+		//TODO: verificar que hago aca tambien puede haber fallo de si no se ejecutook en memoria en ese caso no deberia desactivar la memoria pero aca si.
+	}
+
+	//TODO:verificar si se ejecuto ok
 	t_header paquete;
 	recv(memoria->socket , &paquete, sizeof(t_header), MSG_WAITALL);
 	char* buffer = malloc(paquete.payload_size);
@@ -995,5 +1088,44 @@ void quitar_tabla_lista( char* tabla ){
 	else{
 		log_info(logger,"La tabla:%s a la que se hizo drop no estaba en la metadata " ,tabla);
 	}
+}
+
+
+void desactivar_memoria(t_memoria_del_pool *memoria){
+
+
+	bool memoria_encontrada( t_memoria_del_pool *memoria_pool ){
+
+		if( memoria_pool->numero_memoria == memoria->numero_memoria ) return true;
+		return false;
+	}
+
+	t_memoria_del_pool *memoria_desactivada = NULL;
+
+	memoria_desactivada = list_remove_by_condition(l_criterio_SHC, (void*)memoria_encontrada);
+	if( memoria_desactivada != NULL  ){
+
+		log_info(logger,"Se quita del criterio SHC la memoria: %d " ,memoria_desactivada->numero_memoria);
+		memoria_desactivada=NULL;
+		log_info(logger,"Se envia journal a las memorias del criterio SHC");
+		enviar_journal_lista_memorias( l_criterio_SHC );
+	}
+
+	memoria_desactivada = list_remove_by_condition(l_criterio_SC, (void*)memoria_encontrada);
+	if( memoria_desactivada != NULL  ){
+
+			log_info(logger,"Se quita del criterio SC la memoria: %d " ,memoria_desactivada->numero_memoria);
+			memoria_desactivada=NULL;
+	}
+
+	memoria_desactivada = list_remove_by_condition(l_criterio_EC, (void*)memoria_encontrada);
+	if( memoria_desactivada != NULL  ){
+
+			log_info(logger,"Se quita del criterio EC la memoria: %d " ,memoria_desactivada->numero_memoria);
+			memoria_desactivada=NULL;
+	}
+
+	memoria->activa = false;
+	memoria->socket = -1;
 }
 

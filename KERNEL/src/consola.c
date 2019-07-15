@@ -77,7 +77,7 @@ void procesar_comando (char* linea) {
                                 if (list_is_empty(l_criterio_SC)) {
                                 	log_info(logger, "Se agrega a criterio SC memoria: %d", m->numero_memoria);
                                     list_add(l_criterio_SC, m);
-                                    m->activa= 1;
+                                    m->activa= true;
                                 }
                                 else {
                                     log_info(logger, "Error en el comando ADD: Ya existe una memoria asignada al criterio SC.");
@@ -182,8 +182,9 @@ void enviar_journal_lista_memorias (t_list* memorias) {
 			if( socketmemoria == -1  ){
 
 				m->socket=-1;
-				log_error(logger, "¡Error no se pudo conectar con MEMORIA");
-				//TODO: si no me puedo conectar la memoria esta caida deberia hacer algo. desactivarla de los criterios en donde esta ....
+				log_error(logger, "¡Error no se pudo conectar con MEMORIA:%d" , m->numero_memoria);
+				desactivar_memoria(m);
+				log_info(logger, "Desactivo la memoria: %d . La quito de los criterios donde esta asociada" ,m->numero_memoria );
 				return;
 			}
 			log_info(logger, "conexion existosa con memoria: %d de socket:", m->numero_memoria , m->socket );
@@ -205,7 +206,6 @@ void enviar_journal_lista_memorias (t_list* memorias) {
 
 		log_info(logger, "No hay memorias activas para hacerles el journal.");
 		return;
-
 	}
 
 	log_info(logger, "Memorias activas: %d.", list_size(l_memorias_activas));

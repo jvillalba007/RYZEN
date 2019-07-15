@@ -38,12 +38,12 @@ void parar_por_quantum(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a listos
 int rand_num(int max);
 void reinicio_estadisticas();
 
-void enviar_insert(linea_insert linea, void* socket);
-void enviar_select(linea_select linea, void* socket);
-void enviar_create(linea_create linea, void* socket);
-void enviar_describe_general(void* socket);
-void enviar_describe_especial(void* socket, char* tabla);
-void enviar_drop(void* socket, char* tabla);
+int enviar_insert(linea_insert linea, void* socket);
+int enviar_select(linea_select linea, void* socket);
+int enviar_create(linea_create linea, void* socket);
+int enviar_describe_general(void* socket);
+int enviar_describe_especial(void* socket, char* tabla);
+int enviar_drop(void* socket, char* tabla);
 void recibir_agregar_memoria(void* socket_memoria);
 
 void hilo_gossiping(); //Ejecuta cada x tiempo el gossiping con alguna memoria
@@ -56,5 +56,6 @@ void hilo_describe();
 int describe();
 
 void quitar_tabla_lista( char* tabla );//a partir de un nombre de tabla la busca en la metadata y la borra si existe
+void desactivar_memoria(t_memoria_del_pool *memoria); //desactiva la memoria por una desconexion. la quita de los criterios donde esta asociada.
 
 #endif
