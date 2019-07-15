@@ -332,6 +332,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			verificarSocketLFS();
 
 			retorno = send(socketClienteLfs,msg->header,sizeof(t_header),0);
+			t_header paquete;
 
 			if(retorno == -1)
 			{
@@ -339,11 +340,15 @@ int atender_kernel(int cliente, t_msg* msg)
 				pthread_mutex_lock(&mutex_socket);
 				socketClienteLfs = -1;
 				pthread_mutex_unlock(&mutex_socket);
+
+				paquete.tipo_mensaje = EJECUCIONERROR;
+				paquete.emisor = MEMORIA;
+				send(cliente, &paquete,sizeof(t_header),0);
 				break;
 			}
 			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
 
-			t_header paquete;
+
 			retorno = recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
 
 			if(retorno == -1)
@@ -383,7 +388,7 @@ int atender_kernel(int cliente, t_msg* msg)
 
 		case DESCRIBE:{
 			log_info(mem_log, "ALGORITMIA DESCRIBE");
-
+			t_header paquete;
 			int retorno;
 			verificarSocketLFS();
 
@@ -395,12 +400,13 @@ int atender_kernel(int cliente, t_msg* msg)
 				pthread_mutex_lock(&mutex_socket);
 				socketClienteLfs = -1;
 				pthread_mutex_unlock(&mutex_socket);
+				paquete.tipo_mensaje = EJECUCIONERROR;
+				send(cliente, &paquete,sizeof(t_header),0);
 				break;
 			}
 
 			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
 
-			t_header paquete;
 			retorno = recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
 			paquete.emisor = MEMORIA;
 
@@ -1136,6 +1142,8 @@ void gossiping(){
 
 			if (retorno == -1)
 			{
+				free(data);
+				list_destroy(memorias_activas);
 				log_error(mem_log, "Se murio MEMORIA de numero: %d , de la memoria numero:%d",memoria->numero_memoria);
 				memoria->socket = -1;
 				return;
@@ -1143,6 +1151,8 @@ void gossiping(){
 
 			send(memoria->socket, data, buffer.payload_size , 0);
 			free(data);
+
+			list_destroy(memorias_activas);
 
 			t_header header_memoria;
 			retorno = recv(memoria->socket , &header_memoria, sizeof(t_header), MSG_WAITALL);
