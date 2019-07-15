@@ -399,6 +399,7 @@ int atender_kernel(int cliente, t_msg* msg)
 
 		case CONEXION:{
 			log_info(mem_log, "Se Conecta KERNEL");
+			send(cliente, &mem_config.memory_number,sizeof(int),0);
 		}
 		break;
 
