@@ -20,6 +20,8 @@ pthread_t tid_server;
 pthread_t tid_journal;
 pthread_t tid_gossiping;
 
+pthread_mutex_t mutex;
+
 #define ceiling(x,y) (((x) + (y) - 1) / (y))
 
 void estructurar_memoria();/* inicializa todas las estructuras funcionales para la memoria */

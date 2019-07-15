@@ -22,6 +22,7 @@
 	#include <inttypes.h>
 	#include <time.h>
 	#include <sys/inotify.h>
+	#include <pthread.h>
 
 	#define EVENT_SIZE ( sizeof (struct inotify_event) + 8 )
 	#define BUF_LEN ( 1024 * EVENT_SIZE )
@@ -78,6 +79,8 @@
 	int socketServidor;
 	int socketClienteLfs;
 
+	pthread_mutex_t mutex_socket;
+
 	int maximo_value; //TAMANIO MAXIMO DEL VALUE RECIBIDO EN BYTES POR LFS
 	int cantidad_frames;
 	int frames_ocupados; //ME INDICA LA CANTIDAD DE FRAMES QUE ESTAN OCUPADOS ACTUALMENTE
@@ -96,6 +99,8 @@
 	t_bitarray* bitmap_frames;
 
 	t_list* tabla_memorias;
+
+	void verificarSocketLFS();
 
 	void leer_config();
 	int mem_initialize( char* archivo  );

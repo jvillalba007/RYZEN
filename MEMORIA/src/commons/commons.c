@@ -7,6 +7,16 @@
 
 #include "commons.h"
 
+void verificarSocketLFS()
+{
+	pthread_mutex_lock(&mutex_socket);
+	if(socketClienteLfs == -1)
+	{
+		socketClienteLfs = socket_connect_to_server(mem_config.ip_LFS,  mem_config.puerto_LFS );
+	}
+	pthread_mutex_unlock(&mutex_socket);
+}
+
 void retardo(){
 
 	struct timespec ts;
@@ -230,6 +240,9 @@ void enviar_insert_LFS(linea_insert* linea) {
 	paquete.emisor = MEMORIA;
 	paquete.tipo_mensaje = INSERT;
 	paquete.payload_size = size;
+
+	verificarSocketLFS();
+
 	send(socketClienteLfs, &paquete, sizeof(paquete), 0);
 	send(socketClienteLfs, buffer, size, 0);
 
@@ -238,6 +251,7 @@ void enviar_insert_LFS(linea_insert* linea) {
 }
 
 void mem_exit_global() {
+	(socketClienteLfs == -1) ? 0 : close(socketClienteLfs);
 	liberar_tablas();
 	liberar_memoria_contigua();
 	mem_exit_simple();
