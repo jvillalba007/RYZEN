@@ -134,9 +134,9 @@ void inotify_config(){
 				//log_info(g_logger, "Event detected on: %s", event->name);
 				if (string_contains(event->name, CONFIG_FILE)){
 					log_info(g_logger, "Config File changed");
-					liberar_config(lfs_config);
-					after_cd_config();
-					leer_config();
+
+					inotify_set_config();
+
 					loggear_config();
 				}
 			}

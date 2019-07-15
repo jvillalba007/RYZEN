@@ -8,16 +8,34 @@ void iniciar_logger(void)
 	log_info(g_logger, "logger iniciado");
 }
 
-void primer_config() {
-    config = config_create("config/LFS.cfg");
+void setear_ruta_config() {
+
+    getcwd(APP_DIR, sizeof(APP_DIR));
+    log_info(g_logger, "LFS directory is: %s", APP_DIR);
+
+    CONFIG_PATH = strdup(APP_DIR);
+	string_append(&CONFIG_PATH, "/config/");
+
+	CONFIG_FOLDER = strdup(CONFIG_PATH);
+
+	string_append(&CONFIG_PATH, CONFIG_FILE);
+
+	log_info(g_logger, "Config directory is: %s", CONFIG_PATH);
 }
 
-void after_cd_config() {
-	config = config_create(CONFIG_PATH);
-}
+void inotify_set_config(){
 
+    config = config_create(CONFIG_PATH);
+
+	lfs_config.retardo_lfs = config_get_int_value(config, "RETARDO_LFS");
+	lfs_config.tiempo_dump = config_get_int_value(config, "TIEMPO_DUMP");
+
+	config_destroy(config);
+}
 
 void leer_config() {
+
+    config = config_create(CONFIG_PATH);
 
 	lfs_config.puerto_lfs = strdup(config_get_string_value(config, "PUERTO_LFS"));
 	lfs_config.punto_montaje = strdup(config_get_string_value(config, "PUNTO_MONTAJE"));
@@ -89,7 +107,7 @@ void iniciar_dict_table_status(){
 void iniciar_config(){
 	iniciar_logger();
 
-	primer_config();
+	setear_ruta_config();
 	leer_config();
 	loggear_config();
 
@@ -135,10 +153,17 @@ void iniciar_bitmap(){
 }
 
 void iniciar_montaje(){
+	chdir(lfs_config.punto_montaje);
+
+	char s[100];
+	log_info(g_logger, "Current mount directory is: %s \n", getcwd(s, 100));
+}
+
+void iniciar_montaje_bak(){
 	char** folders = string_split(lfs_config.punto_montaje, "/");
 	int cant_folders = split_cant_elem(folders);
 
-	char s[100];
+	char s[PATH_MAX];
 
 	for (int i = 0; i < cant_folders; i++) {
 		// Does the directory exist?
@@ -151,9 +176,9 @@ void iniciar_montaje(){
 		}
 
 
-		log_info(g_logger, "Current directory is: %s \n", getcwd(s, 100));
+		log_info(g_logger, "Current directory is: %s \n", getcwd(s, sizeof(s)));
 		chdir(folders[i]);
-		log_info(g_logger, "Current mount directory is: %s \n", getcwd(s, 100));
+		log_info(g_logger, "Current mount directory is: %s \n", getcwd(s, sizeof(s)));
 	}
 	split_liberar(folders);
 

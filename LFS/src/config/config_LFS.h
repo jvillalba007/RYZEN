@@ -32,10 +32,7 @@
 
 	#include "shared/protocolo.h"
 
-	#define CONFIG_FOLDER "../config/"
 	#define CONFIG_FILE "LFS.cfg"
-	#define CONFIG_PATH CONFIG_FOLDER CONFIG_FILE
-
 
 	#define TABLES_FOLDER "tables/"
 	#define EVENT_SIZE ( sizeof (struct inotify_event) + 8 )
@@ -64,6 +61,10 @@
 	char* BLOCKS;
 	char* MAGIC_NUMBER;
 
+	char APP_DIR[PATH_MAX];
+	char* CONFIG_PATH;
+	char* CONFIG_FOLDER;
+
 	void iniciar_logger(void);
 	void iniciar_config(void);
 	void leer_config(void);
@@ -78,8 +79,8 @@
 	void leer_metadata(void);
 	void loggear_metadata(void);
 	void iniciar_dict_table_status(void);
-	void primer_config(void);
-	void after_cd_config(void);
+	void setear_ruta_config(void);
+	void inotify_set_config(void);
 
 	//void crear_carpeta(char* carpeta);
 
