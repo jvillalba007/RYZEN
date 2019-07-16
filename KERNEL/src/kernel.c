@@ -166,15 +166,18 @@ int ejecutar_linea( char *linea ){
 
 		t_list *memorias_activas = get_memorias_activas( l_memorias );
 		memoria = obtener_memoria_random( memorias_activas );
+
 		if( memoria == NULL ) {
 			log_info(logger, "Memoria para ejecutar no encontrada. No hay memorias activas" );
 			res=-1;
 			split_liberar(parametros);
+
 			return res;
 		}
 
 		log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
 		res = ejecutar_linea_memoria( memoria , linea );
+		list_destroy(memorias_activas);
 	}
 	//es un insert o select
 	else{
