@@ -20,6 +20,7 @@ void consola(){
 		if(string_equals_ignore_case(linea,"exit")) {
 			EXIT_PROGRAM = true;
 			shutdown(socketServidor,SHUT_RDWR);
+			pthread_kill(tid_inotify, SIGUSR1);
 			pthread_kill(tid_journal, SIGUSR1);
 			pthread_kill(tid_gossiping, SIGUSR1);
 			free(linea);
@@ -70,8 +71,16 @@ void consola_procesar_comando(char* linea)
 			log_info(mem_log, "KEY es %d",linea_ins.key);
 			log_info(mem_log, "VALUE es %s",linea_ins.value);
 
-			(strlen(linea_ins.value) >= maximo_value) ? log_info(mem_log, "Tam Value no Permitido") : ejecutar_insert(&linea_ins);
-
+			if (strlen(linea_ins.value) >= maximo_value)
+			{
+				log_info(mem_log, "Tam Value no Permitido");
+			}
+			else
+			{
+				pthread_mutex_lock(&mutex);
+				ejecutar_insert(&linea_ins);
+				pthread_mutex_unlock(&mutex);
+			}
 			//procesar_insert(cant_sin_value, parametros_no_value, value);
 			free(value);
 			split_liberar(parametros_no_value);
@@ -90,7 +99,9 @@ void consola_procesar_comando(char* linea)
 
 		log_info(mem_log, "SELECT tabla: %s , key: %d",linea_s.tabla ,linea_s.key );
 
+		pthread_mutex_lock(&mutex);
 		fila_TPaginas *pagina = ejecutar_select( &linea_s );
+		pthread_mutex_unlock(&mutex);
 
 		if(pagina != NULL){
 			fila_Frames frame;
@@ -126,12 +137,16 @@ void consola_procesar_comando(char* linea)
 	else if(cantParametros == 2 && string_equals_ignore_case(parametros[0],"DROP")){
 		char* tabla = parametros[1];
 		log_info(mem_log, "DROP tabla: %s" , tabla );
+		pthread_mutex_lock(&mutex);
 		ejecutar_drop(tabla);
+		pthread_mutex_unlock(&mutex);
 	}
 
 	else if(cantParametros == 1 && string_equals_ignore_case(parametros[0],"JOURNAL")){
 		log_info(mem_log, "COMENZANDO JOURNAL..." );
+		pthread_mutex_lock(&mutex);
 		journal();
+		pthread_mutex_unlock(&mutex);
 		log_info(mem_log, "TERMINO JOURNAL..." );
 	}
 

@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
 	log_info(mem_log, "[MEMORIA] ARCHIVO RECIBIDO: %s", fileCFG);
 
 	// INICIAR HILO INOTIFY
-	pthread_t tid_inotify;
 	log_info(mem_log, "[MEMORIA] Abro hilo INOTIFY");
 	pthread_create(&tid_inotify, NULL, (void*)inotify_config, NULL);
 

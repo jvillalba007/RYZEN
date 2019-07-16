@@ -17,6 +17,7 @@
 	#include <inttypes.h>
 
 pthread_t tid_server;
+pthread_t tid_inotify;
 pthread_t tid_journal;
 pthread_t tid_gossiping;
 
