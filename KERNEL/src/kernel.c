@@ -397,7 +397,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 				linea_response_select response_select;
 				deserializar_response_select(buffer, &response_select);
-				log_info(logger, "tabla %s con value %s", split[1], response_select.value);
+				log_info( logger , "operacion: %s value:%s", linea  , response_select.value);
 
 				free(buffer);
 				free(response_select.value);
@@ -907,33 +907,26 @@ void hilo_gossiping(){
 
 		nanosleep(&ts, NULL);
 		log_info(logger, "iniciando gossiping");
-
-		t_memoria_del_pool *memoria = obtener_memoria_random( l_memorias );
-		if( memoria== NULL ){
-			log_info(logger, "No se encuentra memoria disponible para realizar gossiping");
+		t_list* memorias_activas = get_memorias_activas( l_memorias );
+		if( list_is_empty( memorias_activas ) ){
+			log_info(logger, "No se encuentra memorias disponibles para realizar gossiping");
 		}
 		else{
 
-			log_info(logger, "La memoria random activa elegida es:%d",memoria->numero_memoria);
-			int res = gossiping(memoria);
-			if( res ==-1 ){
-
-				log_info(logger, "Falla gossiping con memoria:%d",memoria->numero_memoria);
-			}
-			else{
-				log_info(logger, "Se realiza gossiping exitosamente con memoria:%d",memoria->numero_memoria);
-			}
-
+			list_iterate( memorias_activas , (void*)gossiping );
 		}
 
-
+		list_destroy( memorias_activas );
+		log_info(logger, "Fin gossiping");
 	}
 
 	pthread_exit(0);
 }
 
 
-int gossiping( t_memoria_del_pool *memoria ){
+void gossiping( t_memoria_del_pool *memoria ){
+
+	int res = 0;
 
 	log_info(logger, "memoria recibida para gossiping: %d" , memoria->numero_memoria);
 	if( memoria->socket == -1 ){
@@ -942,28 +935,39 @@ int gossiping( t_memoria_del_pool *memoria ){
 		log_info(logger, "%d" ,socketmemoria);
 
 		if( socketmemoria == -1 ){
-			//TODO:verificar si se desactiva memoria cuando esto ocurr
 			desactivar_memoria( memoria );
 			log_info(logger, "no se pudo conectar con memoria:%d. se rechaza gossiping" , memoria->numero_memoria);
-			return -1;
+			return;
 		}
 		log_info(logger, "Se establece conexion con memoria: %d: socket: %d" , memoria->numero_memoria , memoria->socket);
 		memoria->socket=socketmemoria;
 	}
 
-	//genero intercambio
+	log_info(logger, "Se comienza gossiping con memoria:" , memoria->numero_memoria );
 	t_header buffer;
 	buffer.emisor=KERNEL;
 	buffer.tipo_mensaje =  GOSSIPING;
 	buffer.payload_size = 0;
-	send(memoria->socket, &buffer, sizeof( buffer ) , 0);
+	res = send(memoria->socket, &buffer, sizeof( buffer ) , 0);
+	if( res == -1 ){
+		desactivar_memoria( memoria );
+		log_info(logger, "Fallo el envio de gossiuping a memoria:" , memoria->numero_memoria );
+		return;
+	}
 
+	t_header paquete_recv;
+	recv(memoria->socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+	if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) {
+		log_info(logger, "Fallo la ejecucion de gossiping en memoria. Se desestima la operacion");
+		return;
+	}
 
 	t_header header_tabla;
 	recv(memoria->socket , &header_tabla, sizeof(t_header), MSG_WAITALL);
 
 	char *buffer_tabla = malloc( header_tabla.payload_size);
 	recv(memoria->socket , buffer_tabla, header_tabla.payload_size , MSG_WAITALL);
+	log_info(logger, "Se recibe tabla de gossiping de memorias de la memoria:%d" , memoria->numero_memoria);
 
 	t_list *memorias_seed = deserializar_memorias(buffer_tabla);
 
@@ -973,7 +977,8 @@ int gossiping( t_memoria_del_pool *memoria ){
 	free( buffer_tabla );
 	liberar_memorias_gossiping(memorias_seed);
 
-	return 0;
+	log_info(logger, "Se termina proceso de gossiping con memoria:%d" , memoria->numero_memoria);
+	return;
 }
 
 
