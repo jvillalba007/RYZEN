@@ -275,8 +275,9 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 
 				buffer = malloc(paquete.payload_size);
 				result_recv = recv(cliente, buffer, paquete.payload_size, MSG_WAITALL);
-				if(result_recv < 1){
+				if(result_recv == -1){
 					free(buffer);
+					break;
 				}
 		}
 
@@ -405,18 +406,22 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 				paquete.payload_size = 0;
 
 				if (cant_parametros == 1){
-					list_add_all(definitiva,response);
-					list_destroy(response);
+					(list_is_empty(response)) ? list_destroy(response) : list_add_all(definitiva,response);
 				}
 				else if(response != NULL)
 				{
 						list_add(definitiva,response);
 				}
 
-				if(paquete.tipo_mensaje == EJECUCIONERROR)
+				if(paquete.tipo_mensaje == EJECUCIONERROR || list_is_empty(definitiva))
 				{
+					paquete.tipo_mensaje = EJECUCIONERROR;
 					log_error(g_logger, "Operación DESCRIBE %s no pudo ser realizada. Revise logs.\n",parametros[1]);
 					send(cliente, &paquete,sizeof(t_header),0);
+
+					list_destroy(definitiva);
+					free(describe);
+					split_liberar(parametros);
 					break;
 				}
 
