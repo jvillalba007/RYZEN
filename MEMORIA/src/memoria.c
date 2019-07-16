@@ -565,7 +565,7 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 			pagina = crear_pagina( segmento , frame , 0 );
 			log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
 			log_info(mem_log, "PAGINA N°: %d" , pagina->numero_pagina) ;
-			log_info(mem_log, "ULTIMO USO: %d" , pagina->ultimo_uso  ) ;
+			log_info(mem_log, "ULTIMO USO: %" PRIu64, pagina->ultimo_uso  ) ;
 
 			free(linea_response->value);
 			free(linea_response);
@@ -621,7 +621,7 @@ void ejecutar_insert(linea_insert* linea){
 		fila_TPaginas* pagina = crear_pagina( segmento , frame , 1 );
 		log_info(mem_log, "SE CREA PAGINA EN EL SEGMENTO. El bit modificado es: %d" , pagina->modificado  ) ;
 		log_info(mem_log, "PAGINA N°: %d" , pagina->numero_pagina) ;
-		log_info(mem_log, "ULTIMO USO: %d" , pagina->ultimo_uso  ) ;
+		log_info(mem_log, "ULTIMO USO: %" PRIu64, pagina->ultimo_uso  ) ;
 
 		fila_Frames registro;
 		leer_de_frame( pagina->frame_registro , &registro );
@@ -810,7 +810,7 @@ char* ejecutar_lru(){
 		}
 
 		//Busco con LRU a toda la tabla de paginas, si tiene paginas...
-		if(list_size(un_segmento->paginas) > 0)
+		if(!list_is_empty(un_segmento->paginas))
 		{
 			list_iterate_pos(un_segmento->paginas,(void*)findLRU,&pos);
 		}
@@ -1057,8 +1057,8 @@ void journal()
 
 		if( !list_is_empty( tabla_segmentos ) ){
 			list_iterate(tabla_segmentos,(void*)journal_tabla_paginas);
-			list_destroy(tabla_segmentos);
-			log_info(mem_log, "LIBERADO TABLA DE SEGMENTOS");
+			list_clean(tabla_segmentos);
+			log_info(mem_log, "LIMPIADO TABLA DE SEGMENTOS");
 		}
 	}
 
@@ -1066,7 +1066,7 @@ void journal()
 
 	free(bitMapStr);
 	bitarray_destroy(bitmap_frames);
-	log_info(mem_log, "SE RESETEA DEL BITMAP");
+	log_info(mem_log, "SE RESETEA EL BITMAP");
 
 	bitMapStr = calloc(ceiling(cantidad_frames, 8), 1);
 	bitmap_frames = bitarray_create_with_mode(bitMapStr, ceiling(cantidad_frames, 8), MSB_FIRST);
