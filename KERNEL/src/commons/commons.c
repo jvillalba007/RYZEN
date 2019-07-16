@@ -73,7 +73,11 @@ t_memoria_del_pool* obtener_memoria_random( t_list *memorias ){
 	t_list* memorias_activas = get_memorias_activas(memorias) ;
 	t_memoria_del_pool* mem = NULL;
 
-	if( list_is_empty( memorias_activas )) return NULL;
+	if( list_is_empty( memorias_activas )) {
+
+		list_destroy( memorias_activas);
+		return NULL;
+	}
 
 	int index = rand_num(list_size( memorias));
 	mem = list_get( memorias, index);

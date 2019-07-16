@@ -206,6 +206,7 @@ void enviar_journal_lista_memorias (t_list* memorias) {
 	if (l_memorias_activas == NULL) {
 
 		log_info(logger, "No hay memorias activas para hacerles el journal.");
+		list_destroy(l_memorias_activas);
 		return;
 	}
 

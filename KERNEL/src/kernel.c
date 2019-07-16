@@ -164,8 +164,7 @@ int ejecutar_linea( char *linea ){
 			}
 		}
 
-		t_list *memorias_activas = get_memorias_activas( l_memorias );
-		memoria = obtener_memoria_random( memorias_activas );
+		memoria = obtener_memoria_random( l_memorias );
 
 		if( memoria == NULL ) {
 			log_info(logger, "Memoria para ejecutar no encontrada. No hay memorias activas" );
@@ -177,7 +176,6 @@ int ejecutar_linea( char *linea ){
 
 		log_info(logger, "Memoria a ejecutar: %d", memoria->numero_memoria );
 		res = ejecutar_linea_memoria( memoria , linea );
-		list_destroy(memorias_activas);
 	}
 	//es un insert o select
 	else{
@@ -397,12 +395,12 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				char* buffer = malloc(paquete.payload_size);
 				recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
 
-				linea_response_select *response_select = malloc(sizeof(linea_response_select));
-				deserializar_response_select(buffer, response_select);
-				log_info(logger, "tabla %s con value %s", split[1], response_select->value);
+				linea_response_select response_select;
+				deserializar_response_select(buffer, &response_select);
+				log_info(logger, "tabla %s con value %s", split[1], response_select.value);
 
 				free(buffer);
-				free(response_select->value);
+				free(response_select.value);
 
 				memoria->cantidad_carga++;
 				memoria->cantidad_select++;
