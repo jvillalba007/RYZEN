@@ -19,7 +19,7 @@ void consola(){
 
 		if(string_equals_ignore_case(linea,"exit")) {
 			EXIT_PROGRAM = true;
-			shutdown(socketServidor,SHUT_RDWR);
+			pthread_cancel(tid_server);
 			pthread_kill(tid_inotify, SIGUSR1);
 			pthread_kill(tid_journal, SIGUSR1);
 			pthread_kill(tid_gossiping, SIGUSR1);

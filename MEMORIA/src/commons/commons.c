@@ -89,8 +89,8 @@ void imprimir_config() {
 
 void crear_log( char* archivo ) {
 
-	char* NombreArchivo = string_substring(archivo, 0 , strlen(archivo) - 4);
-	char* fileLOG = string_from_format("%s.LOG", NombreArchivo);
+	NombreArchivo = string_substring(archivo, 0 , strlen(archivo) - 4);
+	fileLOG = string_from_format("%s.LOG", NombreArchivo);
 
 	mem_log = log_create(fileLOG, "LISSANDRA-MEMORIA", false, LOG_LEVEL_TRACE);
 	if (mem_log == NULL) {
@@ -252,6 +252,8 @@ void enviar_insert_LFS(linea_insert* linea) {
 
 void mem_exit_global() {
 	(socketClienteLfs == -1) ? 0 : close(socketClienteLfs);
+	free(NombreArchivo);
+	free(fileLOG);
 	liberar_tablas();
 	liberar_memoria_contigua();
 	mem_exit_simple();

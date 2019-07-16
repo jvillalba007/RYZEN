@@ -87,6 +87,8 @@
 
 	char* fileCFG;
 	char* rutaCFG;
+	char* NombreArchivo;
+	char* fileLOG;
 
 	t_list* tabla_segmentos;
 	char* memoria;

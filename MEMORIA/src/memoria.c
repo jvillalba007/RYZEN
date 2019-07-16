@@ -43,24 +43,24 @@ int main(int argc, char *argv[]) {
 	imprimir_config();
 	log_info(mem_log, "[MEMORIA] ARCHIVO RECIBIDO: %s", fileCFG);
 
-	// INICIAR HILO INOTIFY
-	log_info(mem_log, "[MEMORIA] Abro hilo INOTIFY");
-	pthread_create(&tid_inotify, NULL, (void*)inotify_config, NULL);
-
 	//CLIENTE CON LFS
 	crear_cliente_lfs();
 
 	//ESTRUCTURAR/INICIALIZACION DE MEMORIA
 	estructurar_memoria();
 
-	//INICIAR SERVER
-	log_info(mem_log, "[MEMORIA] Abro hilo servidor");
-	pthread_create(&tid_server, NULL, (void*)crear_servidor, NULL);
+	// INICIAR HILO INOTIFY
+	log_info(mem_log, "[MEMORIA] Abro hilo INOTIFY");
+	pthread_create(&tid_inotify, NULL, (void*)inotify_config, NULL);
 
 	// INICIAR CONSOLA
 	log_info(mem_log, "[MEMORIA] Abro hilo consola");
 	pthread_t tid_consola;
 	pthread_create(&tid_consola, NULL, (void*)consola, NULL);
+
+	//INICIAR SERVER
+	log_info(mem_log, "[MEMORIA] Abro hilo servidor");
+	pthread_create(&tid_server, NULL, (void*)crear_servidor, NULL);
 
 	//GOSSIPING
 	log_info(mem_log, "[MEMORIA] Abro hilo GOSSIPING");
@@ -107,6 +107,7 @@ void iniciar_memoria_contigua(){
 	log_info(mem_log, "***INICIAMOS MEMORIA CONTIGUA ****");
 	cantidad_frames = mem_config.tam_mem / tamanio_fila;
 	log_info(mem_log, "Tamaño Memoria: %d", mem_config.tam_mem);
+	log_info(mem_log, "Tamaño del value: %d", maximo_value);
 	log_info(mem_log, "Tamaño de la fila: %d", tamanio_fila);
 	log_info(mem_log, "Cantidad de Frames: %d", cantidad_frames);
 
@@ -538,7 +539,14 @@ fila_TPaginas* ejecutar_select( linea_select* linea ){
 
 			linea_response_select* linea_response = enviar_select_lfs( linea );
 
-			if( linea_response == NULL ) return NULL;
+			if( linea_response == NULL )
+			{
+				int nro_frame = (int) (frame-memoria) / tamanio_fila_Frames();
+				bitarray_clean_bit(bitmap_frames, nro_frame);
+				frames_ocupados--;
+				log_info(mem_log, "****Fallo el Select libero Frame %d Reservado***", nro_frame);
+				return NULL;
+			}
 
 			//combierto el linea entrante a linea_insert para incializarlo
 			linea_insert linea_ins;
@@ -1030,6 +1038,11 @@ void journal()
 
 		if( !list_is_empty( segmento->paginas ) ){
 			list_iterate(segmento->paginas,(void*)journal_fila_paginas);
+			list_destroy(segmento->paginas);
+			log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
+		}
+		else
+		{
 			list_destroy(segmento->paginas);
 			log_info(mem_log, "LIBERADO TABLA DE PAGINAS");
 		}
