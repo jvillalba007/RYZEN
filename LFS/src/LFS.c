@@ -172,7 +172,7 @@ void iniciar_hilos_compactacion()
 	if(!list_is_empty(tablas_metadata))
 	{
 		list_iterate(tablas_metadata, (void*) hilos);
-		list_destroy_and_destroy_elements(tablas_metadata, (void*) liberar_linea_create);
+		list_destroy(tablas_metadata);
 	}
 	else
 	{
