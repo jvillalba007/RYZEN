@@ -100,6 +100,8 @@ void hilo_compactacion(void* tabla)
 
 	log_info(g_logger, "[THREAD] Se Cierra hilo de compactacion para %s",ctabla);
 
+	liberar_linea_create(metadata);
+
 	free(ctabla);
 	pthread_exit(0);
 }

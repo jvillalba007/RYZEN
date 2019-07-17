@@ -38,7 +38,8 @@ if [[ $# -eq 0 ]] ; then
 fi
 
 echo $blocks blocks
-echo folder is $folder
+echo block size: $block_size
+echo directory where the FS is: $folder
 
 mkdir $folder
 cd $folder
@@ -50,3 +51,5 @@ mkdir Metadata
 create_blocks
 create_metadata
 # create_bitmap
+
+echo REMEMBER TO EDIT LFS.cfg TO TAKE FS NEW PATH
