@@ -146,7 +146,9 @@ int ejecutar_linea( char *linea ){
 		if (es_string(parametros[0],"DROP") ) {
 
 			//verifico que este en la metadata
-			tabla = obtener_tabla( parametros[1] );
+			pthread_mutex_lock(&sem_tablas);
+				tabla = obtener_tabla( parametros[1] );
+			pthread_mutex_unlock(&sem_tablas);
 			if( tabla == NULL ){
 
 				log_info(logger, "No existe en la metadata del sistema la tabla:%s .Se cancela ejecucion", parametros[1] );
@@ -158,7 +160,9 @@ int ejecutar_linea( char *linea ){
 		if (es_string(parametros[0],"CREATE") ) {
 
 			//verifico que este en la metadata
-			tabla = obtener_tabla( parametros[1] );
+			pthread_mutex_lock(&sem_tablas);
+				tabla = obtener_tabla( parametros[1] );
+			pthread_mutex_unlock(&sem_tablas);
 			if( tabla != NULL ){
 
 				log_info(logger, "La tabla:%s ya se encuentra creada en el sistema. No es posible volver a crearla.Se cancela ejecucion ", parametros[1] );
@@ -183,7 +187,9 @@ int ejecutar_linea( char *linea ){
 	//es un insert o select
 	else{
 
-		tabla = obtener_tabla( parametros[1] );
+		pthread_mutex_lock(&sem_tablas);
+			tabla = obtener_tabla( parametros[1] );
+		pthread_mutex_unlock(&sem_tablas);
 		if( tabla != NULL ){
 			log_info(logger, "Tabla encontrada: %s Consistencia: %s", tabla->nombre_tabla,tabla->criterio_consistencia );
 			memoria = obtener_memoria_criterio( tabla, linea);
@@ -420,7 +426,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
 				tabla->criterio_consistencia = strdup(split[2]);
 				tabla->nombre_tabla = strdup(split[1]);
-				list_add(l_tablas, tabla);
+				pthread_mutex_lock(&sem_tablas);
+					list_add(l_tablas, tabla);
+				pthread_mutex_unlock(&sem_tablas);
 				operaciones_totales++;
 				log_info(logger,"tabla %s creada, criterio: %s", split[1],split[2]);
 			}
@@ -445,7 +453,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
 			else{
 				log_info(logger,"se hizo drop de la tabla %s",split[1]);
-				quitar_tabla_lista( split[1]);
+				pthread_mutex_lock(&sem_tablas);
+					quitar_tabla_lista( split[1]);
+				pthread_mutex_unlock(&sem_tablas);
 				operaciones_totales++;
 			}
 		}
@@ -485,8 +495,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 					recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
 
 					t_list *lista_tablas = deserializar_describe(buffer);
-					list_iterate( lista_tablas , (void*)agregar_tabla_describe );
-					log_info(logger,"Se termino de ejecutar DESCRIBE");
+					pthread_mutex_lock(&sem_tablas);
+						list_iterate( lista_tablas , (void*)agregar_tabla_describe );
+						log_info(logger,"Se termino de ejecutar DESCRIBE");
+					pthread_mutex_unlock(&sem_tablas);
 					list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
 					free(buffer);
 					operaciones_totales++;
@@ -1039,7 +1051,9 @@ int describe( t_memoria_del_pool *memoria ){
 
 	t_list *lista_tablas = deserializar_describe(buffer);
 
-	list_iterate( lista_tablas , (void*)agregar_tabla_describe );
+	pthread_mutex_lock(&sem_tablas);
+		list_iterate( lista_tablas , (void*)agregar_tabla_describe );
+	pthread_mutex_unlock(&sem_tablas);
 	list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
 	free(buffer);
 
