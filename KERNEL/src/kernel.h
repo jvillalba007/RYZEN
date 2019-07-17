@@ -37,6 +37,7 @@ void apuntar_archivo(FILE* archivo, int pc);
 void finalizar_pcb(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a finalizados
 void parar_por_quantum(t_PCB* pcb);//quita pcb de ejecucion y lo pasa a listos
 void reinicio_estadisticas();
+void reiniciar_memorias(t_memoria_del_pool* memoria);
 
 int enviar_insert(linea_insert linea, void* socket);
 int enviar_select(linea_select linea, void* socket);
@@ -44,7 +45,6 @@ int enviar_create(linea_create linea, void* socket);
 int enviar_describe_general(void* socket);
 int enviar_describe_especial(void* socket, char* tabla);
 int enviar_drop(void* socket, char* tabla);
-void recibir_agregar_memoria(void* socket_memoria);
 
 void hilo_gossiping(); //Ejecuta cada x tiempo el gossiping con alguna memoria
 void gossiping( t_memoria_del_pool *memoria );
