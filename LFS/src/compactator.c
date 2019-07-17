@@ -17,13 +17,21 @@ int compactate(char* table){
 		return 1;
 	}
 
+    pthread_mutex_lock(&operation_mutex);
+
 	int rename_success;
 	rename_success = rename_temporal_files(table);
 	if (rename_success == 1){ // no hay nada para compactar
 		log_info(g_logger, "No hay nada para compactar");
-		return 0;
+
+		pthread_mutex_unlock(&operation_mutex);
+
+	    return 0;
 	}else if(rename_success == 2){
 		log_info(g_logger, "La compactación para la tabla %s falló. Chequear logs por errores", table);
+
+		pthread_mutex_unlock(&operation_mutex);
+
 		return 1;
 	}
 
@@ -41,6 +49,8 @@ int compactate(char* table){
 
 	unblock_table(table);
 	//----------------------------------------------------UNBLOCKED TABLE----------------------------------------------------
+    pthread_mutex_unlock(&operation_mutex);
+
 	uint64_t block_finish = getCurrentTime();
 	blocked_time = block_finish - block_start;
 
