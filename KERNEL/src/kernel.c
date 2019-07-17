@@ -593,6 +593,8 @@ void inicializar_kernel(){
 	exit_global = 0;
 
 	pthread_mutex_init(&sem_ejecutar, NULL);
+	pthread_mutex_init(&sem_memorias, NULL);
+	pthread_mutex_init(&sem_tablas, NULL);
 
 	//INIT lista criterios
 	l_criterio_SHC = list_create();

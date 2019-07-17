@@ -115,8 +115,10 @@ void liberar_kernel(){
 	log_info(logger, "libera hilos procesadores");
 	list_destroy_and_destroy_elements(l_procesadores  , (void*)free );
 
-	log_info(logger, "libero semaforo");
+	log_info(logger, "libero semaforos");
 	pthread_mutex_destroy(&sem_ejecutar);
+	pthread_mutex_destroy(&sem_memorias);
+	pthread_mutex_destroy(&sem_tablas);
 
 	log_info(logger, "libera lista criterios");
 	//FIN lista criterios
