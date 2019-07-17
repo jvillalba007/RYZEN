@@ -1034,6 +1034,7 @@ void journal()
 
 			enviar_insert_LFS(&linea);
 			}
+			free(fila_pagina);
 		}
 
 		if( !list_is_empty( segmento->paginas ) ){
