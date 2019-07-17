@@ -146,9 +146,10 @@ int ejecutar_linea( char *linea ){
 		if (es_string(parametros[0],"DROP") ) {
 
 			//verifico que este en la metadata
-			if( obtener_tabla( parametros[1]) == NULL ){
+			tabla = obtener_tabla( parametros[1] );
+			if( tabla == NULL ){
 
-				log_info(logger, "No existe en la metadata del sistema la tabla:%s", parametros[1] );
+				log_info(logger, "No existe en la metadata del sistema la tabla:%s .Se cancela ejecucion", parametros[1] );
 				res=-1;
 				split_liberar(parametros);
 				return res;
@@ -157,9 +158,10 @@ int ejecutar_linea( char *linea ){
 		if (es_string(parametros[0],"CREATE") ) {
 
 			//verifico que este en la metadata
-			if( obtener_tabla( parametros[1]) != NULL ){
+			tabla = obtener_tabla( parametros[1] );
+			if( tabla != NULL ){
 
-				log_info(logger, "La tabla:%s ya se encuentra creada en el sistema. No es posible volver a crearla", parametros[1] );
+				log_info(logger, "La tabla:%s ya se encuentra creada en el sistema. No es posible volver a crearla.Se cancela ejecucion ", parametros[1] );
 				res=-1;
 				split_liberar(parametros);
 				return res;
@@ -169,10 +171,9 @@ int ejecutar_linea( char *linea ){
 		memoria = obtener_memoria_random( l_memorias );
 
 		if( memoria == NULL ) {
-			log_info(logger, "Memoria para ejecutar no encontrada. No hay memorias activas" );
+			log_info(logger, "Memoria para ejecutar no encontrada. No hay memorias activas. Se cancela ejecucion" );
 			res=-1;
 			split_liberar(parametros);
-
 			return res;
 		}
 
@@ -182,10 +183,7 @@ int ejecutar_linea( char *linea ){
 	//es un insert o select
 	else{
 
-		char* n_tabla = obtener_nombre_tabla( parametros );
-		if( n_tabla != NULL ) tabla = obtener_tabla( n_tabla );
-		free(n_tabla);
-
+		tabla = obtener_tabla( parametros[1] );
 		if( tabla != NULL ){
 			log_info(logger, "Tabla encontrada: %s Consistencia: %s", tabla->nombre_tabla,tabla->criterio_consistencia );
 			memoria = obtener_memoria_criterio( tabla, linea);
@@ -203,8 +201,7 @@ int ejecutar_linea( char *linea ){
 			}
 		}
 		else{
-			log_info(logger, "No se encuentra la tabla" );
-			log_info(logger, "Se cancela ejecucion de operacion: %s", parametros[0] );
+			log_info(logger, "No se encuentra la tabla. Se cancela ejecucion de operacion: %s", parametros[0] );
 			res= -1;
 			split_liberar(parametros);
 			return res;
@@ -215,20 +212,6 @@ int ejecutar_linea( char *linea ){
 	return res;
 }
 
-char* obtener_nombre_tabla( char** parametros){
-
-	char* n_tabla=NULL;
-
-	if( string_equals_ignore_case(parametros[0], "DESCRIBE") && split_cant_elem(parametros) < 2  ){
-		log_info(logger, "DESCRIBE general sin nombre de tabla" );
-		return n_tabla;
-	}
-
-	n_tabla= strdup(parametros[1]);
-	log_info(logger, "tabla de request:%s", n_tabla );
-
-	return n_tabla;
-}
 
 t_tabla_consistencia *obtener_tabla( char* n_tabla ){
 

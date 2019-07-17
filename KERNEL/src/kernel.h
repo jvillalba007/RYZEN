@@ -21,7 +21,6 @@ void ejecutar_procesador(); //ejecuta en un hilo los pcb
 
 t_PCB* obtener_pcb_ejecutar(); // obtiene un pcb a ejecutar de la listo de ready.
 int ejecutar_linea( char *linea ); //recibe una linea y la envia a ejecutar a alguna memoria
-char* obtener_nombre_tabla(  char** parametros ); //me devuelve el nombre de la tabla a partir de una linea de request. si es un describe sin tabla devuelve null
 t_tabla_consistencia *obtener_tabla( char* n_tabla); //devuelve la tabla a partir del nombre
 t_memoria_del_pool *obtener_memoria_criterio( t_tabla_consistencia* tabla, char* linea); //a partir de una tabla me indica que memoria va a realizar la request segun criterio
 t_memoria_del_pool *obtener_memoria_SC();
