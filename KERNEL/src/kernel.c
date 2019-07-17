@@ -172,7 +172,9 @@ int ejecutar_linea( char *linea ){
 			}
 		}
 
-		memoria = obtener_memoria_random( l_memorias );
+		pthread_mutex_lock(&sem_memorias);
+			memoria = obtener_memoria_random( l_memorias );
+		pthread_mutex_unlock(&sem_memorias);
 
 		if( memoria == NULL ) {
 			log_info(logger, "Memoria para ejecutar no encontrada. No hay memorias activas. Se cancela ejecucion" );
@@ -192,7 +194,10 @@ int ejecutar_linea( char *linea ){
 		pthread_mutex_unlock(&sem_tablas);
 		if( tabla != NULL ){
 			log_info(logger, "Tabla encontrada: %s Consistencia: %s", tabla->nombre_tabla,tabla->criterio_consistencia );
-			memoria = obtener_memoria_criterio( tabla, linea);
+
+			pthread_mutex_lock(&sem_memorias);
+				memoria = obtener_memoria_criterio( tabla, linea);
+			pthread_mutex_unlock(&sem_memorias);
 
 			if( memoria != NULL ){
 
@@ -313,15 +318,16 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 			log_error(logger, "¡Error no se pudo conectar con MEMORIA:%d", memoria->numero_memoria );
 			log_info(logger, "Se deshabilita memoria:%d", memoria->numero_memoria );
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(memoria);
+			pthread_mutex_unlock(&sem_memorias);
 
-			//DESACTIVO LA MEMORIA
-			desactivar_memoria(memoria);
 			return -1;
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
 
 		memoria->socket = socket;
-		memoria->activa = true;
+		//memoria->activa = true; ya esta activa no hace falta setearlo otra vez
 	}
 
 	char** split = string_split(linea, " ");
@@ -339,7 +345,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		res_send = enviar_insert(insert, &socket);
 		if( res_send == -1 ){
 
-			desactivar_memoria( memoria );
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(memoria);
+			pthread_mutex_unlock(&sem_memorias);
 			res=-1;
 			log_info( logger , "Falla send de enviar_insert. Se da de baja la memoria y se sale de la operacion." );
 			log_info( logger , "Falla operacion: %s", linea );
@@ -369,7 +377,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		res_send = enviar_select(select, &socket);
 		if( res_send == -1 ){
 
-			desactivar_memoria( memoria );
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(memoria);
+			pthread_mutex_unlock(&sem_memorias);
 			res=-1;
 			log_info( logger , "Falla send de enviar_select. Se da de baja la memoria y se sale de la operacion." );
 			log_info( logger , "Falla operacion: %s", linea );
@@ -412,7 +422,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		res_send = enviar_create(create, &socket);
 		if( res_send == -1 ){
-			desactivar_memoria( memoria );
+
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(memoria);
+			pthread_mutex_unlock(&sem_memorias);
 			res=-1;
 			log_info( logger , "Falla send de enviar_create. Se da de baja la memoria y se sale de la operacion." );
 			log_info( logger , "Falla operacion: %s", linea );
@@ -442,7 +455,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		res_send = enviar_drop(&socket, tabla);
 		if( res_send == -1 ){
-			desactivar_memoria( memoria );
+
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(memoria);
+			pthread_mutex_unlock(&sem_memorias);
 			res=-1;
 			log_info( logger , "Falla send de enviar_create. Se da de baja la memoria y se sale de la operacion." );
 			log_info( logger , "Falla operacion: %s", linea );
@@ -477,7 +493,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			log_info(logger,"Ejecuto DESCRIBE de tabla %s" , split[1] );
 			res_send = enviar_describe_especial(&socket, split[1]);
 			if( res_send == -1 ){
-				desactivar_memoria( memoria );
+
+				pthread_mutex_lock(&sem_memorias);
+					desactivar_memoria(memoria);
+				pthread_mutex_unlock(&sem_memorias);
 				res=-1;
 				log_info( logger , "Falla send de enviar_descibe de tabla. Se da de baja la memoria y se sale de la operacion." );
 				log_info( logger , "Falla operacion: %s", linea );
@@ -641,9 +660,10 @@ void conectar_memoria(){
 	memoria_original->tiempo_insert=0;
 	memoria_original->tiempo_select=0;
 
-	list_add(l_memorias , memoria_original );
-
-	log_info(logger, "Se agrega memoria de archivo de configuracion con numero:%d" , numero_memoria);
+	pthread_mutex_lock(&sem_memorias);
+		list_add(l_memorias , memoria_original );
+		log_info(logger, "Se agrega memoria de archivo de configuracion con numero:%d" , numero_memoria);
+	pthread_mutex_unlock(&sem_memorias);
 
 	//hago gossiping con la memoria principal.
 	gossiping( memoria_original );
@@ -866,7 +886,9 @@ void hilo_gossiping(){
 
 		if( !list_is_empty(l_memorias ) ){
 
-			t_list* memorias_activas = get_memorias_activas( l_memorias );
+			pthread_mutex_lock(&sem_memorias);
+				t_list* memorias_activas = get_memorias_activas( l_memorias );
+			pthread_mutex_unlock(&sem_memorias);
 			if( list_is_empty( memorias_activas ) ){
 				log_info(logger, "No se encuentra memorias disponibles para realizar gossiping");
 			}
@@ -895,8 +917,12 @@ void gossiping( t_memoria_del_pool *memoria ){
 		log_info(logger, "el socket es :%d" ,socketmemoria);
 
 		if( socketmemoria == -1 ){
-			desactivar_memoria( memoria );
-			log_info(logger, "no se pudo conectar con memoria:%d. se rechaza gossiping:%d" , memoria->numero_memoria);
+
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria( memoria );
+				log_info(logger, "no se pudo conectar con memoria:%d. se rechaza gossiping:%d" , memoria->numero_memoria);
+			pthread_mutex_unlock(&sem_memorias);
+
 			return;
 		}
 		log_info(logger, "Se establece conexion con memoria: %d: socket: %d" , memoria->numero_memoria , memoria->socket);
@@ -910,8 +936,11 @@ void gossiping( t_memoria_del_pool *memoria ){
 	buffer.payload_size = 0;
 	res = send(memoria->socket, &buffer, sizeof( buffer ) , 0);
 	if( res == -1 ){
-		desactivar_memoria( memoria );
-		log_info(logger, "Fallo el envio de gossiuping a memoria:%d" , memoria->numero_memoria );
+
+		pthread_mutex_lock(&sem_memorias);
+			desactivar_memoria( memoria );
+			log_info(logger, "Fallo el envio de gossiuping a memoria:%d" , memoria->numero_memoria );
+		pthread_mutex_unlock(&sem_memorias);
 		return;
 	}
 	/*log_info(logger, "Ejecuto el send correctamente para gossiping" );
@@ -932,7 +961,9 @@ void gossiping( t_memoria_del_pool *memoria ){
 	t_list *memorias_seed = deserializar_memorias(buffer_tabla);
 
 	//recorro lista de gossiping y agrego las nuevas
-	list_iterate( memorias_seed , (void*)agregar_memoria_gossip );
+	pthread_mutex_lock(&sem_memorias);
+		list_iterate( memorias_seed , (void*)agregar_memoria_gossip );
+	pthread_mutex_unlock(&sem_memorias);
 
 	free( buffer_tabla );
 	liberar_memorias_gossiping(memorias_seed);
@@ -989,7 +1020,10 @@ void hilo_describe(){
 
 		if( !list_is_empty(l_memorias ) ){
 
-			t_memoria_del_pool *memoria = obtener_memoria_random( l_memorias );
+			pthread_mutex_lock(&sem_memorias);
+				t_memoria_del_pool *memoria = obtener_memoria_random( l_memorias );
+			pthread_mutex_unlock(&sem_memorias);
+
 			if( memoria== NULL ){
 				log_info(logger, "No se encuentra memoria disponible para realizar describe en hilo");
 			}
@@ -1021,7 +1055,10 @@ int describe( t_memoria_del_pool *memoria ){
 		log_info(logger, "%d" ,socketmemoria);
 
 		if( socketmemoria == -1 ){
-			desactivar_memoria( memoria );
+
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(memoria);
+			pthread_mutex_unlock(&sem_memorias);
 			log_info(logger, "no se pudo conectar con memoria. se rechaza describe");
 			return -1;
 		}
@@ -1032,7 +1069,10 @@ int describe( t_memoria_del_pool *memoria ){
 	log_info(logger,"comienza DESCRIBE con memoria:%d" , memoria->numero_memoria);
 	int res_send = enviar_describe_general(&memoria->socket);
 	if( res_send == -1 ){
-		desactivar_memoria( memoria );
+
+		pthread_mutex_lock(&sem_memorias);
+			desactivar_memoria(memoria);
+		pthread_mutex_unlock(&sem_memorias);
 		log_info(logger, "Fallo el envio de describe general. Se rechaza describe");
 		return -1;
 	}

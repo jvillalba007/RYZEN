@@ -62,11 +62,16 @@ void procesar_comando (char* linea) {
 
                 if (es_string(parametros[0],"JOURNAL")) {
 
-                	log_info(logger, "Ejecuto journal");
-					enviar_journal_lista_memorias(l_memorias);
-					log_info(logger, "Journal finalizado");
+                	pthread_mutex_lock(&sem_memorias);
+                		log_info(logger, "Ejecuto journal");
+                		enviar_journal_lista_memorias(l_memorias);
+                		log_info(logger, "Journal finalizado");
+					pthread_mutex_unlock(&sem_memorias);
                 }
 				if (es_string(parametros[0], "ADD")) {
+
+					pthread_mutex_lock(&sem_memorias);
+
                     //  ADD MEMORY numero_de_memoria TO criterio_de_consistencia
                     t_memoria_del_pool* m = obtener_memoria(atoi(parametros[2]));
                     if (m != NULL) {
@@ -110,6 +115,9 @@ void procesar_comando (char* linea) {
                         //  El número de memoria NO está en la lista de memorias
                         log_info(logger, "Error en el comando ADD: número de memoria desconocido.");
                     }
+
+                    pthread_mutex_unlock(&sem_memorias);
+
 				}
 				if (es_string(parametros[0], "METRICS")) {
 

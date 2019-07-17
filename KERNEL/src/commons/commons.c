@@ -157,7 +157,7 @@ void free_Pcb(t_PCB* pcb){
 void free_memoria(t_memoria_del_pool* memoria_borrar){
 
 	log_info(logger, "libera memoria:%d" , memoria_borrar->numero_memoria );
-	free(memoria_borrar->criterio);
+	//free(memoria_borrar->criterio);
 	free(memoria_borrar->ip);
 	free(memoria_borrar->puerto);
 	free(memoria_borrar);
