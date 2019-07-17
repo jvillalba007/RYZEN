@@ -981,12 +981,13 @@ void agregar_memoria_gossip( pmemoria *memoria ){
 void hilo_describe(){
 
 	struct timespec ts;
-	ts.tv_sec = kernel_config.METADATA_REFRESH / 1000;
-	ts.tv_nsec = (kernel_config.METADATA_REFRESH % 1000) * 1000000;
 
 	assignHandler();
 
 	while(!exit_global){
+
+		ts.tv_sec = kernel_config.METADATA_REFRESH / 1000;
+		ts.tv_nsec = (kernel_config.METADATA_REFRESH % 1000) * 1000000;
 
 		nanosleep(&ts, NULL);
 		log_info(logger, "iniciando describe en hilo");
