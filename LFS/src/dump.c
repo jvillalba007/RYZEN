@@ -113,16 +113,18 @@ void dumpear_tablas_memtable() {
 void dump()
 {
     struct timespec ts;
+    ts.tv_sec = lfs_config.tiempo_dump / 1000;
+    ts.tv_nsec = (lfs_config.tiempo_dump  % 1000) * 1000000;
 
     assignHandler();
 
 	while ( !EXIT_PROGRAM ) {
-	    ts.tv_sec = lfs_config.tiempo_dump / 1000;
-	    ts.tv_nsec = (lfs_config.tiempo_dump  % 1000) * 1000000;
 
 	    nanosleep(&ts, NULL);
 	    dumpear_tablas_memtable();
 
+	    ts.tv_sec = lfs_config.tiempo_dump / 1000;
+	    ts.tv_nsec = (lfs_config.tiempo_dump  % 1000) * 1000000;
 	}
 
 	pthread_exit(0);
