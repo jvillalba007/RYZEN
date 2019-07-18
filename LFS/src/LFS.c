@@ -372,9 +372,7 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 
 				send(cliente, &paquete,sizeof(t_header),0);
 
-				free(lineas->tabla);
-				free(lineas->tipo_consistencia);
-				free(lineas);
+				
 			}
 			break;
 
