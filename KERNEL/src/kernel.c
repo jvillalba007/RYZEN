@@ -20,7 +20,7 @@ int main() {
 
 
 	//INICIA CLIENTE MEMORIA
-	//conectar_memoria();
+	conectar_memoria();
 
 	log_info(logger, "iniciando hilo INOTIFY");
 	pthread_create(&tid_inotify, NULL, (void*)inotify_config, NULL);
