@@ -356,9 +356,7 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 				char* tiempoCompactacion = string_from_format("%"PRIu32, lineas->tiempo_compactacion);
 				response = create_table(lineas->tabla, lineas->tipo_consistencia,particiones , tiempoCompactacion);
 
-				free(particiones);
-				free(tiempoCompactacion);
-
+				
 				t_header paquete;
 				paquete.emisor = LFS;
 				paquete.tipo_mensaje = EJECUCIONOK;
