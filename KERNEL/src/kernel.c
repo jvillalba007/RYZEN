@@ -20,7 +20,7 @@ int main() {
 
 
 	//INICIA CLIENTE MEMORIA
-	conectar_memoria();
+	//conectar_memoria();
 
 	log_info(logger, "iniciando hilo INOTIFY");
 	pthread_create(&tid_inotify, NULL, (void*)inotify_config, NULL);
@@ -552,7 +552,7 @@ void agregar_tabla_describe( linea_create* tabla_describe ){
 		tabla_nueva->tiempo_compactacion = tabla_describe->tiempo_compactacion;
 
 		list_add(l_tablas , tabla_nueva );
-		log_info(logger, "se agrega la tabla :s",  tabla_nueva->nombre_tabla );
+		log_info(logger, "se agrega la tabla: %s",  tabla_nueva->nombre_tabla );
 	}
 	else{
 		log_info(logger, "ya se encuentra en el sistema la tabla: %s",  tabla_describe->tabla );
@@ -639,7 +639,7 @@ void conectar_memoria(){
 	buffer.emisor=KERNEL;
 	buffer.tipo_mensaje =CONEXION;
 	buffer.payload_size = 0;
-	send(socket_memoria, &buffer, sizeof( buffer ) , 0);
+	send(socket_memoria, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
 	log_info(logger, "Consulto a memoria su numero");
 	int numero_memoria;
 	recv(socket_memoria , &numero_memoria, sizeof(int), MSG_WAITALL);
@@ -729,7 +729,7 @@ int enviar_insert(linea_insert linea, void* sock){
 	paquete.tipo_mensaje = INSERT;
 	paquete.payload_size = tamanio;
 
-	res = send(socket, &paquete, sizeof(t_header), 0);
+	res = send(socket, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 	if(res != -1){
 		res = send(socket, buffer, tamanio, 0);
 	}
@@ -930,7 +930,9 @@ void gossiping( t_memoria_del_pool *memoria ){
 	buffer.emisor=KERNEL;
 	buffer.tipo_mensaje =  GOSSIPING;
 	buffer.payload_size = 0;
-	res = send(memoria->socket, &buffer, sizeof( buffer ) , 0);
+	log_info(logger, "socket de memoria es:%d",memoria->socket);
+	res = send(memoria->socket, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
+	log_info(logger, "La respuesta de memoria conexion es:%d",res);
 	if( res == -1 ){
 
 		pthread_mutex_lock(&sem_memorias);
