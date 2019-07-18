@@ -429,7 +429,7 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 				send(cliente, serializado, paquete.payload_size, 0);
 
 				free(serializado);
-				list_destroy_and_destroy_elements(definitiva, (void*) liberar_linea_create);
+				list_destroy(definitiva);
 				free(describe);
 				split_liberar(parametros);
 
