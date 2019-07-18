@@ -10,17 +10,30 @@
 
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include <commons/string.h>
 	#include <commons/config.h>
 	#include <commons/log.h>
 	#include <commons/collections/list.h>
 	#include <string.h>
 	#include <shared/utils.h>
+	#include <shared/socket.h>
+	#include <shared/protocolo.h>
+	#include <commons/bitarray.h>
+	#include <inttypes.h>
+	#include <time.h>
+	#include <sys/inotify.h>
+	#include <pthread.h>
 
+	#define EVENT_SIZE ( sizeof (struct inotify_event) + 8 )
+	#define BUF_LEN ( 1024 * EVENT_SIZE )
+
+	#define CONFIG_FOLDER "config/"
 	#define pathCFG "MEMORIA.CFG"
 	#define pathLOG "MEMORIA.LOG"
 
 	typedef struct {
 		char* puerto_mem;
+		char* ip_mem;
 		char* ip_LFS;
 		char* puerto_LFS;
 		char** ip_SEEDS;
@@ -34,7 +47,7 @@
 	} mem_cfg;
 
 	typedef struct {
-		int32_t timestamp;
+		uint64_t timestamp;
 		u_int16_t key;
 		char* value;
 	} fila_Frames;
@@ -43,7 +56,7 @@
 		int32_t numero_pagina; //TODO: verificar si esto sirve
 		char* frame_registro;
 		int8_t modificado;
-		int32_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
+		uint64_t ultimo_uso; //ultimo tiempo de uso. Lo usa el LRU
 		//TODO verificar si hay que agregar el puntero al segmento
 	} fila_TPaginas;
 
@@ -52,13 +65,30 @@
 		t_list* paginas;
 	} fila_TSegmentos;
 
+
+	typedef struct{
+	    int numero_memoria;
+	    char* ip;
+	    char* puerto;
+	    int socket;
+	    bool activa;
+	} t_memoria;
+
+
 	/* Variables Globales*/
 	int socketServidor;
 	int socketClienteLfs;
 
+	pthread_mutex_t mutex_socket;
+
 	int maximo_value; //TAMANIO MAXIMO DEL VALUE RECIBIDO EN BYTES POR LFS
 	int cantidad_frames;
 	int frames_ocupados; //ME INDICA LA CANTIDAD DE FRAMES QUE ESTAN OCUPADOS ACTUALMENTE
+
+	char* fileCFG;
+	char* rutaCFG;
+	char* NombreArchivo;
+	char* fileLOG;
 
 	t_list* tabla_segmentos;
 	char* memoria;
@@ -67,8 +97,16 @@
 	t_log* mem_log;
 	mem_cfg mem_config;
 
-	int mem_initialize();
-	void crear_log();
+	char* bitMapStr;
+	t_bitarray* bitmap_frames;
+
+	t_list* tabla_memorias;
+
+	void verificarSocketLFS();
+
+	void leer_config();
+	int mem_initialize( char* archivo  );
+	void crear_log( char* archivo );
 	void imprimir_config();
 	void liberar_tablas();
 	void liberar_mem_config(mem_cfg mem_config);
@@ -76,6 +114,10 @@
 	void liberar_memoria_contigua();
 	void liberar_tabla_paginas(fila_TSegmentos *segmento);
 	void liberar_tabla_segmentos(t_list* tabla_segmentos);
+	void liberar_tabla_memorias(t_list* tabla_memorias );
+	void liberar_fila_memoria(t_memoria* memoria_seed);
+	void drop_tabla_paginas(fila_TSegmentos *segmento, int tamanio_fila_Frames);
+	void enviar_insert_LFS(linea_insert* linea);
 	void mem_exit_global();
 	void mem_exit_simple();
 	void imprimir_arrays(char** split,char* nombre);
