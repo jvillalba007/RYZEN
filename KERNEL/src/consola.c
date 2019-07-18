@@ -20,8 +20,9 @@ void consola() {
             free(linea);
             break;
         }
-
-        procesar_comando(linea);
+        else if ( strcmp(linea, "") != 0){
+        	procesar_comando(linea);
+        }
 
         free(linea);
     }

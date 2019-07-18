@@ -93,9 +93,23 @@ void ejecutar_procesador(){
 
 				char** split = string_split(pcb->request_comando, " ");
 				log_info(logger, "Se recibe a ejecucion request compuesta archivo: %s" , pcb->request_comando  );
-				FILE* archivo = fopen( split[1] , "r");
+				char* path = strdup("../lql/");
+				string_append(&path, split[1]);
+				FILE* archivo = fopen( path , "r");
+
+				if (archivo == NULL){
+
+					log_error(logger, "No pude abrir la ruta %s",split[1]);
+					split_liberar(split);
+					free(path);
+					log_info(logger, "procedo a finalizar pcb %d",pcb->id);
+					finalizar_pcb(pcb);
+
+				}else{
+
 				apuntar_archivo(archivo, pcb->pc);
 				split_liberar(split);
+				free(path);
 
 				while( (k < kernel_config.QUANTUM) && (!feof(archivo)) && res != -1 ){
 
@@ -123,6 +137,8 @@ void ejecutar_procesador(){
 					parar_por_quantum(pcb);
 				}
 				fclose(archivo);
+
+				}
 			}
 		}
 	}
