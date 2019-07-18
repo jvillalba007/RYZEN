@@ -391,10 +391,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
 			else{
 
-				t_header paquete;
-				recv(socket, &paquete, sizeof(t_header), MSG_WAITALL);
-				char* buffer = malloc(paquete.payload_size);
-				recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
+				char* buffer = malloc(paquete_recv.payload_size);
+				recv(socket, buffer, paquete_recv.payload_size, MSG_WAITALL);
 
 				linea_response_select response_select;
 				deserializar_response_select(buffer, &response_select);
@@ -417,8 +415,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		linea_create create;
 		create.tabla = split[1];
 		create.tipo_consistencia = split[2];
-		create.nro_particiones = atoi(split[3]);
-		create.tiempo_compactacion = *(u_int32_t*)split[4];
+		create.nro_particiones = (u_int8_t) atoi(split[3]);
+		create.tiempo_compactacion = (u_int32_t) atoi(split[4]);
 
 		res_send = enviar_create(create, &socket);
 		if( res_send == -1 ){
