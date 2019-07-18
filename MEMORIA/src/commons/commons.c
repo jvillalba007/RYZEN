@@ -245,8 +245,8 @@ void enviar_insert_LFS(linea_insert* linea) {
 
 	verificarSocketLFS();
 
-	send(socketClienteLfs, &paquete, sizeof(paquete), 0);
-	send(socketClienteLfs, buffer, size, 0);
+	send(socketClienteLfs, &paquete, sizeof(paquete), MSG_NOSIGNAL);
+	send(socketClienteLfs, buffer, size, MSG_NOSIGNAL);
 
 	free(linea->value);
 	free(buffer);

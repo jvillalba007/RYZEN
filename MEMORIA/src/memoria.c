@@ -222,15 +222,15 @@ int atender_request(int cliente, t_msg* msg)
 			pthread_mutex_unlock(&mutex_memorias);
 			char* data_send = serializar_memorias(memorias_activas,&buffer.payload_size);
 
-			send(cliente, &buffer, sizeof( buffer ) , 0);
-			send(cliente, data_send, buffer.payload_size , 0);
+			send(cliente, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
+			send(cliente, data_send, buffer.payload_size , MSG_NOSIGNAL);
 			free(data_send);
 		}
 
 		if(msg->header->tipo_mensaje == CONEXION)
 		{
 			log_info(mem_log, "Se recibe mensaje de conexion de una memoria");
-			send(cliente, &mem_config.memory_number, sizeof( int ) , 0);
+			send(cliente, &mem_config.memory_number, sizeof( int ) , MSG_NOSIGNAL);
 		}
 
 		if(msg->header->tipo_mensaje == DESCONEXION)
@@ -274,7 +274,7 @@ int atender_kernel(int cliente, t_msg* msg)
 				t_header paquete;
 				paquete.emisor=MEMORIA;
 				paquete.tipo_mensaje = EJECUCIONERROR;
-				send(cliente, &paquete,sizeof(t_header),0);
+				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				break;
 			}
 
@@ -293,8 +293,8 @@ int atender_kernel(int cliente, t_msg* msg)
 
 			char* data = serializar_response_select(linears,&paquete.payload_size);
 
-			send(cliente, &paquete,sizeof(t_header),0);
-			send(cliente, data, paquete.payload_size, 0);
+			send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
+			send(cliente, data, paquete.payload_size, MSG_NOSIGNAL);
 			free(data);
 			free(linears.value);
 
@@ -327,7 +327,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			free(linea.value);
 
 			paquete.emisor = MEMORIA;
-			send(cliente, &paquete,sizeof(t_header),0);
+			send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 		}
 		break;
 
@@ -337,7 +337,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			int retorno;
 			verificarSocketLFS();
 
-			retorno = send(socketClienteLfs,msg->header,sizeof(t_header),0);
+			retorno = send(socketClienteLfs,msg->header,sizeof(t_header),MSG_NOSIGNAL);
 			t_header paquete;
 
 			if(retorno == -1)
@@ -349,10 +349,10 @@ int atender_kernel(int cliente, t_msg* msg)
 
 				paquete.tipo_mensaje = EJECUCIONERROR;
 				paquete.emisor = MEMORIA;
-				send(cliente, &paquete,sizeof(t_header),0);
+				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				break;
 			}
-			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
+			send(socketClienteLfs,msg->payload,msg->header->payload_size,MSG_NOSIGNAL);
 
 
 			retorno = recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
@@ -369,7 +369,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			retardoLFS();
 
 			paquete.emisor = MEMORIA;
-			send(cliente, &paquete,sizeof(t_header),0);
+			send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 		}
 		break;
 
@@ -388,7 +388,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			t_header paquete;
 			paquete.emisor = MEMORIA;
 			paquete.tipo_mensaje = resultadoDROP;
-			send(cliente, &paquete,sizeof(t_header),0);
+			send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 		}
 		break;
 
@@ -398,7 +398,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			int retorno;
 			verificarSocketLFS();
 
-			retorno = send(socketClienteLfs,msg->header,sizeof(t_header),0);
+			retorno = send(socketClienteLfs,msg->header,sizeof(t_header),MSG_NOSIGNAL);
 
 			if(retorno == -1)
 			{
@@ -407,11 +407,11 @@ int atender_kernel(int cliente, t_msg* msg)
 				socketClienteLfs = -1;
 				pthread_mutex_unlock(&mutex_socket);
 				paquete.tipo_mensaje = EJECUCIONERROR;
-				send(cliente, &paquete,sizeof(t_header),0);
+				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				break;
 			}
 
-			send(socketClienteLfs,msg->payload,msg->header->payload_size,0);
+			send(socketClienteLfs,msg->payload,msg->header->payload_size,MSG_NOSIGNAL);
 
 			retorno = recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
 			paquete.emisor = MEMORIA;
@@ -423,7 +423,7 @@ int atender_kernel(int cliente, t_msg* msg)
 				socketClienteLfs = -1;
 				pthread_mutex_unlock(&mutex_socket);
 				paquete.tipo_mensaje = EJECUCIONERROR;
-				send(cliente, &paquete,sizeof(t_header),0);
+				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				break;
 			}
 
@@ -432,8 +432,8 @@ int atender_kernel(int cliente, t_msg* msg)
 
 			retardoLFS();
 
-			send(cliente, &paquete,sizeof(t_header),0);
-			send(cliente, data, paquete.payload_size, 0);
+			send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
+			send(cliente, data, paquete.payload_size, MSG_NOSIGNAL);
 			free(data);
 		}
 		break;
@@ -451,8 +451,8 @@ int atender_kernel(int cliente, t_msg* msg)
 			pthread_mutex_unlock(&mutex_memorias);
 
 			char* data = serializar_memorias(memorias_activas,&paquete.payload_size);
-			send(cliente, &paquete, sizeof(t_header) , 0);
-			send(cliente, data, paquete.payload_size , 0);
+			send(cliente, &paquete, sizeof(t_header) , MSG_NOSIGNAL);
+			send(cliente, data, paquete.payload_size , MSG_NOSIGNAL);
 			free(data);
 		}
 		break;
@@ -469,7 +469,7 @@ int atender_kernel(int cliente, t_msg* msg)
 
 		case CONEXION:{
 			log_info(mem_log, "Se Conecta KERNEL");
-			send(cliente, &mem_config.memory_number,sizeof(int),0);
+			send(cliente, &mem_config.memory_number,sizeof(int),MSG_NOSIGNAL);
 		}
 		break;
 
@@ -782,7 +782,7 @@ void crear_cliente_lfs(){
 	buffer.tipo_mensaje = CONEXION ;
 	buffer.payload_size = 0;
 
-	send(socketClienteLfs, &buffer, sizeof( buffer ) , 0);
+	send(socketClienteLfs, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
 	/* TODO lfs nos devuelve valores, terminar de realizar */
 	recv(socketClienteLfs, &maximo_value, sizeof(int), MSG_WAITALL);
 
@@ -859,7 +859,7 @@ linea_response_select* enviar_select_lfs( linea_select *linea ){
 	int retorno;
 	verificarSocketLFS();
 
-	retorno = send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+	retorno = send(socketClienteLfs, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 
 	if(retorno == -1)
 	{
@@ -871,7 +871,7 @@ linea_response_select* enviar_select_lfs( linea_select *linea ){
 		return NULL;
 	}
 
-	send(socketClienteLfs, buffer, paquete.payload_size, 0);
+	send(socketClienteLfs, buffer, paquete.payload_size, MSG_NOSIGNAL);
 	free(buffer);
 
 	t_header paqueteLFS;
@@ -912,13 +912,13 @@ void enviar_describe_lfs( char *tabla ){
 	{
 		char* buffer;
 		buffer = serializar_string(tabla, &(paquete.payload_size));
-		retorno = send(socketClienteLfs, &paquete, sizeof(t_header), 0);
-		(retorno == -1) ? 0 : send(socketClienteLfs, buffer, paquete.payload_size, 0);
+		retorno = send(socketClienteLfs, &paquete, sizeof(t_header), MSG_NOSIGNAL);
+		(retorno == -1) ? 0 : send(socketClienteLfs, buffer, paquete.payload_size, MSG_NOSIGNAL);
 		free(buffer);
 	}
 	else
 	{
-		retorno = send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+		retorno = send(socketClienteLfs, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 	}
 
 	if(retorno == -1)
@@ -959,7 +959,7 @@ int enviar_drop_lfs( char *tabla ){
 	verificarSocketLFS();
 
 	char* buffer = serializar_string(tabla, &(paquete.payload_size));
-	retorno = send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+	retorno = send(socketClienteLfs, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 
 	t_header paqueteLFS;
 
@@ -974,7 +974,7 @@ int enviar_drop_lfs( char *tabla ){
 		return paqueteLFS.tipo_mensaje;
 	}
 
-	send(socketClienteLfs, buffer, paquete.payload_size, 0);
+	send(socketClienteLfs, buffer, paquete.payload_size, MSG_NOSIGNAL);
 	retorno = recv(socketClienteLfs, &paqueteLFS, sizeof(t_header), MSG_WAITALL);
 
 	if(retorno == -1)
@@ -1004,7 +1004,7 @@ void enviar_create_lfs( linea_create linea_c ){
 	verificarSocketLFS();
 
 	char* buffer = serializar_create(linea_c, &(paquete.payload_size));
-	retorno = send(socketClienteLfs, &paquete, sizeof(t_header), 0);
+	retorno = send(socketClienteLfs, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 	if(retorno == -1)
 	{
 		free(buffer);
@@ -1015,7 +1015,7 @@ void enviar_create_lfs( linea_create linea_c ){
 		return;
 	}
 
-	send(socketClienteLfs, buffer, paquete.payload_size, 0);
+	send(socketClienteLfs, buffer, paquete.payload_size, MSG_NOSIGNAL);
 	free(buffer);
 
 	retorno = recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
@@ -1145,7 +1145,7 @@ void gossiping(){
 						buffer.emisor=MEMORIA;
 						buffer.tipo_mensaje =CONEXION;
 						buffer.payload_size = 0;
-						send(socketSeed, &buffer, sizeof( buffer ) , 0);
+						send(socketSeed, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
 						log_info(mem_log, "HAGO EL SEND");
 						int numero_memoria_seed;
 						recv(socketSeed , &numero_memoria_seed, sizeof(int), MSG_WAITALL);
@@ -1172,7 +1172,7 @@ void gossiping(){
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
 
 			char* data = serializar_memorias(memorias_activas,&buffer.payload_size);
-			int retorno = send(memoria->socket, &buffer, sizeof( buffer ) , 0);
+			int retorno = send(memoria->socket, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
 
 			if (retorno == -1)
 			{
@@ -1183,7 +1183,7 @@ void gossiping(){
 				return;
 			}
 
-			send(memoria->socket, data, buffer.payload_size , 0);
+			send(memoria->socket, data, buffer.payload_size , MSG_NOSIGNAL);
 			free(data);
 
 			list_destroy(memorias_activas);
