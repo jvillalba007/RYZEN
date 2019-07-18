@@ -321,7 +321,7 @@ char* serializar_response_select(linea_response_select linea, int* longitud)
 {
 	int pos = 0;
 	u_int16_t len_value = strlen(linea.value);
-	int buffer_size = sizeof(u_int16_t) + len_value + sizeof(u_int16_t);
+	int buffer_size = sizeof(u_int16_t) + len_value + sizeof(u_int64_t);
 
 	char* buffer = malloc(buffer_size);
 	memcpy(buffer, (void*) &(len_value), sizeof(u_int16_t));
