@@ -12,7 +12,9 @@ void verificarSocketLFS()
 	pthread_mutex_lock(&mutex_socket);
 	if(socketClienteLfs == -1)
 	{
+		log_info(mem_log, "Tratando Reconectar hacia LFS");
 		socketClienteLfs = socket_connect_to_server(mem_config.ip_LFS,  mem_config.puerto_LFS );
+		log_info(mem_log, "Resultado Socket: %d",socketClienteLfs);
 	}
 	pthread_mutex_unlock(&mutex_socket);
 }

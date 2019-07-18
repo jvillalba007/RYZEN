@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
 
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_init(&mutex_socket, NULL);
+	pthread_mutex_init(&mutex_memorias, NULL);
 
 	if (mem_initialize(argv[1]) == -1) {
 		log_destroy(mem_log);
@@ -86,6 +87,7 @@ int main(int argc, char *argv[]) {
 
 	pthread_mutex_destroy(&mutex);
 	pthread_mutex_destroy(&mutex_socket);
+	pthread_mutex_destroy(&mutex_memorias);
 	mem_exit_global();
 
 	return EXIT_SUCCESS;
@@ -203,7 +205,9 @@ int atender_request(int cliente, t_msg* msg)
 			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES...
 			t_list* mems = deserializar_memorias(data);
 
+			pthread_mutex_lock(&mutex_memorias);
 			agregar_memorias_gossiping( mems );
+			pthread_mutex_unlock(&mutex_memorias);
 			free(data);
 			liberar_tabla_memorias(mems);
 
@@ -213,7 +217,9 @@ int atender_request(int cliente, t_msg* msg)
 			buffer.emisor=MEMORIA;
 			buffer.tipo_mensaje =  GOSSIPING;
 
+			pthread_mutex_lock(&mutex_memorias);
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
+			pthread_mutex_unlock(&mutex_memorias);
 			char* data_send = serializar_memorias(memorias_activas,&buffer.payload_size);
 
 			send(cliente, &buffer, sizeof( buffer ) , 0);
@@ -440,7 +446,9 @@ int atender_kernel(int cliente, t_msg* msg)
 			paquete.tipo_mensaje = GOSSIPING;
 
 			/*ENVIO MEMORIAS ACTIVAS*/
+			pthread_mutex_lock(&mutex_memorias);
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
+			pthread_mutex_unlock(&mutex_memorias);
 
 			char* data = serializar_memorias(memorias_activas,&paquete.payload_size);
 			send(cliente, &paquete, sizeof(t_header) , 0);
@@ -1010,6 +1018,16 @@ void enviar_create_lfs( linea_create linea_c ){
 	send(socketClienteLfs, buffer, paquete.payload_size, 0);
 	free(buffer);
 
+	retorno = recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
+
+	if(retorno == -1)
+	{
+		log_error(mem_log, "LFS DEAD..."  );
+		pthread_mutex_lock(&mutex_socket);
+		socketClienteLfs = -1;
+		pthread_mutex_unlock(&mutex_socket);
+	}
+
 	retardoLFS();
 
 }
@@ -1089,6 +1107,9 @@ void hilo_journal()
 	    pthread_mutex_lock(&mutex);
 	    journal();
 	    pthread_mutex_unlock(&mutex);
+
+	    ts.tv_sec = mem_config.retardo_journal / 1000;
+	    ts.tv_nsec = (mem_config.retardo_journal  % 1000) * 1000000;
 
 	}
 
@@ -1265,14 +1286,23 @@ void hilo_gossiping(){
 		nanosleep(&ts, NULL);
 
 		log_info(mem_log, "INICIA gossiping" );
+		pthread_mutex_lock(&mutex_memorias);
 		list_iterate( tabla_memorias , (void*)logear_memoria );
+		pthread_mutex_unlock(&mutex_memorias);
 
+		pthread_mutex_lock(&mutex_memorias);
 		gossiping();
+		pthread_mutex_unlock(&mutex_memorias);
 
 		log_info(mem_log, "FINALIZA gossiping" );
 
 		//loggeo tabla seed
+		pthread_mutex_lock(&mutex_memorias);
 		list_iterate( tabla_memorias , (void*)logear_memoria );
+		pthread_mutex_unlock(&mutex_memorias);
+
+		ts.tv_sec = mem_config.retardo_gossiping / 1000;
+		ts.tv_nsec = (mem_config.retardo_gossiping  % 1000) * 1000000;
 
 	}
 

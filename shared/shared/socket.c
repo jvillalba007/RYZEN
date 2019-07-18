@@ -79,8 +79,12 @@ int socket_create_listener(char* ip, char* port){
 int socket_connect_to_server(char* ip, char* port) {
 	if(ip == NULL || port == NULL) return -1;
 
+	struct timeval time;
 	struct addrinfo hints;
 	struct addrinfo *server_info;
+
+	time.tv_sec = 3;
+	time.tv_usec = 0;
 
 	memset(&hints, 0, sizeof(hints));
 
@@ -91,11 +95,11 @@ int socket_connect_to_server(char* ip, char* port) {
 
 	int server_socket = socket(server_info->ai_family, server_info->ai_socktype,server_info->ai_protocol);
 
-	int retorno = connect(server_socket, server_info->ai_addr, server_info->ai_addrlen);
+	int retorno = connect_wait(server_socket, server_info->ai_addr, server_info->ai_addrlen,&time);
 
 	freeaddrinfo(server_info);
 
-	return (retorno < 0 || server_socket == -1) ? -1 : server_socket;
+	return ((retorno < 0 || retorno == 1) || server_socket == -1) ? -1 : server_socket;
 }
 
 int socket_aceptar_conexion(int socketServidor) {

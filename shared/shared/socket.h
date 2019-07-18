@@ -11,6 +11,7 @@
 	#include <netdb.h>
 	#include <unistd.h>
 	#include <commons/collections/list.h>
+	#include "connect.h"
 
 	typedef enum {DESCONOCIDO, KERNEL,MEMORIA,LFS} e_emisor;
 	typedef enum {CONEXION,DESCONEXION,SELECT,INSERT,CREATE,DESCRIBE,DROP,JOURNAL,GOSSIPING,EJECUCIONERROR,EJECUCIONOK} e_tipo_msg;

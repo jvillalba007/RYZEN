@@ -22,6 +22,7 @@ pthread_t tid_journal;
 pthread_t tid_gossiping;
 
 pthread_mutex_t mutex;
+pthread_mutex_t mutex_memorias;
 
 #define ceiling(x,y) (((x) + (y) - 1) / (y))
 
