@@ -506,10 +506,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
 				else{
 
-					t_header paquete;
-					recv(socket, &paquete, sizeof(t_header), MSG_WAITALL);
-					char* buffer = malloc(paquete.payload_size);
-					recv(socket, buffer, paquete.payload_size, MSG_WAITALL);
+					char* buffer = malloc(paquete_recv.payload_size);
+					recv(socket, buffer, paquete_recv.payload_size, MSG_WAITALL);
 
 					t_list *lista_tablas = deserializar_describe(buffer);
 					pthread_mutex_lock(&sem_tablas);
@@ -1082,10 +1080,10 @@ int describe( t_memoria_del_pool *memoria ){
 		return -1;
 	}
 
-	t_header paquete;
-	recv(memoria->socket , &paquete, sizeof(t_header), MSG_WAITALL);
-	char* buffer = malloc(paquete.payload_size);
-	recv(memoria->socket , buffer, paquete.payload_size, MSG_WAITALL);
+	/*t_header paquete;
+	recv(memoria->socket , &paquete, sizeof(t_header), MSG_WAITALL);*/
+	char* buffer = malloc(paquete_recv.payload_size);
+	recv(memoria->socket , buffer, paquete_recv.payload_size, MSG_WAITALL);
 
 	t_list *lista_tablas = deserializar_describe(buffer);
 
