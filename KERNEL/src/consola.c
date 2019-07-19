@@ -156,6 +156,7 @@ void crear_pcb (char* string_codigo, t_tipo_request tipo) {
     	list_add(l_pcb_listos, list_remove(l_pcb_nuevos, 0));
     	log_info(logger, "Se crea el PCB de la request: %s con id: %d ", pcb->request_comando, pcb->id);
     	log_info(logger, "Cantida de pcb listos: %d ", list_size(l_pcb_listos));
+    	sem_post( &sem_cantidad_listos );
 	pthread_mutex_unlock(&sem_pcb);
     id_pcbs++;
 }

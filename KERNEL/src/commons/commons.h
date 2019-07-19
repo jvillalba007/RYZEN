@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/inotify.h>
+#include <semaphore.h>
 
 #define EVENT_SIZE ( sizeof (struct inotify_event) + 8 )
 #define BUF_LEN ( 1024 * EVENT_SIZE )
@@ -90,6 +91,7 @@ pthread_mutex_t sem_ejecutar; //mutex para obtener los pcb de los hilos de ejecu
 pthread_mutex_t sem_pcb; //mutex para listas de estados de pcb
 pthread_mutex_t sem_tablas; //mutex para lista de tablas
 pthread_mutex_t sem_memorias; //mutex para lista de memorias
+sem_t sem_cantidad_listos;
 
 //LISTAS DE ESTADOS
 t_list* l_pcb_nuevos;

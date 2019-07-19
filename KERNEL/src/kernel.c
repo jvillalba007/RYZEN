@@ -70,11 +70,13 @@ void ejecutar_procesador(){
 	while(!exit_global){
 
 		log_info(logger, "Esperando pcb...");
-		pthread_mutex_lock(&sem_ejecutar);
 
-		pcb = obtener_pcb_ejecutar();
-
-		pthread_mutex_unlock(&sem_ejecutar);
+		sem_wait( &sem_cantidad_listos );
+		pthread_mutex_lock(&sem_pcb);
+			pcb = obtener_pcb_ejecutar();
+		pthread_mutex_unlock(&sem_pcb);
+		/*pthread_mutex_lock(&sem_ejecutar);*/
+		/*pthread_mutex_unlock(&sem_ejecutar);*/
 
 		if(pcb != NULL) {
 		log_info(logger, "Se obtiene para ejecutar pcb id: %d", pcb->id);
@@ -144,6 +146,7 @@ void ejecutar_procesador(){
 					pthread_mutex_lock(&sem_pcb);
 						parar_por_quantum(pcb);
 						log_info(logger, "Fin quantum pcb:%d",pcb->id);
+						sem_post( &sem_cantidad_listos );
 					pthread_mutex_unlock(&sem_pcb);
 				}
 				fclose(archivo);
@@ -651,21 +654,20 @@ void agregar_tabla_describe( linea_create* tabla_describe ){
 
 t_PCB* obtener_pcb_ejecutar(){
 
+	/*
 	//si lista vacia se queda loopeando esperando que entre alguno
 	while( (list_is_empty( l_pcb_listos )) && (!exit_global) ){
 
 	}
 
 	if(exit_global) return NULL;
+	*/
 
 	t_PCB *pcb = NULL;
-
-	pthread_mutex_lock(&sem_pcb);
-		pcb = list_remove( l_pcb_listos , 0 );
-		list_add( l_pcb_ejecutando , pcb  );
-		log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
-		log_info(logger, "nuevo tamanio de la lista de listos %d", list_size( l_pcb_listos ));
-	pthread_mutex_unlock(&sem_pcb);
+	pcb = list_remove( l_pcb_listos , 0 );
+	list_add( l_pcb_ejecutando , pcb  );
+	log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
+	log_info(logger, "nuevo tamanio de la lista de listos %d", list_size( l_pcb_listos ));
 
 	return pcb;
 }
@@ -696,6 +698,7 @@ void inicializar_kernel(){
 	pthread_mutex_init(&sem_memorias, NULL);
 	pthread_mutex_init(&sem_tablas, NULL);
 	pthread_mutex_init(&sem_pcb, NULL);
+	sem_init(&sem_cantidad_listos, 0, 0);
 
 	//INIT lista criterios
 	l_criterio_SHC = list_create();
