@@ -267,7 +267,7 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 
 	assignHandler();
 
-	while((recv( cliente, &paquete, sizeof( t_header ) ,MSG_WAITALL)) && (!EXIT_PROGRAM)){
+	while((recv( cliente, &paquete, sizeof( t_header ) ,MSG_WAITALL) > 0) && (!EXIT_PROGRAM)){
 
 		log_info(g_logger, "[LFS] EVENTO: Emisor: MEMORIA, Tipo: %d, Tamanio: %d",paquete.tipo_mensaje,paquete.payload_size);
 
