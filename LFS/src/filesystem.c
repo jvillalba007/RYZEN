@@ -48,7 +48,7 @@ void get_last_value_for_each_key(t_list* registros){
 		fila_registros* tmp_registro;
 		tmp_registro = list_get(registros, i);
 
-		log_info(g_logger, "El registro que está siendo analizado es key: %d timestamp: %" PRIu64, tmp_registro->key, tmp_registro->timestamp);
+		//log_info(g_logger, "El registro que está siendo analizado es key: %d timestamp: %" PRIu64, tmp_registro->key, tmp_registro->timestamp);
 
 		u_int16_t key;
 		key = tmp_registro->key;
@@ -57,7 +57,7 @@ void get_last_value_for_each_key(t_list* registros){
 		one_key_list = filter_registro_list_by_key(registros, key);
 		last_registro = get_last_registro(one_key_list);
 
-		log_info(g_logger, "El registro que está ganó la disputa por el último valor para la key %d es timestamp: %" PRIu64 " valor: %s" PRIu64, tmp_registro->key, tmp_registro->timestamp, tmp_registro->value);
+		//log_info(g_logger, "El registro que está ganó la disputa por el último valor para la key %d es timestamp: %" PRIu64 " valor: %s" PRIu64, tmp_registro->key, tmp_registro->timestamp, tmp_registro->value);
 
 
 		list_remove_by_condition(registros, (void*)_matches_key_and_is_not_registro);
