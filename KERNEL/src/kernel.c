@@ -363,7 +363,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 	if(es_string(split[0], "INSERT")){
 
-
+		log_info(logger, "ALGORITMIA INSERT");
 		int tiempo_ejecucion = clock();
 
 		linea_insert insert;
@@ -382,8 +382,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			log_info( logger , "Falla operacion: %s", linea );
 		}
 		else{
+			log_info(logger,"send insert ok");
 			t_header paquete_recv;
 			res_recv = recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			log_info(logger,"recibi ok respuesta insert");
 			if( res_recv == -1 ){
 				pthread_mutex_lock(&sem_memorias);
 					desactivar_memoria(memoria);
