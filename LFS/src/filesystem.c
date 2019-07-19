@@ -60,7 +60,7 @@ void get_last_value_for_each_key(t_list* registros){
 		log_info(g_logger, "El registro que está ganó la disputa por el último valor para la key %d es timestamp: %" PRIu64 " valor: %s" PRIu64, tmp_registro->key, tmp_registro->timestamp, tmp_registro->value);
 
 
-		list_remove_and_destroy_by_condition(registros, (void*)_matches_key_and_is_not_registro, (void*) liberar_registros);
+		list_remove_by_condition(registros, (void*)_matches_key_and_is_not_registro);
 
 		list_destroy(one_key_list);
 	}
