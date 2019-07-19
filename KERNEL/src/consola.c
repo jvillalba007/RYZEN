@@ -185,6 +185,7 @@ void enviar_journal_lista_memorias (t_list* memorias) {
     
     void enviar_journal_memoria(t_memoria_del_pool* m) {
 
+    	int res=0;
     	//intento conectarme
     	if( m->socket == -1 ){
 
@@ -205,8 +206,17 @@ void enviar_journal_lista_memorias (t_list* memorias) {
 		header.emisor=KERNEL;
 		header.tipo_mensaje = JOURNAL;
 		header.payload_size = 0;
-		send(m->socket, &header, sizeof( header ) , 0);
-		log_info(logger, "Se envió el journal a la memoria: %d", m->numero_memoria);
+		res = send(m->socket, &header, sizeof( header ) , MSG_NOSIGNAL);
+		if( res == -1 ){
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(m);
+			pthread_mutex_unlock(&sem_memorias);
+			log_info(logger, "Fallo send de journal a la memoria %d", m->numero_memoria);
+		}
+		else{
+			log_info(logger, "Se envió el journal a la memoria: %d", m->numero_memoria);
+		}
+
    }
 
 

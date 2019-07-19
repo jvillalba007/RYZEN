@@ -99,7 +99,7 @@ void ejecutar_procesador(){
 
 				if (archivo == NULL){
 
-					log_error(logger, "No pude abrir la ruta %s",split[1]);
+					log_error(logger, "No pude abrir la ruta:%s",split[1]);
 					split_liberar(split);
 					free(path);
 					log_info(logger, "procedo a finalizar pcb %d",pcb->id);
@@ -130,10 +130,10 @@ void ejecutar_procesador(){
 
 				//si es fin de archivo o es un error de ejecucion finalizo el pcb
 				if( feof(archivo) || res == -1 ){
-					log_info(logger, "Se finaliza pcb por fin de archivo o linea ejecutada incorrectamente");
+					log_info(logger, "Fin archivo o linea incorrecta pcb:%d",pcb->id);
 					finalizar_pcb(pcb);
 				} else{
-					log_info(logger, "Se desaloja pcb a listo de listos por fin de quantum");
+					log_info(logger, "Fin quantum pcb:%d",pcb->id);
 					parar_por_quantum(pcb);
 				}
 				fclose(archivo);
@@ -323,6 +323,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	int socket;
 	int res=0;
 	int res_send = 0;
+	int res_recv = 0;
 
 	if(memoria->socket != -1){
 		socket = memoria->socket;
@@ -341,9 +342,8 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			return -1;
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
-
 		memoria->socket = socket;
-		//memoria->activa = true; ya esta activa no hace falta setearlo otra vez
+
 	}
 
 	char** split = string_split(linea, " ");
@@ -370,17 +370,25 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		}
 		else{
 			t_header paquete_recv;
-			recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+			res_recv = recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			if( res_recv == -1 ){
+				pthread_mutex_lock(&sem_memorias);
+					desactivar_memoria(memoria);
+				pthread_mutex_unlock(&sem_memorias);
+				res=-1;
+				log_info( logger , "Falla recv de insert. Falla operacion: %s", linea );
+			}
 			else{
-				memoria->cantidad_carga++;
-				memoria->cantidad_insert++;
-				memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
-				operaciones_totales++;
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				else{
+					log_info( logger , "operacion: %s realizada. Memoria:%d", linea , memoria->numero_memoria );
+					memoria->cantidad_carga++;
+					memoria->cantidad_insert++;
+					memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
+					operaciones_totales++;
+				}
 			}
 		}
-
-
 	}
 	else if(es_string(split[0], "SELECT")){
 
@@ -403,26 +411,45 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		else{
 
 			t_header paquete_recv;
-			recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
-			else{
-
-				char* buffer = malloc(paquete_recv.payload_size);
-				recv(socket, buffer, paquete_recv.payload_size, MSG_WAITALL);
-
-				linea_response_select response_select;
-				deserializar_response_select(buffer, &response_select);
-				log_info( logger , "operacion: %s value:%s", linea  , response_select.value);
-
-				free(buffer);
-				free(response_select.value);
-
-				memoria->cantidad_carga++;
-				memoria->cantidad_select++;
-				memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
-				operaciones_totales++;
+			res_recv = recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			if( res_recv == -1 ){
+				pthread_mutex_lock(&sem_memorias);
+					desactivar_memoria(memoria);
+				pthread_mutex_unlock(&sem_memorias);
+				res=-1;
+				log_info( logger , "Falla recv de SELECT. Falla operacion: %s", linea );
 			}
+			else{
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				else{
 
+					char* buffer = malloc(paquete_recv.payload_size);
+					res_recv = recv(socket, buffer, paquete_recv.payload_size, MSG_WAITALL);
+					if( res_recv == -1 ){
+						pthread_mutex_lock(&sem_memorias);
+							desactivar_memoria(memoria);
+						pthread_mutex_unlock(&sem_memorias);
+						free(buffer);
+						res=-1;
+						log_info( logger , "Falla recv de SELECT. Falla operacion: %s", linea );
+					}
+					else{
+						linea_response_select response_select;
+						deserializar_response_select(buffer, &response_select);
+						log_info( logger , "operacion: %s value:%s memoria:%d", linea  , response_select.value , memoria->numero_memoria);
+
+						free(buffer);
+						free(response_select.value);
+
+						memoria->cantidad_carga++;
+						memoria->cantidad_select++;
+						memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
+						operaciones_totales++;
+					}
+
+				}
+
+			}
 		}
 
 	}
@@ -447,17 +474,27 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		else{
 
 			t_header paquete_recv;
-			recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+			res_recv = recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			if( res_recv == -1 ){
+				pthread_mutex_lock(&sem_memorias);
+					desactivar_memoria(memoria);
+				pthread_mutex_unlock(&sem_memorias);
+				res=-1;
+				log_info( logger , "Falla recv de CREATE. Falla operacion: %s", linea );
+			}
 			else{
-				t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
-				tabla->criterio_consistencia = strdup(split[2]);
-				tabla->nombre_tabla = strdup(split[1]);
-				pthread_mutex_lock(&sem_tablas);
-					list_add(l_tablas, tabla);
-				pthread_mutex_unlock(&sem_tablas);
-				operaciones_totales++;
-				log_info(logger,"tabla %s creada, criterio: %s", split[1],split[2]);
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				else{
+					//TODO: verificar si existe la tabla
+					t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
+					tabla->criterio_consistencia = strdup(split[2]);
+					tabla->nombre_tabla = strdup(split[1]);
+					pthread_mutex_lock(&sem_tablas);
+						list_add(l_tablas, tabla);
+					pthread_mutex_unlock(&sem_tablas);
+					operaciones_totales++;
+					log_info(logger,"tabla %s creada, criterio: %s memoria:%d", split[1],split[2] , memoria->numero_memoria);
+				}
 			}
 		}
 
@@ -479,14 +516,23 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		}
 		else{
 			t_header paquete_recv;
-			recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-			if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+			res_recv =recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+			if( res_recv == -1 ){
+				pthread_mutex_lock(&sem_memorias);
+					desactivar_memoria(memoria);
+				pthread_mutex_unlock(&sem_memorias);
+				res=-1;
+				log_info( logger , "Falla recv de DROP. Falla operacion: %s", linea );
+			}
 			else{
-				log_info(logger,"se hizo drop de la tabla %s",split[1]);
-				pthread_mutex_lock(&sem_tablas);
-					quitar_tabla_lista( split[1]);
-				pthread_mutex_unlock(&sem_tablas);
-				operaciones_totales++;
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				else{
+					log_info(logger,"se hizo drop de la tabla %s con memoria:%d",split[1] , memoria->numero_memoria);
+					pthread_mutex_lock(&sem_tablas);
+						quitar_tabla_lista( split[1]);
+					pthread_mutex_unlock(&sem_tablas);
+					operaciones_totales++;
+				}
 			}
 		}
 	}
@@ -518,29 +564,45 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			else{
 
 				t_header paquete_recv;
-				recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
-				else{
-
-					char* buffer = malloc(paquete_recv.payload_size);
-					recv(socket, buffer, paquete_recv.payload_size, MSG_WAITALL);
-
-					t_list *lista_tablas = deserializar_describe(buffer);
-					pthread_mutex_lock(&sem_tablas);
-						list_iterate( lista_tablas , (void*)agregar_tabla_describe );
-						log_info(logger,"Se termino de ejecutar DESCRIBE");
-					pthread_mutex_unlock(&sem_tablas);
-					list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
-					free(buffer);
-					operaciones_totales++;
+				res_recv = recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+				if( res_recv == -1 ){
+					pthread_mutex_lock(&sem_memorias);
+						desactivar_memoria(memoria);
+					pthread_mutex_unlock(&sem_memorias);
+					res=-1;
+					log_info( logger , "Falla recv de DESCRIBE. Falla operacion: %s", linea );
 				}
+				else{
+					if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+					else{
 
+						char* buffer = malloc(paquete_recv.payload_size);
+						res_recv = recv(socket, buffer, paquete_recv.payload_size, MSG_WAITALL);
+						if( res_recv == -1 ){
+							pthread_mutex_lock(&sem_memorias);
+								desactivar_memoria(memoria);
+							pthread_mutex_unlock(&sem_memorias);
+							res=-1;
+							log_info( logger , "Falla recv de DESCRIBE. Falla operacion: %s", linea );
+						}
+						else{
+							t_list *lista_tablas = deserializar_describe(buffer);
+							pthread_mutex_lock(&sem_tablas);
+								list_iterate( lista_tablas , (void*)agregar_tabla_describe );
+								log_info(logger,"Se termino de ejecutar DESCRIBE con memoria:%d",memoria->numero_memoria);
+							pthread_mutex_unlock(&sem_tablas);
+							list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
+							free(buffer);
+							operaciones_totales++;
+						}
+					}
+				}
 			}
 		}
-
 	}
 	else{
 		log_error(logger,"comando no reconocido");
+		res = -1;
 	}
 
 	retardo();
@@ -587,7 +649,6 @@ t_PCB* obtener_pcb_ejecutar(){
 	if(exit_global) return NULL;
 
 	t_PCB *pcb = NULL;
-	log_info(logger, "tamanio de la lista de listos %d", list_size( l_pcb_listos ));
 	pcb = list_remove( l_pcb_listos , 0 );
 	list_add( l_pcb_ejecutando , pcb  );
 	log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
@@ -603,7 +664,6 @@ void finalizar_pcb(t_PCB* pcb){
 		return false;
 	}
 
-	log_info(logger, "tamanio de lista ejecutando: %d", list_size( l_pcb_ejecutando ));
 	//quito de la lista pcb y lo agrego a finalizados
 	list_remove_by_condition(l_pcb_ejecutando,(void*)buscar_pcb);
 	log_info(logger, "nuevo tamanio de lista ejecutando: %d", list_size( l_pcb_ejecutando ));
@@ -642,9 +702,8 @@ void inicializar_kernel(){
 }
 
 void conectar_memoria(){
-	log_info(logger, "entro a socket");
+
 	socket_memoria = socket_connect_to_server(kernel_config.IP_MEMORIA, kernel_config.PUERTO_MEMORIA);
-	log_info(logger, "El socket devuelto es: %d", socket_memoria);
 	if( socket_memoria == -1  ){
 
 		log_error(logger, "¡Error no se pudo conectar con MEMORIA");
@@ -656,7 +715,6 @@ void conectar_memoria(){
 	buffer.tipo_mensaje =CONEXION;
 	buffer.payload_size = 0;
 	send(socket_memoria, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
-	log_info(logger, "Consulto a memoria su numero");
 	int numero_memoria;
 	recv(socket_memoria , &numero_memoria, sizeof(int), MSG_WAITALL);
 
@@ -689,7 +747,7 @@ void crear_procesadores(){
 	for(int i=0; i<kernel_config.MULTIPROCESAMIENTO; i++){
 
 		pthread_create(&hilo_ejecucion, NULL , (void*) ejecutar_procesador, NULL);
-		log_info(logger, "Hilo de ejecucion creado id: %d" , hilo_ejecucion);
+		log_info(logger, "Hilo de ejecucion creado");
 
 		pthread_t* valor = malloc(sizeof(pthread_t));
 		*valor = hilo_ejecucion;
@@ -747,7 +805,7 @@ int enviar_insert(linea_insert linea, void* sock){
 
 	res = send(socket, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 	if(res != -1){
-		res = send(socket, buffer, tamanio, 0);
+		res = send(socket, buffer, tamanio, MSG_NOSIGNAL);
 	}
 
 	free(buffer);
@@ -767,9 +825,9 @@ int enviar_select(linea_select linea, void* sock){
 	paquete.tipo_mensaje = SELECT;
 	paquete.payload_size = tamanio;
 
-	res = send(socket, &paquete, sizeof(t_header), 0);
+	res = send(socket, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 	if(res != -1){
-		res = send(socket, buffer, tamanio, 0);
+		res = send(socket, buffer, tamanio, MSG_NOSIGNAL);
 	}
 
 	free(buffer);
@@ -788,9 +846,9 @@ int enviar_create(linea_create linea, void* sock){
 	paquete.tipo_mensaje = CREATE;
 	paquete.payload_size = tamanio;
 
-	res = send(socket, &paquete, sizeof(t_header), 0);
+	res = send(socket, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 	if(res != -1){
-		res = send(socket, buffer, tamanio, 0);
+		res = send(socket, buffer, tamanio, MSG_NOSIGNAL);
 	}
 
 	free(buffer);
@@ -806,7 +864,7 @@ int enviar_describe_general(void* sock){
 	paquete.tipo_mensaje = DESCRIBE;
 	paquete.payload_size = 0;
 
-	res =send(socket, &paquete, sizeof(t_header), 0);
+	res =send(socket, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 
 	return res;
 }
@@ -822,9 +880,9 @@ int enviar_describe_especial(void* sock, char* tabla){
 	paquete.emisor = KERNEL;
 	paquete.tipo_mensaje = DESCRIBE;
 	paquete.payload_size = tamanio;
-	res = send(socket, &paquete, sizeof(t_header), 0);
+	res = send(socket, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 	if( res != -1 ){
-		res = send(socket, buffer, tamanio, 0);
+		res = send(socket, buffer, tamanio, MSG_NOSIGNAL);
 	}
 
 	free(buffer);
@@ -842,9 +900,9 @@ int enviar_drop(void* sock,char* tabla){
 	paquete.emisor = KERNEL;
 	paquete.tipo_mensaje = DROP;
 	paquete.payload_size = tamanio;
-	res=send(socket, &paquete, sizeof(t_header), 0);
+	res=send(socket, &paquete, sizeof(t_header), MSG_NOSIGNAL);
 	if(res != -1){
-		res=send(socket, buffer, tamanio, 0);
+		res=send(socket, buffer, tamanio, MSG_NOSIGNAL);
 	}
 
 	free(buffer);
@@ -894,7 +952,7 @@ void hilo_gossiping(){
 	while(!exit_global){
 
 		nanosleep(&ts, NULL);
-		log_info(logger, "iniciando gossiping");
+		log_info(logger, "iniciando hilo gossiping");
 
 		if( !list_is_empty(l_memorias ) ){
 
@@ -910,7 +968,7 @@ void hilo_gossiping(){
 			}
 
 			list_destroy( memorias_activas );
-			log_info(logger, "Fin gossiping");
+			log_info(logger, "Fin hilo gossiping");
 		}
 	}
 
@@ -922,7 +980,7 @@ void gossiping( t_memoria_del_pool *memoria ){
 
 	int res = 0;
 
-	log_info(logger, "memoria recibida para gossiping: %d" , memoria->numero_memoria);
+	log_info(logger, "Se comienza gossiping con memoria: %d" , memoria->numero_memoria);
 	if( memoria->socket == -1 ){
 
 		int socketmemoria = socket_connect_to_server(memoria->ip,  memoria->puerto );
@@ -941,7 +999,6 @@ void gossiping( t_memoria_del_pool *memoria ){
 		memoria->socket=socketmemoria;
 	}
 
-	log_info(logger, "Se comienza gossiping con memoria:%d" , memoria->numero_memoria );
 	t_header buffer;
 	buffer.emisor=KERNEL;
 	buffer.tipo_mensaje =  GOSSIPING;
@@ -966,11 +1023,26 @@ void gossiping( t_memoria_del_pool *memoria ){
 	}
 */
 	t_header header_tabla;
-	recv(memoria->socket , &header_tabla, sizeof(t_header), MSG_WAITALL);
+	res = recv(memoria->socket , &header_tabla, sizeof(t_header), MSG_WAITALL);
+	if( res == -1 ){
 
+		pthread_mutex_lock(&sem_memorias);
+			desactivar_memoria( memoria );
+			log_info(logger, "Fallo el recv de gossiuping a memoria:%d" , memoria->numero_memoria );
+		pthread_mutex_unlock(&sem_memorias);
+		return;
+	}
 	char *buffer_tabla = malloc( header_tabla.payload_size);
-	recv(memoria->socket , buffer_tabla, header_tabla.payload_size , MSG_WAITALL);
-	log_info(logger, "Se recibe tabla de gossiping de memorias de la memoria:%d" , memoria->numero_memoria);
+	res = recv(memoria->socket , buffer_tabla, header_tabla.payload_size , MSG_WAITALL);
+	if( res == -1 ){
+
+		pthread_mutex_lock(&sem_memorias);
+			desactivar_memoria( memoria );
+			log_info(logger, "Fallo el recv de gossiuping a memoria:%d" , memoria->numero_memoria );
+		pthread_mutex_unlock(&sem_memorias);
+		free( buffer );
+		return;
+	}
 
 	t_list *memorias_seed = deserializar_memorias(buffer_tabla);
 
@@ -1043,7 +1115,7 @@ void hilo_describe(){
 			}
 			else{
 
-				log_info(logger, "La memoria random activa elegida es:%d",memoria->numero_memoria);
+				log_info(logger, "Memoria elegida para describe en hilo es:%d",memoria->numero_memoria);
 				int res = describe( memoria );
 
 				if( res== -1 ){
@@ -1056,6 +1128,7 @@ void hilo_describe(){
 
 			}
 		}
+		log_info(logger, "Fin describe en hilo");
 	}
 
 	pthread_exit(0);
@@ -1092,7 +1165,15 @@ int describe( t_memoria_del_pool *memoria ){
 	}
 
 	t_header paquete_recv;
-	recv(memoria->socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+	res_send = recv(memoria->socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+	if( res_send == -1 ){
+
+		pthread_mutex_lock(&sem_memorias);
+			desactivar_memoria(memoria);
+		pthread_mutex_unlock(&sem_memorias);
+		log_info(logger, "Fallo el recv de describe general. Se rechaza describe");
+		return -1;
+	}
 	if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) {
 		log_info(logger, "Fallo la ejecucion de describe en memoria/lfs. Se rechaza describe");
 		return -1;
@@ -1101,8 +1182,15 @@ int describe( t_memoria_del_pool *memoria ){
 	/*t_header paquete;
 	recv(memoria->socket , &paquete, sizeof(t_header), MSG_WAITALL);*/
 	char* buffer = malloc(paquete_recv.payload_size);
-	recv(memoria->socket , buffer, paquete_recv.payload_size, MSG_WAITALL);
+	res_send = recv(memoria->socket , buffer, paquete_recv.payload_size, MSG_WAITALL);
+	if( res_send == -1 ){
 
+		pthread_mutex_lock(&sem_memorias);
+			desactivar_memoria(memoria);
+		pthread_mutex_unlock(&sem_memorias);
+		log_info(logger, "Fallo el recv de describe general. Se rechaza describe");
+		return -1;
+	}
 	t_list *lista_tablas = deserializar_describe(buffer);
 
 	pthread_mutex_lock(&sem_tablas);
@@ -1144,7 +1232,6 @@ void desactivar_memoria(t_memoria_del_pool *memoria){
 		return false;
 	}
 
-	log_info(logger,"Se recibe para desactivar a la memoria: %d " ,memoria->numero_memoria);
 	t_memoria_del_pool *memoria_desactivada = NULL;
 
 	memoria_desactivada = list_remove_by_condition(l_criterio_SHC, (void*)memoria_encontrada);
