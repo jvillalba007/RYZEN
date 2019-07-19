@@ -167,6 +167,8 @@ void procesar_drop(char** parametros){
 }
 
 int create_table(char* table_name, char* consistency, char* partitions, char* compact_time){
+	string_to_upper(table_name);
+	string_to_upper(consistency);
 
 	// Does the table exist?
 	struct stat st = {0};
@@ -267,9 +269,7 @@ int create_table(char* table_name, char* consistency, char* partitions, char* co
 void procesar_create(char** parametros){
 
 	char* table_name = parametros[1];
-	string_to_upper(table_name);
 	char* consistency = parametros[2];
-	string_to_upper(consistency);
 	char* partitions = parametros[3];
 	char* compact_time = parametros[4];
 
