@@ -494,7 +494,7 @@ linea_create* read_table_metadata(char* table_name){
 
 void* procesar_describe(int cant_parametros, char** parametros){
 
-    pthread_mutex_lock(&operation_mutex);
+    //pthread_mutex_lock(&operation_mutex);
 
 	// DESCRIBE TABLA
 	if (cant_parametros == 2){
@@ -523,7 +523,7 @@ void* procesar_describe(int cant_parametros, char** parametros){
         closedir(d);
     }
 
-    pthread_mutex_unlock(&operation_mutex);
+    //pthread_mutex_unlock(&operation_mutex);
 
     retardo();
     return list_metadata;
