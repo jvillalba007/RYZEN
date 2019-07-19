@@ -187,6 +187,7 @@ void enviar_journal_lista_memorias (t_list* memorias) {
 
     	int res=0;
     	//intento conectarme
+	    /*
     	if( m->socket == -1 ){
 
     		int socketmemoria = socket_connect_to_server(m->ip,  m->puerto );
@@ -200,13 +201,23 @@ void enviar_journal_lista_memorias (t_list* memorias) {
 			}
 			log_info(logger, "conexion existosa con memoria: %d de socket:", m->numero_memoria , m->socket );
 			m->socket = socketmemoria;
-    	}
+    	}*/
+	    
+	    int socketmemoria = socket_connect_to_server(m->ip,  m->puerto );
+			if( socketmemoria == -1  ){
+
+				m->socket=-1;
+				log_error(logger, "¡Error no se pudo conectar con MEMORIA:%d" , m->numero_memoria);
+				desactivar_memoria(m);
+				log_info(logger, "Desactivo la memoria: %d . La quito de los criterios donde esta asociada" ,m->numero_memoria );
+				return;
+			}
 
 		t_header header;
 		header.emisor=KERNEL;
 		header.tipo_mensaje = JOURNAL;
 		header.payload_size = 0;
-		res = send(m->socket, &header, sizeof( header ) , MSG_NOSIGNAL);
+		res = send(socketmemoria, &header, sizeof( header ) , MSG_NOSIGNAL);
 		if( res == -1 ){
 			pthread_mutex_lock(&sem_memorias);
 				desactivar_memoria(m);
