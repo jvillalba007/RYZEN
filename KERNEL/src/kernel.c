@@ -337,7 +337,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	int res=0;
 	int res_send = 0;
 	int res_recv = 0;
-
+/*
 	if(memoria->socket != -1){
 		socket = memoria->socket;
 	}
@@ -358,7 +358,25 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		memoria->socket = socket;
 
 	}
+	*/
 
+	socket = socket_connect_to_server(memoria->ip, memoria->puerto);
+		log_info(logger, "El socket devuelto es: %d", socket);
+		if( socket == -1  ){
+
+			log_error(logger, "¡Error no se pudo conectar con MEMORIA:%d", memoria->numero_memoria );
+			log_info(logger, "Se deshabilita memoria:%d", memoria->numero_memoria );
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(memoria);
+			pthread_mutex_unlock(&sem_memorias);
+
+			return -1;
+		}
+		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
+		
+	
+	
+	
 	char** split = string_split(linea, " ");
 
 	if(es_string(split[0], "INSERT")){
@@ -1001,6 +1019,7 @@ void gossiping( t_memoria_del_pool *memoria ){
 	int res = 0;
 
 	log_info(logger, "Se comienza gossiping con memoria: %d" , memoria->numero_memoria);
+	/*
 	if( memoria->socket == -1 ){
 
 		int socketmemoria = socket_connect_to_server(memoria->ip,  memoria->puerto );
@@ -1018,13 +1037,27 @@ void gossiping( t_memoria_del_pool *memoria ){
 		log_info(logger, "Se establece conexion con memoria: %d: socket: %d" , memoria->numero_memoria , memoria->socket);
 		memoria->socket=socketmemoria;
 	}
+*/
+	
+	int socketmemoria = socket_connect_to_server(memoria->ip,  memoria->puerto );
+		log_info(logger, "el socket es :%d" ,socketmemoria);
 
+		if( socketmemoria == -1 ){
+
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria( memoria );
+				log_info(logger, "no se pudo conectar con memoria:%d. se rechaza gossiping:%d" , memoria->numero_memoria);
+			pthread_mutex_unlock(&sem_memorias);
+
+			return;
+		}
+	
 	t_header buffer;
 	buffer.emisor=KERNEL;
 	buffer.tipo_mensaje =  GOSSIPING;
 	buffer.payload_size = 0;
 	log_info(logger, "socket de memoria es:%d",memoria->socket);
-	res = send(memoria->socket, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
+	res = send(socketmemoria, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
 	log_info(logger, "La respuesta de memoria conexion es:%d",res);
 	if( res == -1 ){
 
@@ -1043,7 +1076,7 @@ void gossiping( t_memoria_del_pool *memoria ){
 	}
 */
 	t_header header_tabla;
-	res = recv(memoria->socket , &header_tabla, sizeof(t_header), MSG_WAITALL);
+	res = recv(socketmemoria , &header_tabla, sizeof(t_header), MSG_WAITALL);
 	if( res == -1 ){
 
 		pthread_mutex_lock(&sem_memorias);
@@ -1053,7 +1086,7 @@ void gossiping( t_memoria_del_pool *memoria ){
 		return;
 	}
 	char *buffer_tabla = malloc( header_tabla.payload_size);
-	res = recv(memoria->socket , buffer_tabla, header_tabla.payload_size , MSG_WAITALL);
+	res = recv(socketmemoria , buffer_tabla, header_tabla.payload_size , MSG_WAITALL);
 	if( res == -1 ){
 
 		pthread_mutex_lock(&sem_memorias);
@@ -1156,6 +1189,7 @@ void hilo_describe(){
 
 int describe( t_memoria_del_pool *memoria ){
 
+	/*
 	if( memoria->socket == -1 ){
 
 		int socketmemoria = socket_connect_to_server(memoria->ip,  memoria->puerto );
@@ -1171,10 +1205,22 @@ int describe( t_memoria_del_pool *memoria ){
 		}
 		log_info(logger, "Se establece conexion con memoria: %d: socket: %d" , memoria->numero_memoria , memoria->socket);
 		memoria->socket=socketmemoria;
-	}
+	}*/
 
+	int socketmemoria = socket_connect_to_server(memoria->ip,  memoria->puerto );
+		log_info(logger, "%d" ,socketmemoria);
+
+		if( socketmemoria == -1 ){
+
+			pthread_mutex_lock(&sem_memorias);
+				desactivar_memoria(memoria);
+			pthread_mutex_unlock(&sem_memorias);
+			log_info(logger, "no se pudo conectar con memoria. se rechaza describe");
+			return -1;
+		}
+	
 	log_info(logger,"comienza DESCRIBE con memoria:%d" , memoria->numero_memoria);
-	int res_send = enviar_describe_general(&memoria->socket);
+	int res_send = enviar_describe_general(&socketmemoria);
 	if( res_send == -1 ){
 
 		pthread_mutex_lock(&sem_memorias);
@@ -1185,7 +1231,7 @@ int describe( t_memoria_del_pool *memoria ){
 	}
 
 	t_header paquete_recv;
-	res_send = recv(memoria->socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
+	res_send = recv(socketmemoria, &paquete_recv, sizeof(t_header), MSG_WAITALL);
 	if( res_send == -1 ){
 
 		pthread_mutex_lock(&sem_memorias);
@@ -1202,7 +1248,7 @@ int describe( t_memoria_del_pool *memoria ){
 	/*t_header paquete;
 	recv(memoria->socket , &paquete, sizeof(t_header), MSG_WAITALL);*/
 	char* buffer = malloc(paquete_recv.payload_size);
-	res_send = recv(memoria->socket , buffer, paquete_recv.payload_size, MSG_WAITALL);
+	res_send = recv(socketmemoria , buffer, paquete_recv.payload_size, MSG_WAITALL);
 	if( res_send == -1 ){
 
 		pthread_mutex_lock(&sem_memorias);
