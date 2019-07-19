@@ -9,6 +9,7 @@
 	#define MEMTABLE_H_
 
 	#include "config/config_LFS.h"
+	#include <pthread.h>
 	#include <inttypes.h>
 
 		typedef struct{
