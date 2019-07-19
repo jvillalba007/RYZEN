@@ -1285,10 +1285,10 @@ void hilo_gossiping(){
 
 		nanosleep(&ts, NULL);
 
-		log_info(mem_log, "INICIA gossiping" );
+		/*log_info(mem_log, "INICIA gossiping" );
 		pthread_mutex_lock(&mutex_memorias);
 		list_iterate( tabla_memorias , (void*)logear_memoria );
-		pthread_mutex_unlock(&mutex_memorias);
+		pthread_mutex_unlock(&mutex_memorias);*/
 
 		pthread_mutex_lock(&mutex_memorias);
 		gossiping();
@@ -1297,9 +1297,9 @@ void hilo_gossiping(){
 		log_info(mem_log, "FINALIZA gossiping" );
 
 		//loggeo tabla seed
-		pthread_mutex_lock(&mutex_memorias);
+		/*pthread_mutex_lock(&mutex_memorias);
 		list_iterate( tabla_memorias , (void*)logear_memoria );
-		pthread_mutex_unlock(&mutex_memorias);
+		pthread_mutex_unlock(&mutex_memorias);*/
 
 		ts.tv_sec = mem_config.retardo_gossiping / 1000;
 		ts.tv_nsec = (mem_config.retardo_gossiping  % 1000) * 1000000;
