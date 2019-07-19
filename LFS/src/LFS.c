@@ -287,7 +287,7 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 		switch(paquete.tipo_mensaje){
 
 			case CONEXION:{
-				send(cliente, &lfs_config.value_size,sizeof(int),0);
+				send(cliente, &lfs_config.value_size,sizeof(int),MSG_NOSIGNAL);
 			}
 			break;
 
@@ -314,14 +314,14 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 					linears.timestamp = 0;
 
 					serializado = serializar_response_select(linears,&paquete.payload_size);
-					send(cliente, &paquete, sizeof(t_header), 0);
-					send(cliente, serializado, paquete.payload_size, 0);
+					send(cliente, &paquete, sizeof(t_header), MSG_NOSIGNAL);
+					send(cliente, serializado, paquete.payload_size, MSG_NOSIGNAL);
 					free(serializado);
 					free(response);
 				}
 				else
 				{
-					send(cliente, &paquete,sizeof(t_header),0);
+					send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				}
 			}
 			break;
@@ -368,7 +368,7 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 					log_error(g_logger, "Operación create %s no pudo ser realizada. Revise logs.\n", lineas->tabla);
 				}
 
-				send(cliente, &paquete,sizeof(t_header),0);
+				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 
 				
 			}
@@ -415,7 +415,7 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 				{
 					paquete.tipo_mensaje = EJECUCIONERROR;
 					log_error(g_logger, "Operación DESCRIBE %s no pudo ser realizada. Revise logs.\n",parametros[1]);
-					send(cliente, &paquete,sizeof(t_header),0);
+					send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 
 					list_destroy(definitiva);
 					free(describe);
@@ -425,8 +425,8 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 
 				char* serializado;
 				serializado = serializar_describe(definitiva,&paquete.payload_size);
-				send(cliente, &paquete, sizeof(t_header), 0);
-				send(cliente, serializado, paquete.payload_size, 0);
+				send(cliente, &paquete, sizeof(t_header), MSG_NOSIGNAL);
+				send(cliente, serializado, paquete.payload_size, MSG_NOSIGNAL);
 
 				free(serializado);
 				list_destroy(definitiva);
@@ -454,7 +454,7 @@ void funcionalidad_conexion_memoria(void* clienteSocket){
 					log_error(g_logger, "La tabla %s especificada no existe. \n", tabla);
 				}
 
-				send(cliente, &paquete,sizeof(t_header),0);
+				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				free(tabla);
 			}
 			break;
