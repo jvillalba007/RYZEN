@@ -84,7 +84,9 @@ void ejecutar_procesador(){
 				log_info(logger, "Se recibe a ejecucion request simple: %s" , pcb->request_comando  );
 				ejecutar_linea( pcb->request_comando );
 
-				finalizar_pcb(pcb);
+				pthread_mutex_lock(&sem_pcb);
+					finalizar_pcb(pcb);
+				pthread_mutex_unlock(&sem_pcb);
 			}
 			else
 			{
@@ -103,7 +105,10 @@ void ejecutar_procesador(){
 					split_liberar(split);
 					free(path);
 					log_info(logger, "procedo a finalizar pcb %d",pcb->id);
-					finalizar_pcb(pcb);
+
+					pthread_mutex_lock(&sem_pcb);
+						finalizar_pcb(pcb);
+					pthread_mutex_unlock(&sem_pcb);
 
 				}else{
 
@@ -131,10 +136,15 @@ void ejecutar_procesador(){
 				//si es fin de archivo o es un error de ejecucion finalizo el pcb
 				if( feof(archivo) || res == -1 ){
 					log_info(logger, "Fin archivo o linea incorrecta pcb:%d",pcb->id);
-					finalizar_pcb(pcb);
+
+					pthread_mutex_lock(&sem_pcb);
+						finalizar_pcb(pcb);
+					pthread_mutex_unlock(&sem_pcb);
 				} else{
-					log_info(logger, "Fin quantum pcb:%d",pcb->id);
-					parar_por_quantum(pcb);
+					pthread_mutex_lock(&sem_pcb);
+						parar_por_quantum(pcb);
+						log_info(logger, "Fin quantum pcb:%d",pcb->id);
+					pthread_mutex_unlock(&sem_pcb);
 				}
 				fclose(archivo);
 
@@ -649,10 +659,14 @@ t_PCB* obtener_pcb_ejecutar(){
 	if(exit_global) return NULL;
 
 	t_PCB *pcb = NULL;
-	pcb = list_remove( l_pcb_listos , 0 );
-	list_add( l_pcb_ejecutando , pcb  );
-	log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
-	log_info(logger, "nuevo tamanio de la lista de listos %d", list_size( l_pcb_listos ));
+
+	pthread_mutex_lock(&sem_pcb);
+		pcb = list_remove( l_pcb_listos , 0 );
+		list_add( l_pcb_ejecutando , pcb  );
+		log_info(logger, "se agrega a ejecucion pcb id %d",  pcb->id );
+		log_info(logger, "nuevo tamanio de la lista de listos %d", list_size( l_pcb_listos ));
+	pthread_mutex_unlock(&sem_pcb);
+
 	return pcb;
 }
 
@@ -681,6 +695,7 @@ void inicializar_kernel(){
 	pthread_mutex_init(&sem_ejecutar, NULL);
 	pthread_mutex_init(&sem_memorias, NULL);
 	pthread_mutex_init(&sem_tablas, NULL);
+	pthread_mutex_init(&sem_pcb, NULL);
 
 	//INIT lista criterios
 	l_criterio_SHC = list_create();
@@ -1040,7 +1055,7 @@ void gossiping( t_memoria_del_pool *memoria ){
 			desactivar_memoria( memoria );
 			log_info(logger, "Fallo el recv de gossiuping a memoria:%d" , memoria->numero_memoria );
 		pthread_mutex_unlock(&sem_memorias);
-		free( buffer );
+		free( buffer_tabla );
 		return;
 	}
 

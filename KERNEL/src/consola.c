@@ -151,13 +151,12 @@ void crear_pcb (char* string_codigo, t_tipo_request tipo) {
     pcb->tipo_request = tipo;  
     
     //  Se crea el PCB
-    list_add(l_pcb_nuevos, pcb);
-    
-    //  Se mueve el PCB de la lista de NEW a la lista de READY
-    list_add(l_pcb_listos, list_remove(l_pcb_nuevos, 0));
-
-    log_info(logger, "Se crea el PCB de la request: %s con id: %d ", pcb->request_comando, pcb->id);
-    log_info(logger, "Cantida de pcb listos: %d ", list_size(l_pcb_listos));
+    pthread_mutex_lock(&sem_pcb);
+    	list_add(l_pcb_nuevos, pcb);
+    	list_add(l_pcb_listos, list_remove(l_pcb_nuevos, 0));
+    	log_info(logger, "Se crea el PCB de la request: %s con id: %d ", pcb->request_comando, pcb->id);
+    	log_info(logger, "Cantida de pcb listos: %d ", list_size(l_pcb_listos));
+	pthread_mutex_unlock(&sem_pcb);
     id_pcbs++;
 }
 

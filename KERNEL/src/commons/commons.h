@@ -87,6 +87,7 @@ int operaciones_totales; //sumatoria de todas las operaciones que se ejecutaron 
 int id_pcbs; //para controlar los id de pcbs entrantes
 int socket_memoria;
 pthread_mutex_t sem_ejecutar; //mutex para obtener los pcb de los hilos de ejecucion
+pthread_mutex_t sem_pcb; //mutex para listas de estados de pcb
 pthread_mutex_t sem_tablas; //mutex para lista de tablas
 pthread_mutex_t sem_memorias; //mutex para lista de memorias
 

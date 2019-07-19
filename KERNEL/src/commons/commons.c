@@ -119,6 +119,7 @@ void liberar_kernel(){
 	pthread_mutex_destroy(&sem_ejecutar);
 	pthread_mutex_destroy(&sem_memorias);
 	pthread_mutex_destroy(&sem_tablas);
+	pthread_mutex_destroy(&sem_pcb);
 
 	log_info(logger, "libera lista criterios");
 	//FIN lista criterios
