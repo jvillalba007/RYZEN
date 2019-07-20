@@ -125,8 +125,8 @@ void ejecutar_procesador(){
 					if(linea != NULL){
 
 						log_info(logger, "la linea a ejecutar es: %s" , linea  );
-						/*res = ejecutar_linea( linea );*/
-						printf( "\t %s" , linea );
+						res = ejecutar_linea( linea );
+						printf( "\n %s" , linea );
 						
 						k++;
 						pcb->pc++;
@@ -138,19 +138,19 @@ void ejecutar_procesador(){
 				}
 
 				//si es fin de archivo o es un error de ejecucion finalizo el pcb
-				if( feof(archivo) ){
+				if( feof(archivo)  ){
 					log_info(logger, "Fin archivo pcb:%d",pcb->id);
 					pthread_mutex_lock(&sem_pcb);
 						finalizar_pcb(pcb);
 					pthread_mutex_unlock(&sem_pcb);
 				} 
-				if( res== -1 ){
+				else if( res== -1 ){
 					log_info(logger, "linea incorrecta pcb:%d",pcb->id);
 					pthread_mutex_lock(&sem_pcb);
 						finalizar_pcb(pcb);
 					pthread_mutex_unlock(&sem_pcb);
 				}	
-				else{
+				else if( k== kernel_config.QUANTUM ){
 					pthread_mutex_lock(&sem_pcb);
 						parar_por_quantum(pcb);
 						log_info(logger, "Fin quantum pcb:%d",pcb->id);
@@ -345,7 +345,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	int res=0;
 	int res_send = 0;
 	int res_recv = 0;
-/*
+
 	if(memoria->socket != -1){
 		socket = memoria->socket;
 	}
@@ -366,8 +366,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		memoria->socket = socket;
 
 	}
-	*/
 
+
+/*
 	socket = socket_connect_to_server(memoria->ip, memoria->puerto);
 		log_info(logger, "El socket devuelto es: %d", socket);
 		if( socket == -1  ){
@@ -381,7 +382,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			return -1;
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
-		
+	*/
 	
 	
 	
@@ -461,7 +462,11 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				log_info( logger , "Falla recv de SELECT. Falla operacion: %s", linea );
 			}
 			else{
-				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) {
+					res = 0;
+					printf("operacion: %s no existe value. memoria: %d", linea  , memoria->numero_memoria);
+					log_info( logger , "operacion: %s no existe value. memoria: %d", linea  , memoria->numero_memoria);
+				}
 				else{
 
 					char* buffer = malloc(paquete_recv.payload_size);
