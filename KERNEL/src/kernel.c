@@ -125,7 +125,9 @@ void ejecutar_procesador(){
 					if(linea != NULL){
 
 						log_info(logger, "la linea a ejecutar es: %s" , linea  );
-						res = ejecutar_linea( linea );
+						/*res = ejecutar_linea( linea );*/
+						printf( "\t %s" , linea );
+						
 						k++;
 						pcb->pc++;
 						free(linea);
@@ -136,13 +138,19 @@ void ejecutar_procesador(){
 				}
 
 				//si es fin de archivo o es un error de ejecucion finalizo el pcb
-				if( feof(archivo) || res == -1 ){
-					log_info(logger, "Fin archivo o linea incorrecta pcb:%d",pcb->id);
-
+				if( feof(archivo) ){
+					log_info(logger, "Fin archivo pcb:%d",pcb->id);
 					pthread_mutex_lock(&sem_pcb);
 						finalizar_pcb(pcb);
 					pthread_mutex_unlock(&sem_pcb);
-				} else{
+				} 
+				if( res== -1 ){
+					log_info(logger, "linea incorrecta pcb:%d",pcb->id);
+					pthread_mutex_lock(&sem_pcb);
+						finalizar_pcb(pcb);
+					pthread_mutex_unlock(&sem_pcb);
+				}	
+				else{
 					pthread_mutex_lock(&sem_pcb);
 						parar_por_quantum(pcb);
 						log_info(logger, "Fin quantum pcb:%d",pcb->id);
