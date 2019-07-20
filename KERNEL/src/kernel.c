@@ -392,11 +392,16 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 		log_info(logger, "ALGORITMIA INSERT");
 		int tiempo_ejecucion = clock();
-
+		
+		char* value = string_extract_substring(linea, "\"", "\"");
+		remove_value(linea, value);
+		split = string_split(linea, " ");
+		
 		linea_insert insert;
 		insert.tabla = split[1];
 		insert.key = (uint16_t) atoi(split[2]);
-		insert.value = string_extract_substring(linea, "\"", "\"");
+		insert.value = value;
+		
 
 		res_send = enviar_insert(insert, &socket);
 		if( res_send == -1 ){
