@@ -167,7 +167,7 @@ int ejecutar_linea( char *linea ){
 
 	char** parametros = string_split(linea, " ");
 
-
+	if (es_string(linea,"\n")) return -1;
 	//si es CREATE DESCRIBE DROP
 	if (es_string(parametros[0],"CREATE") || es_string(parametros[0],"DESCRIBE") || es_string(parametros[0],"DROP") ) {
 
@@ -400,10 +400,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			log_info( logger , "Falla operacion: %s", linea );
 		}
 		else{
-			log_info(logger,"send insert ok");
+
 			t_header paquete_recv;
 			res_recv = recv(socket, &paquete_recv, sizeof(t_header), MSG_WAITALL);
-			log_info(logger,"recibi ok respuesta insert");
+
 			if( res_recv == -1 ){
 				pthread_mutex_lock(&sem_memorias);
 					desactivar_memoria(memoria);
@@ -414,10 +414,10 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			else{
 				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
 				else{
-					log_info( logger , "operacion: %s realizada. Memoria:%d", linea , memoria->numero_memoria );
+					log_info( logger , "operacion: %s realizada. Memoria: %d", linea , memoria->numero_memoria );
 					memoria->cantidad_carga++;
 					memoria->cantidad_insert++;
-					memoria->tiempo_insert = (clock() - tiempo_ejecucion)/memoria->cantidad_insert;
+					memoria->tiempo_insert = (clock() - tiempo_ejecucion);
 					operaciones_totales++;
 				}
 			}
@@ -469,14 +469,15 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 					else{
 						linea_response_select response_select;
 						deserializar_response_select(buffer, &response_select);
-						log_info( logger , "operacion: %s value:%s memoria:%d", linea  , response_select.value , memoria->numero_memoria);
+						printf("%s %d %s\n", select.tabla, select.key, response_select.value);
+						log_info( logger , "operacion: %s value: %s memoria: %d", linea  , response_select.value , memoria->numero_memoria);
 
 						free(buffer);
 						free(response_select.value);
 
 						memoria->cantidad_carga++;
 						memoria->cantidad_select++;
-						memoria->tiempo_select = (clock() - tiempo_ejecucion)/memoria->cantidad_select;
+						memoria->tiempo_select = (clock() - tiempo_ejecucion);
 						operaciones_totales++;
 					}
 
@@ -526,7 +527,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 						list_add(l_tablas, tabla);
 					pthread_mutex_unlock(&sem_tablas);
 					operaciones_totales++;
-					log_info(logger,"tabla %s creada, criterio: %s memoria:%d", split[1],split[2] , memoria->numero_memoria);
+					log_info(logger,"tabla %s creada, criterio: %s memoria: %d", split[1],split[2] , memoria->numero_memoria);
 				}
 			}
 		}
@@ -622,7 +623,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 							t_list *lista_tablas = deserializar_describe(buffer);
 							pthread_mutex_lock(&sem_tablas);
 								list_iterate( lista_tablas , (void*)agregar_tabla_describe );
-								log_info(logger,"Se termino de ejecutar DESCRIBE con memoria:%d",memoria->numero_memoria);
+								log_info(logger,"Se termino de ejecutar DESCRIBE con memoria: %d",memoria->numero_memoria);
 							pthread_mutex_unlock(&sem_tablas);
 							list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
 							free(buffer);
@@ -666,7 +667,7 @@ void agregar_tabla_describe( linea_create* tabla_describe ){
 		log_info(logger, "se agrega la tabla: %s",  tabla_nueva->nombre_tabla );
 	}
 	else{
-		log_info(logger, "ya se encuentra en el sistema la tabla: %s",  tabla_describe->tabla );
+		//log_info(logger, "ya se encuentra en el sistema la tabla: %s",  tabla_describe->tabla );
 
 	}
 
@@ -1168,12 +1169,12 @@ void hilo_describe(){
 			}
 			else{
 
-				log_info(logger, "Memoria elegida para describe en hilo es:%d",memoria->numero_memoria);
+				log_info(logger, "Memoria elegida para describe en hilo es: %d",memoria->numero_memoria);
 				int res = describe( memoria );
 
 				if( res== -1 ){
 
-					log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
+					log_info(logger, "Falla describe con memoria: %d",memoria->numero_memoria);
 				}
 				else{
 					log_info(logger, "Se realiza describe exitosamente con memoria:%d",memoria->numero_memoria);
@@ -1243,7 +1244,7 @@ int describe( t_memoria_del_pool *memoria ){
 	if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) {
 		log_info(logger, "Fallo la ejecucion de describe en memoria/lfs. Se rechaza describe");
 		return -1;
-	}
+	}else{
 
 	/*t_header paquete;
 	recv(memoria->socket , &paquete, sizeof(t_header), MSG_WAITALL);*/
@@ -1264,7 +1265,7 @@ int describe( t_memoria_del_pool *memoria ){
 	pthread_mutex_unlock(&sem_tablas);
 	list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
 	free(buffer);
-
+	}
 	return 0;
 }
 
@@ -1284,7 +1285,7 @@ void quitar_tabla_lista( char* tabla ){
 		free_tabla( tabla_encontrada );
 	}
 	else{
-		log_info(logger,"La tabla:%s a la que se hizo drop no estaba en la metadata " ,tabla);
+		log_info(logger,"La tabla: %s a la que se hizo drop no estaba en la metadata " ,tabla);
 	}
 }
 

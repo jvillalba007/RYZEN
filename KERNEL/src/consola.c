@@ -326,7 +326,12 @@ void ejecutar_metricas(t_memoria_del_pool* memoria){
 	printf("METRICAS DE LA MEMORIA %d\n", memoria->numero_memoria);
 	printf("Memory Load: %d \n", memoria->cantidad_carga);
 	printf("Writes: %d \n",memoria->cantidad_insert);
-	printf("Write Latency / 30s: %f \n",memoria->tiempo_insert);
+
+	if (memoria->cantidad_insert == 0) printf("Write Latency / 30s: %f \n", memoria->tiempo_insert);
+	else printf("Write Latency / 30s: %f \n", (memoria->tiempo_insert/memoria->cantidad_insert));
+
 	printf("Reads: %d \n", memoria->cantidad_select);
-	printf("Read Latency / 30s: %f\n", memoria->tiempo_select);
+
+	if (memoria->cantidad_select == 0) printf("Read Latency / 30s: %f\n", memoria->tiempo_select);
+	else printf("Read Latency / 30s: %f\n", (memoria->tiempo_select/memoria->cantidad_select));
 }
