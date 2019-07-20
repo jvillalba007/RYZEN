@@ -16,6 +16,17 @@ int compactate(char* table){
 		// tabla ya no existe
 		return 1;
 	}
+	
+	char* table_path;
+	table_path = generate_path(table, TABLES_FOLDER, "");
+	
+    struct stat buf;
+    stat(table_path, &buf);
+	if(S_ISREG(buf.st_mode)){
+		free(table_path);
+		log_info(g_logger, "%s is not a directory", table);
+		return 1; //tabla no es un directorio
+	}
 
     pthread_mutex_lock(&operation_mutex);
 
