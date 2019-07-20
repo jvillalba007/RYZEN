@@ -995,7 +995,7 @@ void hilo_gossiping(){
 		if( !list_is_empty(l_memorias ) ){
 
 			pthread_mutex_lock(&sem_memorias);
-				t_list* memorias_activas = get_memorias_activas( l_memorias );
+				t_list* memorias_activas = l_memorias;
 			pthread_mutex_unlock(&sem_memorias);
 			if( list_is_empty( memorias_activas ) ){
 				log_info(logger, "No se encuentra memorias disponibles para realizar gossiping");
@@ -1005,7 +1005,7 @@ void hilo_gossiping(){
 				list_iterate( memorias_activas , (void*)gossiping );
 			}
 
-			list_destroy( memorias_activas );
+			//list_destroy( memorias_activas );
 			log_info(logger, "Fin hilo gossiping");
 		}
 	}

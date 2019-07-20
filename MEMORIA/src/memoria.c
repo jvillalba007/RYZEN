@@ -205,9 +205,12 @@ int atender_request(int cliente, t_msg* msg)
 			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES...
 			t_list* mems = deserializar_memorias(data);
 
+			log_info(mem_log, "LOCK PORQUE MULTIPLEXACION VA AGREGAR MEMORIAS");
 			pthread_mutex_lock(&mutex_memorias);
 			agregar_memorias_gossiping( mems );
 			pthread_mutex_unlock(&mutex_memorias);
+			log_info(mem_log, "DESLOCKEO MULTIPLEXACION EL AGREGADO DE MEMORIAS");
+
 			free(data);
 			liberar_tabla_memorias(mems);
 
@@ -217,9 +220,12 @@ int atender_request(int cliente, t_msg* msg)
 			buffer.emisor=MEMORIA;
 			buffer.tipo_mensaje =  GOSSIPING;
 
+			log_info(mem_log, "LOCK MULTIPLEXACION PARA OBTENER MEMORIAS ACTIVAS");
 			pthread_mutex_lock(&mutex_memorias);
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
 			pthread_mutex_unlock(&mutex_memorias);
+			log_info(mem_log, "DESLOCKEO MULTIPLEXACION PARA OBTENER MEMORIAS ACTIVAS");
+
 			char* data_send = serializar_memorias(memorias_activas,&buffer.payload_size);
 
 			send(cliente, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
@@ -418,10 +424,13 @@ int atender_kernel(int cliente, t_msg* msg)
 
 			if(paquete.tipo_mensaje == EJECUCIONERROR || retorno == -1)
 			{
-				log_error(mem_log, "LFS DEAD..."  );
-				pthread_mutex_lock(&mutex_socket);
-				socketClienteLfs = -1;
-				pthread_mutex_unlock(&mutex_socket);
+				if(retorno == -1)
+				{
+					log_error(mem_log, "LFS DEAD..."  );
+					pthread_mutex_lock(&mutex_socket);
+					socketClienteLfs = -1;
+					pthread_mutex_unlock(&mutex_socket);
+				}
 				paquete.tipo_mensaje = EJECUCIONERROR;
 				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				break;
@@ -439,16 +448,18 @@ int atender_kernel(int cliente, t_msg* msg)
 		break;
 
 		case GOSSIPING:{
-			log_info(mem_log, "GOSSIPING");
+			log_info(mem_log, "GOSSIPING KERNEL");
 
 			t_header paquete;
 			paquete.emisor=MEMORIA;
 			paquete.tipo_mensaje = GOSSIPING;
 
 			/*ENVIO MEMORIAS ACTIVAS*/
+			log_info(mem_log, "LOCK KERNEL PARA OBTENER MEMORIAS ACTIVAS");
 			pthread_mutex_lock(&mutex_memorias);
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
 			pthread_mutex_unlock(&mutex_memorias);
+			log_info(mem_log, "UNLOCK KERNEL PARA OBTENER MEMORIAS ACTIVAS");
 
 			char* data = serializar_memorias(memorias_activas,&paquete.payload_size);
 			send(cliente, &paquete, sizeof(t_header) , MSG_NOSIGNAL);
@@ -879,10 +890,13 @@ linea_response_select* enviar_select_lfs( linea_select *linea ){
 
 	if(paqueteLFS.tipo_mensaje == EJECUCIONERROR || retorno == -1) //FALLO
 	{
-		log_error(mem_log, "LFS DEAD..."  );
-		pthread_mutex_lock(&mutex_socket);
-		socketClienteLfs = -1;
-		pthread_mutex_unlock(&mutex_socket);
+		if(retorno == -1)
+		{
+			log_error(mem_log, "LFS DEAD..."  );
+			pthread_mutex_lock(&mutex_socket);
+			socketClienteLfs = -1;
+			pthread_mutex_unlock(&mutex_socket);
+		}
 		return NULL;
 	}
 
@@ -1169,20 +1183,22 @@ void gossiping(){
 			buffer.tipo_mensaje = GOSSIPING;
 
 			/*ENVIO MEMORIAS ACTIVAS*/
+			log_info(mem_log, "LOCK PARA OBTENER HILO GOO MEMORIAS ACTIVAS");
+			pthread_mutex_lock(&mutex_memorias);
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
+			pthread_mutex_unlock(&mutex_memorias);
+			log_info(mem_log, "UNLOCK PARA OBTENER HILO GOO MEMORIAS ACTIVAS");
 
 			char* data = serializar_memorias(memorias_activas,&buffer.payload_size);
 			int retorno = send(memoria->socket, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
-
 			if (retorno == -1)
 			{
 				free(data);
 				list_destroy(memorias_activas);
-				log_error(mem_log, "Se murio MEMORIA de numero: %d , de la memoria numero:%d",memoria->numero_memoria);
+				log_error(mem_log, "Se murio MEMORIA de numero: %d",memoria->numero_memoria);
 				memoria->socket = -1;
 				return;
 			}
-
 			send(memoria->socket, data, buffer.payload_size , MSG_NOSIGNAL);
 			free(data);
 
@@ -1193,16 +1209,19 @@ void gossiping(){
 
 			if (retorno == -1)
 			{
-				log_error(mem_log, "Se murio MEMORIA de numero: %d , de la memoria numero:%d",memoria->numero_memoria);
+				log_error(mem_log, "Se murio MEMORIA de numero: %d",memoria->numero_memoria);
 				memoria->socket = -1;
 				return;
 			}
-
 			char *buffer_tabla = malloc( header_memoria.payload_size);
 			recv(memoria->socket , buffer_tabla, header_memoria.payload_size , MSG_WAITALL);
 
 			t_list *memorias_seed = deserializar_memorias(buffer_tabla);
+			log_info(mem_log, "LOCK PARA OBTENER HILO GOO AGREGAR MEMORIAS");
+			pthread_mutex_lock(&mutex_memorias);
 			agregar_memorias_gossiping( memorias_seed );
+			pthread_mutex_unlock(&mutex_memorias);
+			log_info(mem_log, "UNLOCK PARA OBTENER HILO GOO AGREGAR MEMORIAS");
 
 			free( buffer_tabla );
 			liberar_tabla_memorias(memorias_seed);
@@ -1285,15 +1304,12 @@ void hilo_gossiping(){
 
 		nanosleep(&ts, NULL);
 
+		log_info(mem_log, "COMIENZAR gossiping" );
 		/*log_info(mem_log, "INICIA gossiping" );
 		pthread_mutex_lock(&mutex_memorias);
 		list_iterate( tabla_memorias , (void*)logear_memoria );
 		pthread_mutex_unlock(&mutex_memorias);*/
-
-		pthread_mutex_lock(&mutex_memorias);
 		gossiping();
-		pthread_mutex_unlock(&mutex_memorias);
-
 		log_info(mem_log, "FINALIZA gossiping" );
 
 		//loggeo tabla seed
