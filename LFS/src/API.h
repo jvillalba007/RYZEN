@@ -25,7 +25,7 @@
 		#define TABLES_FOLDER "tables/"
 
 		void consola_procesar_comando(char*);
-		void procesar_insert(int, char**);
+		void procesar_insert(int, char**, char*);
 		char* extract_value_from_key(char*, char*);
 		void procesar_select(char**);
 		void procesar_drop(char**);

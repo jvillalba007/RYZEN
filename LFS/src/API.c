@@ -59,28 +59,27 @@ int insert_record(linea_insert* datos, char* fixed_timestamp){
 	return 0;
 }
 
-void procesar_insert(int cant_parametros, char** parametros){
+void procesar_insert(int cant_parametros, char** parametros, char* value){
 
 	char* table_name = parametros[1];
 	char* key = parametros[2];
-	char* value = parametros[3];
-	char* value1 = string_substring_from(value, 1); // remove first "
-	char* value2 = string_substring_until(value1, strlen(value1) - 1); //remove last "
+/*
+	char* value1 = parametros[3];
 
-	value = strdup(value2);
-	free(value1);
-	free(value2);
-
+	char* value;
+	value = string_extract_substring(value1, "\"", "\"");
+*/
+	printf(value);
 	linea_insert* datos = malloc(sizeof(linea_insert));
 	datos->key = atoi(key);
 	datos->tabla = strdup(table_name);
 	datos->value = strdup(value);
 
 	int response;
-	if (cant_parametros == 4){
+	if (cant_parametros == 3){
 		response = insert_record(datos, NULL);
 	}else{
-		response = insert_record(datos, parametros[4]);
+		response = insert_record(datos, parametros[3]);
 	}
 
 	liberar_linea_insert(datos);
@@ -553,14 +552,21 @@ void consola_procesar_comando(char* linea)
 	int cant_parametros = split_cant_elem(parametros);
 
 	if(string_equals_ignore_case(parametros[0],"INSERT")){
+			char * value;
+			value = string_extract_substring(linea, "\"", "\"");
+			remove_value(linea, value);
 
+			parametros = string_split(linea, " ");
+
+ /*
 		if (cant_parametros >= 4 && cant_parametros < 6) {
-
-			procesar_insert(cant_parametros, parametros);
-
+*/
+			procesar_insert(cant_parametros, parametros, value);
+/*
 		}else{
 			printf("API Error: 3 o 4 argumentos son requeridos\n");
 		}
+		*/
 	}
 
 	else if(string_equals_ignore_case(parametros[0],"SELECT")){
