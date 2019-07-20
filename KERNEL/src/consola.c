@@ -269,7 +269,7 @@ bool es_correcta_cantidad_parametros (char* comando, int cantidad) {
     if (es_string(comando, "CREATE") AND (cantidad == 5)) {
         return true;
     }
-    else if (es_string(comando, "INSERT") AND (cantidad == 4)) {
+    else if (es_string(comando, "INSERT") AND (cantidad >= 4)) {
         return true;
     }
     else if (es_string(comando, "SELECT") AND (cantidad == 3)) {
