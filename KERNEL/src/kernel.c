@@ -346,7 +346,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 	int res_send = 0;
 	int res_recv = 0;
 
-	if(memoria->socket != -1){
+/*	if(memoria->socket != -1){
 		socket = memoria->socket;
 	}
 	else{
@@ -366,9 +366,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		memoria->socket = socket;
 
 	}
+*/
 
 
-/*
 	socket = socket_connect_to_server(memoria->ip, memoria->puerto);
 		log_info(logger, "El socket devuelto es: %d", socket);
 		if( socket == -1  ){
@@ -382,7 +382,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			return -1;
 		}
 		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
-	*/
+	
 	
 	
 	
@@ -656,7 +656,11 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		log_error(logger,"comando no reconocido");
 		res = -1;
 	}
-
+	
+	
+	if( socket != -1  ){
+		close(socket);
+	}
 	retardo();
 	split_liberar(split);
 	return res;
@@ -1122,7 +1126,8 @@ void gossiping( t_memoria_del_pool *memoria ){
 	pthread_mutex_lock(&sem_memorias);
 		list_iterate( memorias_seed , (void*)agregar_memoria_gossip );
 	pthread_mutex_unlock(&sem_memorias);
-
+	
+	close(socketmemoria);
 	free( buffer_tabla );
 	liberar_memorias_gossiping(memorias_seed);
 
