@@ -170,27 +170,43 @@ int tamanio_fila_Frames(){
 
 void crear_servidor(){
 
-	if((socketServidor = socket_create_listener(mem_config.ip_mem,mem_config.puerto_mem)) == -1){
-		log_error(mem_log, "¡Error no se pudo abrir el servidor!");
-		pthread_exit(0);
-	}
+	int cliente;
 
+	socketServidor = socket_create_listener( mem_config.ip_mem, mem_config.puerto_mem); // @suppress("Symbol is not resolved")
+
+	if( socketServidor < 0  ){
+
+		log_error(mem_log, "¡Error no se pudo abrir el servidor ");
+		exit(EXIT_FAILURE);
+	}
 	log_info(mem_log, "Se abre servidor de MEMORIA");
-	log_info(mem_log, "[MEMORIA] Escucho en el socket %d. Mi IP es: %s",socketServidor, mem_config.ip_mem);
-	socket_start_listening_select(socketServidor, atender_request, 0);
-	log_info(mem_log, "FIN SERVIDOR");
+
+	/* NUEVO CLIENTE */
+	while( (cliente = socket_aceptar_conexion(socketServidor)) && (!EXIT_PROGRAM)  ){
+		// INICIAR DETACHABLE
+		pthread_t memoria_id;
+		pthread_create(&memoria_id, NULL, (void*)atender_request, (void*)&cliente);
+		log_info(mem_log, "[THREAD] Creo hilo para atender");
+		pthread_detach(memoria_id);
+	}
 
 	close(socketServidor);
 	pthread_exit(0);
+
 }
 
-int atender_request(int cliente, t_msg* msg)
+void atender_request(void* clienteSocket)
 {
 
-	if(msg->header->emisor == DESCONOCIDO){
-			log_info(mem_log, "[MEMORIA] Se Agrego Nueva Conexion");
-			return 1;
-	}
+	int cliente = *(int*) clienteSocket;
+
+	log_info(mem_log,"HILO DE CONEXIONES");
+	t_msg* msg = malloc(sizeof(t_msg));
+
+	assignHandler();
+
+	while((msg_await(cliente,msg) > 0) && (!EXIT_PROGRAM)){
+	log_info(mem_log, "[LFS] EVENTO: Emisor: MEMORIA, Tipo: %d, Tamanio: %d",msg->header->tipo_mensaje,msg->header->payload_size);
 
 	/*************************** SI EL HANDSHAKE LO HIZO UNA MEMORIA *********************************/
 	if (msg->header->emisor == MEMORIA) {
@@ -231,6 +247,7 @@ int atender_request(int cliente, t_msg* msg)
 			send(cliente, &buffer, sizeof( buffer ) , MSG_NOSIGNAL);
 			send(cliente, data_send, buffer.payload_size , MSG_NOSIGNAL);
 			free(data_send);
+			list_destroy(memorias_activas);
 		}
 
 		if(msg->header->tipo_mensaje == CONEXION)
@@ -239,23 +256,20 @@ int atender_request(int cliente, t_msg* msg)
 			send(cliente, &mem_config.memory_number, sizeof( int ) , MSG_NOSIGNAL);
 		}
 
-		if(msg->header->tipo_mensaje == DESCONEXION)
-		{
-			log_error(mem_log, "[Memoria] Se desconecto una Memoria");
-			return -1;
-		}
-
 	}
 
 	/************************** SI EL HANDSHAKE LO HIZO KERNEL ***************************************/
 	if( msg->header->emisor == KERNEL ){
 		log_info(mem_log, "************* NUEVA CONEXION DE KERNEL **************");
 		log_info(mem_log, "[Memoria] EVENTO: Emisor: %d, Tipo: %d, Tamanio: %d",msg->header->emisor,msg->header->tipo_mensaje,msg->header->payload_size);
-		return atender_kernel(cliente,msg);
 
+		atender_kernel(cliente,msg);
+
+		}
 	}
 
-	return 1;
+	log_info(mem_log,"FIN DE CONEXION");
+	close(cliente);
 }
 
 int atender_kernel(int cliente, t_msg* msg)
@@ -341,34 +355,31 @@ int atender_kernel(int cliente, t_msg* msg)
 			log_info(mem_log, "ALGORITMIA CREATE");
 
 			int retorno;
-			verificarSocketLFS();
 
-			retorno = send(socketClienteLfs,msg->header,sizeof(t_header),MSG_NOSIGNAL);
+			int socketCreateLFS = socket_connect_to_server(mem_config.ip_LFS,mem_config.puerto_LFS);
+
+			retorno = send(socketCreateLFS,msg->header,sizeof(t_header),MSG_NOSIGNAL);
 			t_header paquete;
 
 			if(retorno == -1)
 			{
 				log_error(mem_log, "LFS DEAD..."  );
-				pthread_mutex_lock(&mutex_socket);
-				socketClienteLfs = -1;
-				pthread_mutex_unlock(&mutex_socket);
+				close(socketCreateLFS);
 
 				paquete.tipo_mensaje = EJECUCIONERROR;
 				paquete.emisor = MEMORIA;
 				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				break;
 			}
-			send(socketClienteLfs,msg->payload,msg->header->payload_size,MSG_NOSIGNAL);
+			send(socketCreateLFS,msg->payload,msg->header->payload_size,MSG_NOSIGNAL);
 
 
-			retorno = recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
+			retorno = recv(socketCreateLFS, &paquete, sizeof(t_header), MSG_WAITALL);
 
 			if(retorno == -1)
 			{
 				log_error(mem_log, "LFS DEAD..."  );
-				pthread_mutex_lock(&mutex_socket);
-				socketClienteLfs = -1;
-				pthread_mutex_unlock(&mutex_socket);
+				close(socketCreateLFS);
 				paquete.tipo_mensaje = EJECUCIONERROR;
 			}
 
@@ -376,6 +387,7 @@ int atender_kernel(int cliente, t_msg* msg)
 
 			paquete.emisor = MEMORIA;
 			send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
+			close(socketCreateLFS);
 		}
 		break;
 
@@ -402,24 +414,24 @@ int atender_kernel(int cliente, t_msg* msg)
 			log_info(mem_log, "ALGORITMIA DESCRIBE");
 			t_header paquete;
 			int retorno;
-			verificarSocketLFS();
 
-			retorno = send(socketClienteLfs,msg->header,sizeof(t_header),MSG_NOSIGNAL);
+			int socketDescribeLFS = socket_connect_to_server(mem_config.ip_LFS,mem_config.puerto_LFS);
+
+			retorno = send(socketDescribeLFS,msg->header,sizeof(t_header),MSG_NOSIGNAL);
 
 			if(retorno == -1)
 			{
 				log_error(mem_log, "LFS DEAD..."  );
-				pthread_mutex_lock(&mutex_socket);
-				socketClienteLfs = -1;
-				pthread_mutex_unlock(&mutex_socket);
+				close(socketDescribeLFS);
+
 				paquete.tipo_mensaje = EJECUCIONERROR;
 				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 				break;
 			}
 
-			send(socketClienteLfs,msg->payload,msg->header->payload_size,MSG_NOSIGNAL);
+			send(socketDescribeLFS,msg->payload,msg->header->payload_size,MSG_NOSIGNAL);
 
-			retorno = recv(socketClienteLfs, &paquete, sizeof(t_header), MSG_WAITALL);
+			retorno = recv(socketDescribeLFS, &paquete, sizeof(t_header), MSG_WAITALL);
 			paquete.emisor = MEMORIA;
 
 			if(paquete.tipo_mensaje == EJECUCIONERROR || retorno == -1)
@@ -427,9 +439,7 @@ int atender_kernel(int cliente, t_msg* msg)
 				if(retorno == -1)
 				{
 					log_error(mem_log, "LFS DEAD..."  );
-					pthread_mutex_lock(&mutex_socket);
-					socketClienteLfs = -1;
-					pthread_mutex_unlock(&mutex_socket);
+					close(socketDescribeLFS);
 				}
 				paquete.tipo_mensaje = EJECUCIONERROR;
 				send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
@@ -437,13 +447,14 @@ int atender_kernel(int cliente, t_msg* msg)
 			}
 
 			char *data = malloc(paquete.payload_size);
-			recv(socketClienteLfs, data, paquete.payload_size, MSG_WAITALL);
+			recv(socketDescribeLFS, data, paquete.payload_size, MSG_WAITALL);
 
 			retardoLFS();
 
 			send(cliente, &paquete,sizeof(t_header),MSG_NOSIGNAL);
 			send(cliente, data, paquete.payload_size, MSG_NOSIGNAL);
 			free(data);
+			close(socketDescribeLFS);
 		}
 		break;
 
@@ -465,6 +476,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			send(cliente, &paquete, sizeof(t_header) , MSG_NOSIGNAL);
 			send(cliente, data, paquete.payload_size , MSG_NOSIGNAL);
 			free(data);
+			list_destroy(memorias_activas);
 		}
 		break;
 
@@ -481,12 +493,6 @@ int atender_kernel(int cliente, t_msg* msg)
 		case CONEXION:{
 			log_info(mem_log, "Se Conecta KERNEL");
 			send(cliente, &mem_config.memory_number,sizeof(int),MSG_NOSIGNAL);
-		}
-		break;
-
-		case DESCONEXION:{
-			log_error(mem_log, "[Memoria] Se desconecto KERNEL");
-			return -1;
 		}
 		break;
 
@@ -1295,27 +1301,13 @@ void hilo_gossiping(){
 
 	assignHandler();
 
-	void logear_memoria( t_memoria *memoria ){
-
-		log_info(mem_log, "MEMORIA: %d", memoria->numero_memoria );
-	}
-
 	while ( !EXIT_PROGRAM ) {
 
 		nanosleep(&ts, NULL);
 
 		log_info(mem_log, "COMIENZAR gossiping" );
-		/*log_info(mem_log, "INICIA gossiping" );
-		pthread_mutex_lock(&mutex_memorias);
-		list_iterate( tabla_memorias , (void*)logear_memoria );
-		pthread_mutex_unlock(&mutex_memorias);*/
 		gossiping();
 		log_info(mem_log, "FINALIZA gossiping" );
-
-		//loggeo tabla seed
-		/*pthread_mutex_lock(&mutex_memorias);
-		list_iterate( tabla_memorias , (void*)logear_memoria );
-		pthread_mutex_unlock(&mutex_memorias);*/
 
 		ts.tv_sec = mem_config.retardo_gossiping / 1000;
 		ts.tv_nsec = (mem_config.retardo_gossiping  % 1000) * 1000000;
