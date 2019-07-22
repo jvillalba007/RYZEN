@@ -185,7 +185,9 @@ void crear_servidor(){
 	while( (cliente = socket_aceptar_conexion(socketServidor)) && (!EXIT_PROGRAM)  ){
 		// INICIAR DETACHABLE
 		pthread_t memoria_id;
-		pthread_create(&memoria_id, NULL, (void*)atender_request, (void*)&cliente);
+		int* socketCliente = malloc(sizeof(int));
+		*socketCliente = cliente;
+		pthread_create(&memoria_id, NULL, (void*)atender_request, (void*)socketCliente);
 		log_info(mem_log, "[THREAD] Creo hilo para atender");
 		pthread_detach(memoria_id);
 	}
@@ -202,12 +204,12 @@ void atender_request(void* clienteSocket)
 
 	log_info(mem_log,"HILO DE CONEXIONES");
 	t_msg* msg = malloc(sizeof(t_msg));
+	msg->header = NULL;
+	msg->payload = NULL;
 
 	assignHandler();
 
 	while((msg_await(cliente,msg) > 0) && (!EXIT_PROGRAM)){
-	log_info(mem_log, "[LFS] EVENTO: Emisor: MEMORIA, Tipo: %d, Tamanio: %d",msg->header->tipo_mensaje,msg->header->payload_size);
-
 	/*************************** SI EL HANDSHAKE LO HIZO UNA MEMORIA *********************************/
 	if (msg->header->emisor == MEMORIA) {
 		log_info(mem_log, "************* NUEVA CONEXION DE MEMORIA **************");
@@ -221,26 +223,26 @@ void atender_request(void* clienteSocket)
 			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES...
 			t_list* mems = deserializar_memorias(data);
 
-			log_info(mem_log, "LOCK PORQUE MULTIPLEXACION VA AGREGAR MEMORIAS");
+			log_info(mem_log, "LOCK PORQUE HiloConexion VA AGREGAR MEMORIAS");
 			pthread_mutex_lock(&mutex_memorias);
 			agregar_memorias_gossiping( mems );
 			pthread_mutex_unlock(&mutex_memorias);
-			log_info(mem_log, "DESLOCKEO MULTIPLEXACION EL AGREGADO DE MEMORIAS");
-
+			log_info(mem_log, "DESLOCKEO HiloConexion EL AGREGADO DE MEMORIAS");
 			free(data);
-			liberar_tabla_memorias(mems);
+			free(msg->payload);
 
+			liberar_tabla_memorias(mems);
 
 			//ENVIO INFO DE TABLA
 			t_header buffer;
 			buffer.emisor=MEMORIA;
 			buffer.tipo_mensaje =  GOSSIPING;
 
-			log_info(mem_log, "LOCK MULTIPLEXACION PARA OBTENER MEMORIAS ACTIVAS");
+			log_info(mem_log, "LOCK HiloConexion PARA OBTENER MEMORIAS ACTIVAS");
 			pthread_mutex_lock(&mutex_memorias);
 			t_list* memorias_activas = get_memorias_activas( tabla_memorias );
 			pthread_mutex_unlock(&mutex_memorias);
-			log_info(mem_log, "DESLOCKEO MULTIPLEXACION PARA OBTENER MEMORIAS ACTIVAS");
+			log_info(mem_log, "DESLOCKEO HiloConexion PARA OBTENER MEMORIAS ACTIVAS");
 
 			char* data_send = serializar_memorias(memorias_activas,&buffer.payload_size);
 
@@ -256,6 +258,7 @@ void atender_request(void* clienteSocket)
 			send(cliente, &mem_config.memory_number, sizeof( int ) , MSG_NOSIGNAL);
 		}
 
+		(msg->header != NULL) ? free(msg->header):0;
 	}
 
 	/************************** SI EL HANDSHAKE LO HIZO KERNEL ***************************************/
@@ -270,6 +273,9 @@ void atender_request(void* clienteSocket)
 
 	log_info(mem_log,"FIN DE CONEXION");
 	close(cliente);
+	free(clienteSocket);
+	free(msg);
+	pthread_exit(0);
 }
 
 int atender_kernel(int cliente, t_msg* msg)
@@ -284,6 +290,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES...
 			deserializar_select(data,&linea);
 			free(data);
+			free(msg->payload);
 
 			pthread_mutex_lock(&mutex);
 			fila_TPaginas* pagina = ejecutar_select(&linea);
@@ -328,6 +335,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			memcpy((void*) data, msg->payload, msg->header->payload_size);//TENER EN CUENTA SI HAY ERRORES..
 			deserializar_insert(data,&linea);
 			free(data);
+			free(msg->payload);
 
 			t_header paquete;
 			if(strlen(linea.value) >= maximo_value)
@@ -372,7 +380,7 @@ int atender_kernel(int cliente, t_msg* msg)
 				break;
 			}
 			send(socketCreateLFS,msg->payload,msg->header->payload_size,MSG_NOSIGNAL);
-
+			free(msg->payload);
 
 			retorno = recv(socketCreateLFS, &paquete, sizeof(t_header), MSG_WAITALL);
 
@@ -402,6 +410,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			pthread_mutex_unlock(&mutex);
 			free(data);
 			free(tabla);
+			free(msg->payload);
 
 			t_header paquete;
 			paquete.emisor = MEMORIA;
@@ -430,6 +439,7 @@ int atender_kernel(int cliente, t_msg* msg)
 			}
 
 			send(socketDescribeLFS,msg->payload,msg->header->payload_size,MSG_NOSIGNAL);
+			msg->header->payload_size ? free(msg->payload):0;
 
 			retorno = recv(socketDescribeLFS, &paquete, sizeof(t_header), MSG_WAITALL);
 			paquete.emisor = MEMORIA;
@@ -497,6 +507,7 @@ int atender_kernel(int cliente, t_msg* msg)
 		break;
 
 		}
+	(msg->header != NULL) ? free(msg->header):0;
 	return 1;
 }
 
@@ -1202,6 +1213,7 @@ void gossiping(){
 				free(data);
 				list_destroy(memorias_activas);
 				log_error(mem_log, "Se murio MEMORIA de numero: %d",memoria->numero_memoria);
+				close(memoria->socket);
 				memoria->socket = -1;
 				return;
 			}
@@ -1216,6 +1228,7 @@ void gossiping(){
 			if (retorno == -1)
 			{
 				log_error(mem_log, "Se murio MEMORIA de numero: %d",memoria->numero_memoria);
+				close(memoria->socket);
 				memoria->socket = -1;
 				return;
 			}
