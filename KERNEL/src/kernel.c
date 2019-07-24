@@ -126,7 +126,6 @@ void ejecutar_procesador(){
 
 						log_info(logger, "la linea a ejecutar es: %s" , linea  );
 						res = ejecutar_linea( linea );
-						printf( "\n %s" , linea );
 						
 						k++;
 						pcb->pc++;
@@ -188,7 +187,7 @@ int ejecutar_linea( char *linea ){
 			pthread_mutex_unlock(&sem_tablas);
 			if( tabla == NULL ){
 
-				log_info(logger, "No existe en la metadata del sistema la tabla:%s .Se cancela ejecucion", parametros[1] );
+				log_info(logger, "No existe en la metadata del sistema la tabla:%s .Se aborta script", parametros[1] );
 				res=-1;
 				split_liberar(parametros);
 				return res;
@@ -202,7 +201,7 @@ int ejecutar_linea( char *linea ){
 			pthread_mutex_unlock(&sem_tablas);
 			if( tabla != NULL ){
 
-				log_info(logger, "La tabla:%s ya se encuentra creada en el sistema. No es posible volver a crearla.Se cancela ejecucion ", parametros[1] );
+				log_info(logger, "La tabla:%s ya se encuentra creada en el sistema. No es posible volver a crearla.Se aborta script ", parametros[1] );
 				res=-1;
 				split_liberar(parametros);
 				return res;
@@ -214,8 +213,8 @@ int ejecutar_linea( char *linea ){
 		pthread_mutex_unlock(&sem_memorias);
 
 		if( memoria == NULL ) {
-			log_info(logger, "Memoria para ejecutar no encontrada. No hay memorias activas. Se cancela ejecucion" );
-			res=-1;
+			log_info(logger, "Memoria para ejecutar no encontrada. Linea no ejecutada: %s" , linea );
+			res=0;
 			split_liberar(parametros);
 			return res;
 		}
@@ -242,14 +241,14 @@ int ejecutar_linea( char *linea ){
 				res = ejecutar_linea_memoria( memoria , linea );
 			}
 			else{
-				log_info(logger, "Memoria para ejecutar no encontrada" );
-				res=-1;
+				log_info(logger, "Memoria para ejecutar no encontrada  Linea no ejecutada: %s" , linea );
+				res=0;
 				split_liberar(parametros);
 				return res;
 			}
 		}
 		else{
-			log_info(logger, "No se encuentra la tabla. Se cancela ejecucion de operacion: %s", parametros[0] );
+			log_info(logger, "No se encuentra la tabla. Operacion: %s no ejecutada. Se aborta script", linea );
 			res= -1;
 			split_liberar(parametros);
 			return res;
@@ -374,18 +373,14 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		if( socket == -1  ){
 
 			log_error(logger, "¡Error no se pudo conectar con MEMORIA:%d", memoria->numero_memoria );
-			log_info(logger, "Se deshabilita memoria:%d", memoria->numero_memoria );
 			pthread_mutex_lock(&sem_memorias);
 				desactivar_memoria(memoria);
 			pthread_mutex_unlock(&sem_memorias);
-
-			return -1;
+			log_info(logger, "Error de conexion con memoria:%d. Linea no ejecutada: %s" ,memoria->numero_memoria ,  linea );
+			return 0;
 		}
-		log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
-	
-	
-	
-	
+	log_info(logger, "Se creo el socket cliente con MEMORIA de numero: %d en la memoria: %d", socket , memoria->numero_memoria);
+
 	char** split = string_split(linea, " ");
 
 	if(es_string(split[0], "INSERT")){
@@ -409,9 +404,9 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			pthread_mutex_lock(&sem_memorias);
 				desactivar_memoria(memoria);
 			pthread_mutex_unlock(&sem_memorias);
-			res=-1;
+			res=0;
 			log_info( logger , "Falla send de enviar_insert. Se da de baja la memoria y se sale de la operacion." );
-			log_info( logger , "Falla operacion: %s", linea );
+			log_info( logger , "Linea no ejecutada: %s", linea );
 		}
 		else{
 
@@ -422,11 +417,14 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				pthread_mutex_lock(&sem_memorias);
 					desactivar_memoria(memoria);
 				pthread_mutex_unlock(&sem_memorias);
-				res=-1;
+				res=0;
 				log_info( logger , "Falla recv de insert. Falla operacion: %s", linea );
 			}
 			else{
-				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ){
+					log_info( logger , "Memoria informa falla de de operacion:%s .Se aborta script" , linea );
+					res = -1;
+				}
 				else{
 					log_info( logger , "operacion: %s realizada. Memoria: %d", linea , memoria->numero_memoria );
 					memoria->cantidad_carga++;
@@ -451,7 +449,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			pthread_mutex_lock(&sem_memorias);
 				desactivar_memoria(memoria);
 			pthread_mutex_unlock(&sem_memorias);
-			res=-1;
+			res=0;
 			log_info( logger , "Falla send de enviar_select. Se da de baja la memoria y se sale de la operacion." );
 			log_info( logger , "Falla operacion: %s", linea );
 		}
@@ -463,14 +461,13 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				pthread_mutex_lock(&sem_memorias);
 					desactivar_memoria(memoria);
 				pthread_mutex_unlock(&sem_memorias);
-				res=-1;
+				res=0;
 				log_info( logger , "Falla recv de SELECT. Falla operacion: %s", linea );
 			}
 			else{
 				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) {
 					res = 0;
-					printf("operacion: %s no existe value. memoria: %d", linea  , memoria->numero_memoria);
-					log_info( logger , "operacion: %s no existe value. memoria: %d", linea  , memoria->numero_memoria);
+					log_info( logger , "operacion: %s no existe value en memoria: %d", linea  , memoria->numero_memoria);
 				}
 				else{
 
@@ -481,7 +478,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 							desactivar_memoria(memoria);
 						pthread_mutex_unlock(&sem_memorias);
 						free(buffer);
-						res=-1;
+						res=0;
 						log_info( logger , "Falla recv de SELECT. Falla operacion: %s", linea );
 					}
 					else{
@@ -519,7 +516,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			pthread_mutex_lock(&sem_memorias);
 				desactivar_memoria(memoria);
 			pthread_mutex_unlock(&sem_memorias);
-			res=-1;
+			res=0;
 			log_info( logger , "Falla send de enviar_create. Se da de baja la memoria y se sale de la operacion." );
 			log_info( logger , "Falla operacion: %s", linea );
 		}
@@ -531,11 +528,15 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				pthread_mutex_lock(&sem_memorias);
 					desactivar_memoria(memoria);
 				pthread_mutex_unlock(&sem_memorias);
-				res=-1;
+				res=0;
 				log_info( logger , "Falla recv de CREATE. Falla operacion: %s", linea );
 			}
 			else{
-				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ){
+					//TODO:verificar si se aborta script o no
+					log_info( logger , "Falla CREATE en memoria. Falla operacion:%s " , linea );
+					res = 0;
+				}
 				else{
 					//TODO: verificar si existe la tabla
 					t_tabla_consistencia *tabla = malloc(sizeof(t_tabla_consistencia));
@@ -562,7 +563,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 			pthread_mutex_lock(&sem_memorias);
 				desactivar_memoria(memoria);
 			pthread_mutex_unlock(&sem_memorias);
-			res=-1;
+			res=0;
 			log_info( logger , "Falla send de enviar_create. Se da de baja la memoria y se sale de la operacion." );
 			log_info( logger , "Falla operacion: %s", linea );
 		}
@@ -573,11 +574,15 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				pthread_mutex_lock(&sem_memorias);
 					desactivar_memoria(memoria);
 				pthread_mutex_unlock(&sem_memorias);
-				res=-1;
+				res=0;
 				log_info( logger , "Falla recv de DROP. Falla operacion: %s", linea );
 			}
 			else{
-				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+				if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) {
+					//TODO: verificar si aca se aborta o no script
+					log_info( logger , "Falla operacion: %s con memoria", linea );
+					res =0;
+				}
 				else{
 					log_info(logger,"se hizo drop de la tabla %s con memoria:%d",split[1] , memoria->numero_memoria);
 					pthread_mutex_lock(&sem_tablas);
@@ -594,11 +599,16 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 
 			log_info(logger,"Ejecuto DESCRIBE general");
 			res = describe(memoria);
-			if( res == -1 ) log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
+			if( res == -1 ) {
+				//TODO: verificar si falla describe general se aborta script o no.
+				log_info(logger, "Falla describe con memoria:%d",memoria->numero_memoria);
+
+			}
 			else {
 				operaciones_totales++;
 				log_info(logger, "Se realiza describe exitosamente con memoria:%d",memoria->numero_memoria);
 			}
+			res=0;
 		}
 		else{
 
@@ -609,7 +619,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				pthread_mutex_lock(&sem_memorias);
 					desactivar_memoria(memoria);
 				pthread_mutex_unlock(&sem_memorias);
-				res=-1;
+				res=0;
 				log_info( logger , "Falla send de enviar_descibe de tabla. Se da de baja la memoria y se sale de la operacion." );
 				log_info( logger , "Falla operacion: %s", linea );
 			}
@@ -621,11 +631,14 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 					pthread_mutex_lock(&sem_memorias);
 						desactivar_memoria(memoria);
 					pthread_mutex_unlock(&sem_memorias);
-					res=-1;
+					res=0;
 					log_info( logger , "Falla recv de DESCRIBE. Falla operacion: %s", linea );
 				}
 				else{
-					if(paquete_recv.tipo_mensaje == EJECUCIONERROR ) res = -1;
+					if(paquete_recv.tipo_mensaje == EJECUCIONERROR ){
+						log_info( logger , "Falla DESCRIBE con memoria. Falla operacion: %s", linea );
+						res = 0;
+					}
 					else{
 
 						char* buffer = malloc(paquete_recv.payload_size);
@@ -634,7 +647,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 							pthread_mutex_lock(&sem_memorias);
 								desactivar_memoria(memoria);
 							pthread_mutex_unlock(&sem_memorias);
-							res=-1;
+							res=0;
 							log_info( logger , "Falla recv de DESCRIBE. Falla operacion: %s", linea );
 						}
 						else{
@@ -653,7 +666,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 		}
 	}
 	else{
-		log_error(logger,"comando no reconocido");
+		log_error(logger,"comando no reconocido. Se aborta script");
 		res = -1;
 	}
 	
