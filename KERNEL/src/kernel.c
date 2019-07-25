@@ -126,7 +126,7 @@ void ejecutar_procesador(){
 
 						log_info(logger, "la linea a ejecutar es: %s" , linea  );
 						res = ejecutar_linea( linea );
-						log_info( logger, "\n %s" , linea );
+						printf( "\n %s" , linea );
 						
 						k++;
 						pcb->pc++;
@@ -487,7 +487,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 					else{
 						linea_response_select response_select;
 						deserializar_response_select(buffer, &response_select);
-						log_info( logger, "%s %d %s\n", select.tabla, select.key, response_select.value);
+						printf("%s %d %s\n", select.tabla, select.key, response_select.value);
 						log_info( logger , "operacion: %s value: %s memoria: %d", linea  , response_select.value , memoria->numero_memoria);
 
 						free(buffer);
