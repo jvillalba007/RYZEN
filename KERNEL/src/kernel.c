@@ -484,7 +484,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 					else{
 						linea_response_select response_select;
 						deserializar_response_select(buffer, &response_select);
-						printf("%s %d %s\n", select.tabla, select.key, response_select.value);
+						log_info( logger, "SELECT a %s KEY %d es: %s\n", select.tabla, select.key, response_select.value);
 						log_info( logger , "operacion: %s value: %s memoria: %d", linea  , response_select.value , memoria->numero_memoria);
 
 						free(buffer);
