@@ -864,6 +864,9 @@ char* ejecutar_lru(){
 
 		log_info(mem_log,"SE QUITO AL SEGMENTO: %s",segmento->nombre_tabla);
 		log_info(mem_log,"LA PAGINA N°: %d",pagina->numero_pagina);
+		u_int16_t key;
+		memcpy((void*) &(key), (void*) frame+sizeof(uint64_t), sizeof(u_int16_t));
+		log_info(mem_log,"QUE CONTENIA LA KEY: %d", key);
 		list_remove(segmento->paginas,posicion);
 		free(pagina);
 	}
