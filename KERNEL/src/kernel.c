@@ -1301,6 +1301,7 @@ int describe( t_memoria_del_pool *memoria ){
 	pthread_mutex_unlock(&sem_tablas);
 	list_destroy_and_destroy_elements( lista_tablas , (void*)free_tabla_describe);
 	free(buffer);
+	close(socketmemoria);
 	}
 	return 0;
 }
