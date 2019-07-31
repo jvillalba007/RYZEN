@@ -564,7 +564,7 @@ int ejecutar_linea_memoria( t_memoria_del_pool* memoria , char* linea ){
 				desactivar_memoria(memoria);
 			pthread_mutex_unlock(&sem_memorias);
 			res=0;
-			log_info( logger , "Falla send de enviar_create. Se da de baja la memoria y se sale de la operacion." );
+			log_info( logger , "Falla send de enviar_drop. Se da de baja la memoria y se sale de la operacion." );
 			log_info( logger , "Falla operacion: %s", linea );
 		}
 		else{
