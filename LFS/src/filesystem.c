@@ -460,7 +460,7 @@ void obtenerDatos(char* pathParticion, char** ret_buffer, int* ret_buffer_size){
 	// Agrego el resto de bloques a abrir
 	while(bytes > 0 && !eof){
 		int indice = indice_bloque_inicial + ++i;
-		log_info(g_logger, "AGREGO BLOQUE INDICE: %d, NRO: %s | BYTES_RESTANTES: %d", indice, bloques_strings[indice], bytes);
+		//log_info(g_logger, "AGREGO BLOQUE INDICE: %d, NRO: %s | BYTES_RESTANTES: %d", indice, bloques_strings[indice], bytes);
 		eof = _agregar_bloque_a_buffer(bloques_strings[indice], 0, indice);
 		bytes -= atoi(BLOCK_SIZE);
 	}
